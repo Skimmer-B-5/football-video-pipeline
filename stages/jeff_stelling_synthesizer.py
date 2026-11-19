@@ -101,7 +101,7 @@ def get_jeff_stelling_prompt():
 def master_jeff_audio(
     raw_wav_path: Path,
     final_output_path: Path,
-    speed_factor: float = 1.08,
+    speed_factor: float = 1.02,
     target_lufs: float = -14.0,
     peak_db: float = -1.0
 ) -> Path:
@@ -111,7 +111,7 @@ def master_jeff_audio(
     - Lowpass @ 11kHz (smooth high-end, zero digital hiss)
     - Presence EQ boost @ 3.2kHz (+2.5dB) for crisp British consonants and articulation
     - Compand for broadcast levelling and punch
-    - Pacing speed multiplier (1.08x for lively brisk delivery)
+    - Pacing speed multiplier (1.02x for relaxed, authoritative British delivery)
     - ITU-R BS.1770-4 loudnorm to -14 LUFS, -1.0 dBTP ceiling
     - 48 kHz stereo output
     """
@@ -139,12 +139,50 @@ def master_jeff_audio(
     return final_output_path
 
 
+def inject_breath_into_scene(
+    audio_wav_path: Path,
+    breath_type: str = "soft",
+    pause_after_sec: float = 0.05
+) -> float:
+    """
+    Prepends a natural human television studio breath (inhalation) before the speech.
+    Simulates authentic presenter breathing dynamics with zero digital artifacts.
+    """
+    import soundfile as sf
+    import numpy as np
+
+    speech, sr = sf.read(str(audio_wav_path))
+    sfx_dir = PROJECT_ROOT / "data" / "sfx"
+    breath_file = sfx_dir / ("breath_soft_01.wav" if breath_type == "soft" else "breath_quick_02.wav")
+    if not breath_file.exists():
+        return len(speech) / sr
+
+    breath, b_sr = sf.read(str(breath_file))
+    if b_sr != sr:
+        import scipy.signal
+        breath = scipy.signal.resample(breath, int(len(breath) * sr / b_sr))
+
+    if speech.ndim == 2 and breath.ndim == 1:
+        breath = np.column_stack([breath, breath])
+    elif speech.ndim == 1 and breath.ndim == 2:
+        breath = np.mean(breath, axis=1)
+
+    pre_silence = np.zeros((int(0.04 * sr), 2)) if speech.ndim == 2 else np.zeros(int(0.04 * sr))
+    gap = np.zeros((int(pause_after_sec * sr), 2)) if speech.ndim == 2 else np.zeros(int(pause_after_sec * sr))
+
+    combined = np.concatenate([pre_silence, breath, gap, speech])
+    sf.write(str(audio_wav_path), combined, sr)
+    return len(combined) / sr
+
+
 def synthesize_jeff_stelling_scene(
     text: str,
     output_wav_path: Path,
     scene_id: str = "scene_01",
-    speed_factor: float = 1.08,
-    master: bool = True
+    speed_factor: float = 1.02,
+    master: bool = True,
+    prepend_breath: bool = False,
+    breath_type: str = "soft"
 ) -> Dict[str, Any]:
     """Synthesizes a single narration scene using Jeff Stelling cloned voice."""
     import soundfile as sf
@@ -176,6 +214,9 @@ def synthesize_jeff_stelling_scene(
     else:
         temp_raw.replace(output_wav_path)
 
+    if prepend_breath:
+        inject_breath_into_scene(output_wav_path, breath_type=breath_type)
+
     # Measure exact physical duration
     cmd = [
         "ffprobe", "-v", "error",
@@ -191,7 +232,7 @@ def synthesize_jeff_stelling_scene(
         "audio_duration_sec": round(dur, 3),
         "synth_time_sec": round(synth_time, 2),
         "engine": "JeffStelling-Qwen3",
-        "voice": "Jeff Stelling (Sky Sports Studio 1.08x)",
+        "voice": f"Jeff Stelling (Sky Sports Studio {speed_factor:.2f}x)",
         "scene_id": scene_id
     }
 
@@ -199,24 +240,33 @@ def synthesize_jeff_stelling_scene(
 def synthesize_jeff_stelling_script(
     scenes: List[Dict[str, Any]],
     output_dir: Path,
-    speed_factor: float = 1.08
+    speed_factor: float = 1.02,
+    breath_scenes: Optional[List[str]] = None
 ) -> List[Dict[str, Any]]:
-    """Synthesizes all scenes in a Schema v2.0 script in order."""
+    """Synthesizes all scenes in a Schema v2.0 script in order with realistic human breathing."""
+    if breath_scenes is None:
+        # Prepend natural breaths to opening hook, major transitions, and closing debate
+        breath_scenes = ["s01", "s03", "s05", "s06", "s07"]
+
     results = []
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    print(f"\n[JeffStelling] Beginning synthesis of {len(scenes)} scenes...")
+    print(f"\n[JeffStelling] Beginning synthesis of {len(scenes)} scenes (pacing: {speed_factor:.2f}x)...")
     for s in scenes:
         sid = s.get("scene_id", "s01")
         narration = s.get("narration", "")
         out_f = output_dir / f"scene_{sid}.wav"
+        has_breath = sid in breath_scenes
+        b_type = "soft" if sid in ["s01", "s05", "s07"] else "quick"
 
-        print(f"  [{sid}] Synthesizing: \"{narration[:50]}...\"")
+        print(f"  [{sid}] Synthesizing{' with natural breath' if has_breath else ''}: \"{narration[:50]}...\"")
         res = synthesize_jeff_stelling_scene(
             text=narration,
             output_wav_path=out_f,
             scene_id=sid,
-            speed_factor=speed_factor
+            speed_factor=speed_factor,
+            prepend_breath=has_breath,
+            breath_type=b_type
         )
         print(f"    -> Duration: {res['audio_duration_sec']}s (Generated in {res['synth_time_sec']}s)")
         results.append(res)

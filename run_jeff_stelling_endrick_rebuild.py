@@ -66,34 +66,45 @@ def main():
     script_data = json.loads(script_file.read_text(encoding="utf-8"))
     scenes = script_data.get("scenes", [])
     
-    logger.info("=== STEP 1: Checking / Synthesizing 7 Scenes with Jeff Stelling ===")
-    all_audio_exist = all((audio_dir / f"scene_{s['scene_id']}.wav").exists() for s in scenes)
-    if all_audio_exist:
-        logger.info("Existing Jeff Stelling audio files verified in data/audio/. Reusing pristine 48kHz masters.")
-        scene_durations = []
-        for s in scenes:
-            a_f = audio_dir / f"scene_{s['scene_id']}.wav"
-            cmd = ["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "default=noprint_wrappers=1:nokey=1", str(a_f)]
-            dur = float(subprocess.check_output(cmd, text=True).strip())
-            scene_durations.append({
-                "scene_id": s["scene_id"],
-                "narration": s["narration"],
-                "duration_sec": round(dur, 3)
-            })
-    else:
-        logger.info("Synthesizing 7 Scenes with Jeff Stelling (Qwen3-TTS Clone)...")
-        synth_results = synthesize_jeff_stelling_script(
-            scenes=scenes,
-            output_dir=audio_dir,
-            speed_factor=1.08
+    logger.info("=== STEP 1: Synthesizing 7 Scenes with Jeff Stelling (Relaxed Pacing 1.02x & Human Breathing) ===")
+    synth_results = synthesize_jeff_stelling_script(
+        scenes=scenes,
+        output_dir=audio_dir,
+        speed_factor=1.02,
+        breath_scenes=["s01", "s03", "s05", "s06", "s07"]
+    )
+    scene_durations = []
+    for s, res in zip(scenes, synth_results):
+        scene_durations.append({
+            "scene_id": s["scene_id"],
+            "narration": s["narration"],
+            "duration_sec": res["audio_duration_sec"]
+        })
+
+    # Prepare broadcast outro audio with whoosh transition if not already generated
+    outro_wav = audio_dir / "scene_outro.wav"
+    raw_outro = audio_dir / "outro_jeff.wav"
+    whoosh_sfx = root / "data" / "sfx" / "meme_whoosh_swoosh.wav"
+    if not raw_outro.exists():
+        from stages.jeff_stelling_synthesizer import synthesize_jeff_stelling_scene
+        synthesize_jeff_stelling_scene(
+            text="Follow Football in Thirty Seconds for daily breaking news.",
+            output_wav_path=raw_outro,
+            scene_id="outro",
+            speed_factor=1.03
         )
-        scene_durations = []
-        for s, res in zip(scenes, synth_results):
-            scene_durations.append({
-                "scene_id": s["scene_id"],
-                "narration": s["narration"],
-                "duration_sec": res["audio_duration_sec"]
-            })
+    if not outro_wav.exists() or outro_wav.stat().st_size < 10000:
+        cmd = [
+            "ffmpeg", "-y",
+            "-i", str(raw_outro),
+            "-i", str(whoosh_sfx),
+            "-filter_complex",
+            "[0:a]atempo=1.2,volume=1.1[vo]; [1:a]volume=0.35[sfx]; [vo]adelay=180|180[vodelayed]; [sfx][vodelayed]amix=inputs=2:duration=first:dropout_transition=0,loudnorm=I=-14:TP=-1.0:LRA=6,aformat=sample_rates=48000:channel_layouts=stereo[aout]",
+            "-map", "[aout]",
+            "-t", "2.4",
+            str(outro_wav)
+        ]
+        subprocess.run(cmd, check=True, capture_output=True)
         
     logger.info("=== STEP 2: Generating Time-Aligned Subtitle File ===")
     srt_file = evidence_dir / "endrick_milan_v2_rebuild.srt"

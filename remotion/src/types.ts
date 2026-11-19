@@ -48,6 +48,7 @@ export interface FootballShortProps {
   kicker: string;
   logoSrc?: string;
   masterLogoSrc?: string;
+  tickerBaseSrc?: string;
   scanlinesSrc?: string;
   enableRetroEffects?: boolean;
 }

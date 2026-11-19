@@ -108,6 +108,27 @@ def prepare_remotion_props(
             "motion": s.get("motion", {"type": "subtle_push_in"})
         })
         
+    # Append dedicated broadcast outro scene if available
+    outro_audio = workspace_root / "data" / "audio" / "scene_outro.wav"
+    if outro_audio.exists():
+        outro_dur = get_physical_audio_duration(str(outro_audio))
+        outro_frames = int(round(outro_dur * fps))
+        total_frames += outro_frames
+        remotion_scenes.append({
+            "scene_id": "outro",
+            "role": "outro",
+            "narration": "Follow Football in Thirty Seconds for daily breaking news.",
+            "durationInFrames": outro_frames,
+            "audio_path": str(outro_audio.resolve()),
+            "image_path": None,
+            "on_screen": {
+                "headline": "FOLLOW FOR DAILY BREAKING NEWS",
+                "kicker": "OFFICIAL"
+            },
+            "visual": {"kind": "outro_branding"},
+            "motion": {"type": "static"}
+        })
+
     srt_path = workspace_root / "evidence" / "endrick_milan_v2_rebuild.srt"
     subtitles = parse_srt_to_frame_cues(srt_path, fps=fps)
     
@@ -115,9 +136,10 @@ def prepare_remotion_props(
     headline = story.get("headline", "Milan line up €60m Endrick bid")
     ticker_text = f"CORRIERE DELLO SPORT: {headline.upper()} ✦ €60M BID + €10M ADD-ONS ✦ €80M BUY-BACK CLAUSE ✦"
 
-    # Load authentic branding assets (Top-Left TV Bug, Outro Master Logo, CRT Scanlines)
+    # Load authentic branding assets (Top-Left TV Bug, Outro Master Logo, Ticker Base Plate, CRT Scanlines)
     logo_file = workspace_root / "data" / "branding" / "user_bezel_tv_bug.png"
     master_logo_file = workspace_root / "data" / "branding" / "user_bezel_logo_master.png"
+    ticker_base_file = workspace_root / "data" / "branding" / "ticker_base_3d.png"
     scanlines_file = workspace_root / "data" / "retro_90s" / "crt_scanlines.png"
 
     logo_data_uri = None
@@ -129,6 +151,11 @@ def prepare_remotion_props(
     if master_logo_file.exists():
         with open(master_logo_file, "rb") as f:
             master_logo_data_uri = f"data:image/png;base64,{base64.b64encode(f.read()).decode('ascii')}"
+
+    ticker_base_data_uri = None
+    if ticker_base_file.exists():
+        with open(ticker_base_file, "rb") as f:
+            ticker_base_data_uri = f"data:image/png;base64,{base64.b64encode(f.read()).decode('ascii')}"
 
     scanlines_data_uri = None
     if scanlines_file.exists():
@@ -145,6 +172,7 @@ def prepare_remotion_props(
         "kicker": kicker,
         "logoSrc": logo_data_uri,
         "masterLogoSrc": master_logo_data_uri,
+        "tickerBaseSrc": ticker_base_data_uri,
         "scanlinesSrc": scanlines_data_uri,
         "enableRetroEffects": True
     }
