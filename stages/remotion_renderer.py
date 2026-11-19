@@ -371,3 +371,78 @@ def master_audio_and_mux(
     subprocess.run(mux_cmd, capture_output=True, check=True)
     logger.info(f"Final mastered video produced: {output_master_path}")
     return output_master_path
+
+
+def render_remotion_video(
+    assets: List[Dict[str, Any]],
+    story_meta: Dict[str, Any],
+    output_path: Path,
+    include_retro: bool = True,
+    fps: float = 30.0
+) -> Path:
+    """
+    End-to-end headless render function for the autonomous pipeline orchestrator.
+    Prepares props, runs headless Remotion render, masters audio to -14 LUFS, and outputs final MP4.
+    """
+    remotion_dir = PROJECT_ROOT / "remotion"
+    temp_dir = PROJECT_ROOT / "data" / "temp_orchestrator_render"
+    temp_dir.mkdir(parents=True, exist_ok=True)
+    raw_video = temp_dir / "temp_raw_stream.mp4"
+
+    # Synthesize outro audio if missing
+    outro_audio = PROJECT_ROOT / "data" / "audio" / "scene_outro.wav"
+    if not outro_audio.exists():
+        try:
+            from stages.video_assembler import generate_outro_audio
+            generate_outro_audio(outro_audio.parent, voice_name="en-GB-RyanNeural")
+        except Exception as e:
+            logger.warning(f"Could not synthesize outro audio: {e}")
+
+    headline = story_meta.get("headline") or (assets[0].get("on_screen", {}).get("headline") if assets else "BREAKING FOOTBALL NEWS")
+    kicker = story_meta.get("kicker") or (assets[0].get("on_screen", {}).get("kicker") if assets else "NEWS UPDATE")
+    source = story_meta.get("source", "30 Football Plus")
+
+    # Build clean rolling ticker text
+    ticker_bullets = [
+        f"FOOTBALL UPDATE  |  {headline.upper()}",
+        f"SOURCE: {source.upper()}  |  STATUS: REPORTED"
+    ]
+    for s in assets:
+        on_screen = s.get("on_screen", {})
+        h = on_screen.get("headline")
+        sub = on_screen.get("subheadline")
+        if h and len(h) <= 50:
+            ticker_bullets.append(h.upper())
+        elif sub and len(sub) <= 50:
+            ticker_bullets.append(sub.upper())
+    ticker_bullets.append("THIS IS FOOTBALL IN 30 SECONDS")
+    ticker_bullets.append("FOLLOW FOR DAILY BREAKING NEWS")
+    clean_ticker_text = "   |   ".join(ticker_bullets) + "   |   "
+
+    script_data = {
+        "story": {
+            "headline": headline,
+            "kicker": kicker,
+            "source": source,
+            "ticker_text": clean_ticker_text
+        },
+        "scenes": assets
+    }
+
+    props = prepare_remotion_props(script_data, PROJECT_ROOT, fps=fps)
+    render_with_remotion(props, raw_video, remotion_dir)
+
+    master_audio_and_mux(
+        raw_video_path=raw_video,
+        scenes=props["scenes"],
+        output_master_path=output_path,
+        temp_dir=temp_dir / "mux",
+        apply_retro_grading=include_retro
+    )
+
+    try:
+        raw_video.unlink(missing_ok=True)
+    except Exception:
+        pass
+
+    return output_path

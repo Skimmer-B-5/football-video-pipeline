@@ -85,14 +85,14 @@ You MUST respond with a SINGLE valid JSON object adhering strictly to Schema v2.
         "status_badge": "REPORTED" | "RUMOUR" | "CONFIRMED" | "ANALYSIS"
       },
       "visual": {
-        "kind": "player_photo" | "club_photo" | "match_action" | "contract_or_clause_graphic" | "stat_card" | "tactical_diagram" | "press_conference",
-        "primary_subject": "Name of player, club, or graphic subject",
+        "kind": "player_photo" | "manager_photo" | "club_photo" | "match_action" | "press_conference" | "stadium_atmosphere",
+        "primary_subject": "Name of player, manager, executive, or club subject",
         "action_or_context": "Verified visual description",
         "required_entities": ["EntityName"],
         "avoid_entities": ["UnrelatedPeople"],
         "temporal_constraints": "current season or recent",
         "composition": "portrait with safe area for lower third",
-        "must_explain": "What the image or graphic is meant to show"
+        "must_explain": "What the image is meant to show"
       },
       "motion": {
         "type": "subtle_push_in" | "slow_pan" | "static_focus" | "pop_in",
@@ -110,7 +110,7 @@ CRITICAL RULES:
 1. 'full_script' MUST equal the exact concatenated string of all scene 'narration' texts!
 2. Dynamic scene count: Generate between 5 and 8 scenes based on narrative rhythm.
 3. Every on_screen.headline must be an independently written broadcast headline, NEVER derived by splitting the narration.
-4. If describing a contract clause, buy-back, or fee, set visual.kind to 'contract_or_clause_graphic' or 'stat_card'.
+4. NO INFOGRAPHICS OR CHARTS: Every scene must feature authentic, high-impact editorial football photography, match action, press conferences, or portraits of the real players, managers, or executives involved. Never request infographics or stat cards.
 5. Output ONLY the raw JSON object. No markdown fencing, no preamble, no thinking chatter.
 """
 

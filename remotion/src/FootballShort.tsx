@@ -67,9 +67,6 @@ export const FootballShort: React.FC<FootballShortProps> = ({
                   durationInFrames={scene.durationInFrames}
                 />
 
-                {/* Vertical Native Infographic Engine (Stage y: 210 to 1340) */}
-                <InfographicDirector visual={scene.visual} />
-
                 {/* Reusable Broadcast Lower-Third Headline Plate (Anchored at y: 1400) */}
                 <LowerThird onScreen={scene.on_screen} />
               </>
@@ -84,8 +81,14 @@ export const FootballShort: React.FC<FootballShortProps> = ({
       {/* 3. Subtitle Cards (Caption Zone y: 1300) - Hidden during outro */}
       {!isOutroActive && <SubtitleCard subtitles={subtitles} />}
 
-      {/* 4. Rolling Factual Ticker (Lowered to y: 1778, bottom: 90px) - Hidden during outro */}
-      {!isOutroActive && <RollingTicker text={tickerText || headline} />}
+      {/* 4. Rolling Factual Ticker (Lowered to bottom: 90px, height: 110px) - Hidden during outro */}
+      {!isOutroActive && (
+        <RollingTicker
+          text={tickerText || headline}
+          tickerBaseSrc={tickerBaseSrc}
+          headlinesTabSrc={headlinesTabSrc}
+        />
+      )}
 
       {/* 5. Authentic Retro 90s CRT Scanlines & Tube Layer */}
       {enableRetroEffects && (

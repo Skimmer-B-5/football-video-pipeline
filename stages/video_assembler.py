@@ -306,7 +306,7 @@ def create_outro_plate(
     draw.text((text_x, text_y), follow_text, fill=(255, 215, 0), font=font_follow)
 
     # 4. Sub-tagline below pill (Centered)
-    sub_text = "DAILY TRANSFERS  ●  EXCLUSIVE SCOOPS  ●  BREAKING DRAMA"
+    sub_text = "DAILY TRANSFERS  |  EXCLUSIVE SCOOPS  |  BREAKING DRAMA"
     bbox_s = font_sub.getbbox(sub_text)
     sub_w = bbox_s[2] - bbox_s[0]
     sub_x = (target_w - sub_w) // 2
@@ -346,26 +346,23 @@ def generate_outro_audio(temp_dir: Path, voice_name: str = "en-GB-RyanNeural") -
     return out_mp3, dur
 
 def build_ticker_text(headline: str, scenes: List[Dict[str, Any]], credit_source_name: str = "Football Plus") -> str:
-    """Build clean rolling news ticker text with concise, factual bullets ● (never whole narration dumps)."""
+    """Build clean rolling news ticker text with concise, factual bullets (never whole narration dumps)."""
     bullets = [
-        f"FOOTBALL UPDATE  ●  {headline.upper()}",
-        f"SOURCE: {credit_source_name.upper()}  ●  STATUS: REPORTED"
+        f"FOOTBALL UPDATE  |  {headline.upper()}",
+        f"SOURCE: {credit_source_name.upper()}  |  STATUS: REPORTED"
     ]
     for s in scenes:
         on_screen = s.get("on_screen", {})
         h = on_screen.get("headline")
         sub = on_screen.get("subheadline")
-        callout = on_screen.get("data_callout")
-        if callout:
-            bullets.append(f"{callout.upper()}")
-        elif h and len(h) <= 45:
+        if h and len(h) <= 50:
             bullets.append(h.upper())
-        elif sub and len(sub) <= 45:
+        elif sub and len(sub) <= 50:
             bullets.append(sub.upper())
 
     bullets.append("THIS IS FOOTBALL IN 30 SECONDS")
-    bullets.append("FOLLOW FOR DAILY BREAKING NEWS  ●")
-    return "  ●  ".join(bullets)
+    bullets.append("FOLLOW FOR DAILY BREAKING NEWS")
+    return "   |   ".join(bullets) + "   |   "
 
 def generate_subtitles_srt(scenes: List[Dict[str, Any]], srt_out_path: Path) -> Path:
     """
@@ -672,11 +669,14 @@ def assemble_video_ffmpeg(
         srt_esc = str(srt_file).replace("\\", "/").replace(":", "\\:")
 
         # 9. Master Assembly: CRT Scanlines, Chromatic Aberration, TV Noise, Rolling Ticker & Burned-in Subtitles
+        # Ticker text is strictly bounded to an 800px transparent window (x: 280 to 1080) so it rolls cleanly and NEVER goes under the red HEADLINES tab
         cmd_master = (
             f'ffmpeg -y -i "{concat_raw_video}" -i "{tab_img_path}" -i "{crt_overlay_path}" -i "{mixed_audio}" '
             f'-filter_complex "'
             f'[0:v]subtitles=\'{srt_esc}\':force_style=\'FontName=BarlowCondensed-ExtraBold,FontSize=26,PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,BorderStyle=3,MarginV=610,Alignment=2\'[v_sub]; '
-            f'[v_sub]drawtext=fontfile=\'{font_ticker_esc}\':textfile=\'{ticker_file_esc}\':fontcolor=0xFFD700:fontsize=38:x=\'w-t*195\':y=1766[v_tick]; '
+            f'color=c=black@0:s=785x110:d={total_video_dur:.3f}[t_canvas]; '
+            f'[t_canvas]drawtext=fontfile=\'{font_ticker_esc}\':textfile=\'{ticker_file_esc}\':fontcolor=0xFFD700:fontsize=32:x=\'w-t*180\':y=(h-text_h)/2[t_strip]; '
+            f'[v_sub][t_strip]overlay=295:1730[v_tick]; '
             f'[v_tick][1:v]overlay=0:1730[v_masked]; '
             f'[v_masked][2:v]overlay=0:0[v_crt]; '
             f'[v_crt]chromashift=cbh=1.8:crh=-1.8,colorbalance=rs=0.04:gs=0.02:bs=-0.02,noise=alls=3:allf=t+u[v_final]" '

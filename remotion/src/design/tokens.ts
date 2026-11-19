@@ -64,11 +64,11 @@ export const tokens = {
     // Rolling Factual News Ticker (LOWERED to restore 90s TV broadcast proportions)
     ticker: {
       bottom: 90, // Resting cleanly above 80px platform safe margin
-      height: 52,
+      height: 110,
       left: 0,
       right: 0,
       zIndex: 50,
-      badgeWidth: 190,
+      badgeWidth: 280,
       scrollSpeedPxPerFrame: 4.5,
     },
 

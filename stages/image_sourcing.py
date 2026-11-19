@@ -411,32 +411,6 @@ def source_scene_image(
         images_dir.mkdir(parents=True, exist_ok=True)
         chosen_path = images_dir / f"scene_{scene_id}.png"
 
-        # Check if the scene explicitly requires an explainer graphic
-        if scene_data and isinstance(scene_data, dict):
-            visual_info = scene_data.get("visual", {})
-            v_kind = visual_info.get("kind", "")
-            if v_kind in ("contract_or_clause_graphic", "transfer_flow_graphic", "stat_card"):
-                from stages.explainer_graphics import create_explainer_graphic_for_scene
-                create_explainer_graphic_for_scene(scene_data, chosen_path)
-                print(f"[ImageSourcing] Scene {scene_id}: Rendered broadcast explainer graphic ({v_kind}) -> {chosen_path.name}")
-                manifest_entry = {
-                    "asset_id": f"asset_{scene_id}",
-                    "scene_id": scene_id,
-                    "kind": v_kind,
-                    "chosen_image": str(chosen_path),
-                    "source_type": "BROADCAST_EXPLAINER_GRAPHIC",
-                    "source_url": "internal://stages/explainer_graphics.py",
-                    "licence": "Original Production Graphic (FootballIn30Sec)",
-                    "commercial_use_allowed": True,
-                    "usage_decision": "APPROVED_ORIGINAL_EXPLAINER"
-                }
-                record_asset_manifest(manifest_entry)
-                return {
-                    "chosen_image": str(chosen_path),
-                    "source_type": "BROADCAST_EXPLAINER_GRAPHIC",
-                    "asset_manifest": manifest_entry
-                }
-
         # Avoid entities filter (reject unrelated meme/manager candidates)
         avoid_entities = [a.lower() for a in scene_data.get("visual", {}).get("avoid_entities", [])] if scene_data else []
 

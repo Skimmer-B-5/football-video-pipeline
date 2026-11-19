@@ -422,17 +422,31 @@ class PipelineOrchestrator:
 
                 self.update_progress(bot_client, caller_chat_id, 80, "90s TV Broadcast Rendering", "Applying CRT scanlines, 3D beveled logo bug, lower thirds & crossfades...")
 
-                from stages.video_assembler import assemble_video_ffmpeg
-                from stages.verify_video import inspect_video
-
                 out_video = PROJECT_ROOT / "evidence" / f"{self.job.job_id}_final.mp4"
-                assemble_video_ffmpeg(
-                    scenes=assets,
-                    output_mp4_path=out_video,
-                    credit_source_name=topic["source"],
-                    include_logo_outro=True,
-                    story_headline=topic.get("headline")
-                )
+                rendered = False
+                try:
+                    from stages.remotion_renderer import render_remotion_video
+                    print(f"[Orchestrator] Rendering 90s broadcast short with Remotion engine...")
+                    render_remotion_video(
+                        assets=assets,
+                        story_meta=topic,
+                        output_path=out_video,
+                        include_retro=True
+                    )
+                    rendered = True
+                    print(f"[Orchestrator] ✓ Remotion rendering succeeded: {out_video}")
+                except Exception as rem_err:
+                    print(f"[Orchestrator] Remotion render failed ({rem_err}), falling back to FFmpeg assembler...")
+
+                if not rendered:
+                    from stages.video_assembler import assemble_video_ffmpeg
+                    assemble_video_ffmpeg(
+                        scenes=assets,
+                        output_mp4_path=out_video,
+                        credit_source_name=topic["source"],
+                        include_logo_outro=True,
+                        story_headline=topic.get("headline")
+                    )
 
                 # Audit final video with See-Back and Self-Healing
                 self.update_progress(bot_client, caller_chat_id, 95, "Video Quality Verification", "Running See-Back verification and visual integrity audit...")
