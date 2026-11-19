@@ -36,11 +36,11 @@ def get_audio_duration_wave(file_path: Path) -> float:
 def synthesize_with_jeff_stelling(
     text: str,
     out_wav_path: Path,
-    speed_factor: float = 1.08,
+    speed_factor: float = 0.98,
     pad_sec: float = 0.15
 ) -> Tuple[float, float]:
     """
-    Synthesize brisk, authoritative television breaking transfer news commentary
+    Synthesize natural, authoritative television breaking transfer news commentary
     via Jeff Stelling zero-shot voice clone (Qwen3-TTS Base).
     Includes clean studio broadcast EQ and presence mastering.
     """

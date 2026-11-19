@@ -189,11 +189,13 @@ def render_with_remotion(
     
     output_raw_video.parent.mkdir(parents=True, exist_ok=True)
     
+    total_frames = props.get("totalDurationInFrames", 1137)
     cmd = [
         "npx.cmd", "remotion", "render",
         "FootballShort",
         str(output_raw_video.resolve()),
         f"--props={props_file.resolve()}",
+        f"--frames=0-{total_frames - 1}",
         "--concurrency=4",
         "--gl=angle",
         "--log=warn",

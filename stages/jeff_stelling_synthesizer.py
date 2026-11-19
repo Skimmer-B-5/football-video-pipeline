@@ -101,7 +101,7 @@ def get_jeff_stelling_prompt():
 def master_jeff_audio(
     raw_wav_path: Path,
     final_output_path: Path,
-    speed_factor: float = 1.02,
+    speed_factor: float = 0.98,
     target_lufs: float = -14.0,
     peak_db: float = -1.0
 ) -> Path:
@@ -111,7 +111,7 @@ def master_jeff_audio(
     - Lowpass @ 11kHz (smooth high-end, zero digital hiss)
     - Presence EQ boost @ 3.2kHz (+2.5dB) for crisp British consonants and articulation
     - Compand for broadcast levelling and punch
-    - Pacing speed multiplier (1.02x for relaxed, authoritative British delivery)
+    - Pacing speed multiplier (0.98x for completely natural, unhurried British delivery)
     - ITU-R BS.1770-4 loudnorm to -14 LUFS, -1.0 dBTP ceiling
     - 48 kHz stereo output
     """
@@ -179,7 +179,7 @@ def synthesize_jeff_stelling_scene(
     text: str,
     output_wav_path: Path,
     scene_id: str = "scene_01",
-    speed_factor: float = 1.02,
+    speed_factor: float = 0.98,
     master: bool = True,
     prepend_breath: bool = False,
     breath_type: str = "soft"
@@ -240,7 +240,7 @@ def synthesize_jeff_stelling_scene(
 def synthesize_jeff_stelling_script(
     scenes: List[Dict[str, Any]],
     output_dir: Path,
-    speed_factor: float = 1.02,
+    speed_factor: float = 0.98,
     breath_scenes: Optional[List[str]] = None
 ) -> List[Dict[str, Any]]:
     """Synthesizes all scenes in a Schema v2.0 script in order with realistic human breathing."""
