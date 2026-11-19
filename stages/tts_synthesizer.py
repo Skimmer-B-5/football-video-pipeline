@@ -21,6 +21,8 @@ from pipeline.resource_monitor import ResourceTracker
 
 AUDIO_DIR = PROJECT_ROOT / "data" / "audio"
 MODELS_DIR = PROJECT_ROOT / "models"
+JEFF_STELLING_PROMPT = MODELS_DIR / "jeff_stelling_prompt.pt"
+JEFF_STELLING_VOICE_DIR = PROJECT_ROOT / "data" / "branding" / "voices" / "jeff_stelling"
 MARTIN_TYLER_WEIGHTS = MODELS_DIR / "qwen3_tts_base" / "model.safetensors"
 QWEN3_WEIGHTS_FILE = MODELS_DIR / "qwen3_tts_customvoice" / "model.safetensors"
 
@@ -30,6 +32,44 @@ def get_audio_duration_wave(file_path: Path) -> float:
         frames = wf.getnframes()
         rate = wf.getframerate()
         return round(frames / float(rate), 3)
+
+def synthesize_with_jeff_stelling(
+    text: str,
+    out_wav_path: Path,
+    speed_factor: float = 1.08,
+    pad_sec: float = 0.15
+) -> Tuple[float, float]:
+    """
+    Synthesize brisk, authoritative television breaking transfer news commentary
+    via Jeff Stelling zero-shot voice clone (Qwen3-TTS Base).
+    Includes clean studio broadcast EQ and presence mastering.
+    """
+    from stages.jeff_stelling_synthesizer import synthesize_jeff_stelling_scene
+    
+    res = synthesize_jeff_stelling_scene(
+        text=text,
+        output_wav_path=out_wav_path,
+        speed_factor=speed_factor,
+        master=True
+    )
+    
+    if pad_sec > 0:
+        temp_padded = out_wav_path.with_name(f"pad_{out_wav_path.name}")
+        cmd = [
+            "ffmpeg", "-y",
+            "-i", str(out_wav_path),
+            "-af", f"apad=pad_dur={pad_sec}",
+            "-ar", "48000",
+            "-ac", "2",
+            "-c:a", "pcm_s16le",
+            str(temp_padded)
+        ]
+        subprocess.run(cmd, check=True, capture_output=True)
+        temp_padded.replace(out_wav_path)
+
+    total_dur = get_audio_duration_wave(out_wav_path)
+    spoken_dur = max(0.1, round(total_dur - pad_sec, 3))
+    return (total_dur, spoken_dur)
 
 def synthesize_with_martin_tyler(
     text: str,
@@ -249,23 +289,35 @@ def synthesize_scenes_expressive(
         AUDIO_DIR.mkdir(parents=True, exist_ok=True)
         results = []
 
+        use_jeff_stelling = False
         use_martin_tyler = False
         use_qwen = False
-        if preferred_engine in ("martin_tyler", "auto") and MARTIN_TYLER_WEIGHTS.exists():
+        if preferred_engine in ("jeff_stelling", "auto") and (JEFF_STELLING_PROMPT.exists() or JEFF_STELLING_VOICE_DIR.exists()):
+            use_jeff_stelling = True
+        elif preferred_engine == "martin_tyler" and MARTIN_TYLER_WEIGHTS.exists():
             use_martin_tyler = True
         elif preferred_engine == "qwen3" or (preferred_engine == "auto" and QWEN3_WEIGHTS_FILE.exists()):
             use_qwen = True
 
         for s in scenes:
             scene_id = s.get("scene_id", 1)
-            text = s.get("text", "").strip()
+            text = (s.get("narration") or s.get("text", "")).strip()
             out_path = AUDIO_DIR / f"scene_{scene_id}.wav"
 
             start_t = time.time()
             success = False
 
-            # 1. Try Martin Tyler Cloned Voice (Qwen3 Base)
-            if use_martin_tyler:
+            # 1. Try Jeff Stelling Cloned Voice (Qwen3 Base with pristine studio audio)
+            if use_jeff_stelling:
+                try:
+                    print(f"[TTS-JeffStelling] Synthesizing Scene {scene_id} (Jeff Stelling Studio 1.08x): \"{text[:45]}...\"")
+                    total_dur, spoken_dur = synthesize_with_jeff_stelling(text, out_path, speed_factor=1.08, pad_sec=pad_sec)
+                    success = True
+                except Exception as jse:
+                    print(f"[TTS-JeffStelling] Scene {scene_id} note: {jse}. Falling back to Martin Tyler/Qwen3.")
+
+            # 2. Try Martin Tyler Cloned Voice (Qwen3 Base)
+            if not success and use_martin_tyler:
                 try:
                     print(f"[TTS-MartinTyler] Synthesizing Scene {scene_id} (Martin Tyler Commentary 1.14x): \"{text[:45]}...\"")
                     total_dur, spoken_dur = synthesize_with_martin_tyler(text, out_path, speed_factor=1.14, pad_sec=pad_sec)
@@ -273,7 +325,7 @@ def synthesize_scenes_expressive(
                 except Exception as mte:
                     print(f"[TTS-MartinTyler] Scene {scene_id} note: {mte}. Falling back to Qwen3/Edge-TTS.")
 
-            # 2. Try Qwen3-TTS CustomVoice if enabled
+            # 3. Try Qwen3-TTS CustomVoice if enabled
             if not success and use_qwen:
                 try:
                     print(f"[TTS-Qwen3] Synthesizing Scene {scene_id} (Speaker: Ryan, British cadence): \"{text[:45]}...\"")
@@ -282,7 +334,7 @@ def synthesize_scenes_expressive(
                 except Exception as qe:
                     print(f"[TTS-Qwen3] Scene {scene_id} note: {qe}. Falling back to edge-tts.")
 
-            # 2. Try Edge-TTS
+            # 4. Try Edge-TTS
             if not success:
                 print(f"[TTS-Edge] Synthesizing Scene {scene_id} ({voice_name}): \"{text[:45]}...\"")
                 for tts_retry in range(1, 4):
@@ -294,7 +346,7 @@ def synthesize_scenes_expressive(
                         print(f"[TTS-Edge] attempt {tts_retry}/3 error: {e}")
                         time.sleep(1.0)
 
-            # 3. Fallback to Kokoro
+            # 5. Fallback to Kokoro
             if not success:
                 print(f"[TTS] Falling back to Kokoro Neural HD for Scene {scene_id}...")
                 try:
@@ -307,8 +359,18 @@ def synthesize_scenes_expressive(
             dur_time = round(time.time() - start_t, 2)
             print(f"[TTS] Scene {scene_id} rendered in {dur_time}s | Spoken: {spoken_dur}s | Total slide with pad: {total_dur}s")
 
-            used_engine = "MartinTyler-Qwen3" if (use_martin_tyler and success) else ("EdgeTTS" if success else "Kokoro")
-            used_voice = "Martin Tyler (Cloned 1.14x)" if used_engine == "MartinTyler-Qwen3" else voice_name
+            if use_jeff_stelling and success:
+                used_engine = "JeffStelling-Qwen3"
+                used_voice = "Jeff Stelling (Sky Sports Studio 1.08x)"
+            elif use_martin_tyler and success:
+                used_engine = "MartinTyler-Qwen3"
+                used_voice = "Martin Tyler (Cloned 1.14x)"
+            elif success:
+                used_engine = "EdgeTTS"
+                used_voice = voice_name
+            else:
+                used_engine = "Kokoro"
+                used_voice = "bm_george"
 
             results.append({
                 "scene_id": scene_id,
