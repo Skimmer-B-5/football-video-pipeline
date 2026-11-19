@@ -1,0 +1,82 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyd
+
+# C extensions
+*.so
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual Environments
+.venv/
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Environment secrets and private configuration
+.env
+.env.local
+config/client_secret.json
+config/youtube_token.json
+
+# Local databases and runtime state
+*.db
+*.sqlite
+*.sqlite3
+pipeline_state.db
+data/news.db
+
+# Heavy AI model weights (Downloaded automatically via setup script)
+models/**/*.safetensors
+models/**/*.bin
+models/**/*.onnx
+models/**/*.pt
+models/**/*.pth
+models/voices.json
+models/qwen3_tts_customvoice/
+models/qwen3_tts_base/
+!models/.gitkeep
+
+# Temporary media & assembly caches
+data/audio/*
+!data/audio/.gitkeep
+data/images/*
+!data/images/.gitkeep
+temp/
+output/
+scratch/
+evidence/*
+!evidence/.gitkeep
+
+# Operating System files
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# IDE & Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+.agents/

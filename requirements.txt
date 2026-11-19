@@ -1,0 +1,42 @@
+# Football Video Pipeline - Production Requirements
+# Core AI, Speech, and Video Assembly Engine
+
+# Computer Vision & Image Processing
+pillow>=10.0.0
+opencv-python>=4.8.0
+scipy>=1.11.0
+rembg>=2.0.50
+
+# Speech Synthesis (Qwen3-TTS & Neural Edge)
+transformers==4.57.3
+accelerate==1.12.0
+tokenizers<=0.23.0,>=0.22.0
+qwen-tts==0.1.1
+edge-tts>=6.1.0
+soundfile>=0.12.1
+librosa>=0.10.0
+decorator>=5.1.1
+msgpack>=1.0.0
+narwhals>=1.0.0
+threadpoolctl>=3.0.0
+sox>=1.5.0
+onnxruntime>=1.18.0
+einops>=0.7.0
+
+# HTTP & Network Clients
+requests>=2.31.0
+urllib3>=2.0.0
+feedparser>=6.0.0
+beautifulsoup4>=4.12.0
+yt-dlp>=2024.0.0
+
+# YouTube Data API & OAuth
+google-api-python-client>=2.100.0
+google-auth-oauthlib>=1.1.0
+google-auth-httplib2>=0.1.1
+
+# System, Monitoring & Utilities
+psutil>=5.9.0
+pyyaml>=6.0
+python-dotenv>=1.0.0
+numpy>=1.26.0,<2.5.0
