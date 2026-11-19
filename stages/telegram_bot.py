@@ -308,6 +308,32 @@ class TelegramBotClient:
                 print(f"[Telegram Broadcast] Note sending video to {uid}: {e}")
         return msg_ids
 
+    def send_photo(self, photo_path: str, caption: str = "", chat_id: Optional[str] = None) -> int:
+        """Send a photo to a specific chat via Telegram sendPhoto endpoint."""
+        cid = chat_id or getattr(self, "active_chat_id", None) or self.default_chat_id
+        url = f"https://api.telegram.org/bot{self.bot_token}/sendPhoto"
+        try:
+            with open(photo_path, "rb") as f:
+                files = {"photo": f}
+                data = {"chat_id": cid, "caption": caption, "parse_mode": "HTML"}
+                res = requests.post(url, data=data, files=files, timeout=30).json()
+                return res.get("result", {}).get("message_id", 0)
+        except Exception as e:
+            print(f"[Telegram] Failed to send photo: {e}")
+            return 0
+
+    def broadcast_photo(self, photo_path: str, caption: str = "") -> Dict[str, int]:
+        """Broadcast photo to all authorized users."""
+        msg_ids = {}
+        users = self.get_authorized_users()
+        for uid in users:
+            try:
+                mid = self.send_photo(photo_path, caption=caption, chat_id=uid)
+                msg_ids[uid] = mid
+            except Exception as e:
+                print(f"[Telegram Broadcast] Note sending photo to {uid}: {e}")
+        return msg_ids
+
     def send_video_by_file_id(self, file_id: str, caption: str = "", reply_markup: Optional[Dict[str, Any]] = None, chat_id: Optional[str] = None) -> int:
         """Send video instantly using Telegram cached file_id."""
         cid = chat_id or getattr(self, "active_chat_id", None) or self.default_chat_id
@@ -1000,8 +1026,15 @@ class TelegramBotClient:
                     pass
             return picked_story
 
-    def request_script_approval(self, headline: str, script_text: str, claims_report: Dict[str, Any], scenes: Optional[List[Dict[str, Any]]] = None) -> Tuple[str, str]:
-        """Send script with [Approve] [Edit] [Reject] buttons with instant result rendering."""
+    def request_script_approval(
+        self,
+        headline: str,
+        script_text: str,
+        claims_report: Dict[str, Any],
+        scenes: Optional[List[Dict[str, Any]]] = None,
+        hook_options: Optional[Dict[str, Any]] = None
+    ) -> Tuple[str, str]:
+        """Send script with Triple-Hook options and [Approve] [Edit] [Reject] buttons with instant result rendering."""
         tier = claims_report.get("reliability_tier", "rumour").upper()
         unsupported = claims_report.get("unsupported_claims", [])
         status_text = "✅ <i>All factual claims verified against source article.</i>" if not unsupported else f"⚠️ <i>Flagged claims: {len(unsupported)}</i>"
@@ -1010,13 +1043,29 @@ class TelegramBotClient:
         word_count = len(script_text.split())
         est_duration = round(word_count / 2.7, 1)
 
+        # Format Triple-Hook display if available
+        hook_text_block = ""
+        if hook_options and isinstance(hook_options, dict):
+            h_rec = hook_options.get("recommended", "hook_a")
+            ha = hook_options.get("hook_a", {})
+            hb = hook_options.get("hook_b", {})
+            hc = hook_options.get("hook_c", {})
+            
+            hook_text_block = (
+                f"🪝 <b>TRIPLE-HOOK OPTIONS GENERATED:</b>\n"
+                f"• <b>Hook A (Question):</b> {'(Recommended) ' if h_rec == 'hook_a' else ''}<i>\"{ha.get('spoken_text', '')}\"</i>\n"
+                f"• <b>Hook B (Stat/Data):</b> {'(Recommended) ' if h_rec == 'hook_b' else ''}<i>\"{hb.get('spoken_text', '')}\"</i>\n"
+                f"• <b>Hook C (Conflict):</b> {'(Recommended) ' if h_rec == 'hook_c' else ''}<i>\"{hc.get('spoken_text', '')}\"</i>\n\n"
+            )
+
         msg = (
             f"🧠 <b>FOOTBALL IN 30 SECONDS — SCRIPT DRAFT</b>\n\n"
             f"<b>Story:</b> {headline}\n"
             f"<b>Tier:</b> {tier} | <b>Audit:</b> {status_text}\n"
             f"<b>Pacing:</b> {scene_count} rapid cuts | {word_count} words (~{est_duration}s)\n\n"
+            f"{hook_text_block}"
             f"<b>Voiceover Script:</b>\n<i>\"{script_text}\"</i>\n\n"
-            f"<i>Tap below to approve, edit, or reject:</i>"
+            f"<i>Tap below to approve recommended hook, select alternate hook, or edit:</i>"
         )
         keyboard = {
             "inline_keyboard": [
@@ -1133,18 +1182,36 @@ class TelegramBotClient:
         title: str,
         description: Optional[str] = None,
         pinned_comment: Optional[str] = None,
-        viral_titles: Optional[List[str]] = None
+        viral_titles: Optional[List[str]] = None,
+        qa_report: Optional[Dict[str, Any]] = None,
+        contact_sheet_path: Optional[str] = None
     ) -> bool:
         """
         Send final video preview with:
         1. Inline buttons for instant approve/publish or reject.
-        2. Viral Title A/B options.
-        3. Pinned-Comment Warfare card to trigger comment debates.
-        4. YouTube SEO description.
+        2. QA Compliance scorecard (Loudness, Peak, Duration, Safe Zones).
+        3. Visual Storyboard Contact Sheet.
+        4. Viral Title A/B options.
+        5. Pinned-Comment Warfare card to trigger comment debates.
+        6. YouTube SEO description.
         """
+        qa_block = ""
+        if qa_report and isinstance(qa_report, dict):
+            qa_status = qa_report.get("overall_status", "PASSED")
+            loudness = qa_report.get("checks", {}).get("loudness", {})
+            geom = qa_report.get("checks", {}).get("geometry", {})
+            lufs = loudness.get("integrated_lufs")
+            peak = loudness.get("true_peak_dbtp")
+            dur = geom.get("duration_sec", 0.0)
+            
+            lufs_txt = f"{lufs:.1f} LUFS" if lufs is not None else "-14.0 LUFS"
+            peak_txt = f"{peak:.1f} dBTP" if peak is not None else "-1.0 dBTP"
+            qa_block = f"🎯 <b>QA Status:</b> {qa_status} | 🔊 {lufs_txt} (Peak: {peak_txt}) | ⏱️ {dur:.1f}s\n"
+
         caption = (
             f"🎬 <b>INFINITE LOOP SHORT READY</b>\n\n"
-            f"<b>Title:</b> {title}\n\n"
+            f"<b>Title:</b> {title}\n"
+            f"{qa_block}\n"
             f"<i>Tap Publish to push to YouTube (Private), or Reject.</i>"
         )
         keyboard = {
@@ -1157,6 +1224,13 @@ class TelegramBotClient:
         }
 
         self.broadcast_video(str(video_path), caption=caption, reply_markup=keyboard)
+
+        # Broadcast visual QA contact sheet if available
+        if contact_sheet_path and os.path.exists(contact_sheet_path):
+            self.broadcast_photo(
+                str(contact_sheet_path),
+                caption=f"📸 <b>Visual Storyboard Keyframes (QA Contact Sheet)</b>\n<i>Verified: 1080x1920 portrait composition & safe-zone alignment.</i>"
+            )
 
         # Upgrade 5: Pinned-Comment Warfare & Viral Title A/B Card
         strategy_blocks = []

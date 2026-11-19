@@ -104,6 +104,54 @@ class EngineQASuite:
             "notes": notes
         }
 
+    def verify_streams_and_integrity(self, video_path: Path) -> Dict[str, Any]:
+        """Verifies presence of video + audio streams and checks for accidental dead air/silent tail."""
+        cmd = [
+            "ffprobe", "-v", "error",
+            "-show_entries", "stream=codec_type,codec_name,duration",
+            "-of", "json",
+            str(video_path)
+        ]
+        res = subprocess.run(cmd, capture_output=True, text=True, check=True)
+        data = json.loads(res.stdout)
+        streams = data.get("streams", [])
+
+        has_video = any(s.get("codec_type") == "video" for s in streams)
+        has_audio = any(s.get("codec_type") == "audio" for s in streams)
+
+        issues = []
+        if not has_video:
+            issues.append("Missing video stream in container.")
+        if not has_audio:
+            issues.append("Missing audio stream in container.")
+
+        # Silent tail detection: probe last 1.2s of audio
+        silent_tail = False
+        try:
+            cmd_tail = [
+                "ffmpeg", "-sseof", "-1.2",
+                "-i", str(video_path),
+                "-af", "volumedetect",
+                "-f", "null", "-"
+            ]
+            tail_res = subprocess.run(cmd_tail, capture_output=True, text=True)
+            for line in tail_res.stderr.split("\n"):
+                if "max_volume:" in line and "-91.0 dB" in line:
+                    silent_tail = True
+                    issues.append("Detected >1.0s of completely silent dead air at video tail.")
+        except Exception:
+            pass
+
+        passed = has_video and has_audio and not silent_tail
+        return {
+            "check": "streams_and_integrity",
+            "passed": passed,
+            "has_video": has_video,
+            "has_audio": has_audio,
+            "silent_tail": silent_tail,
+            "issues": issues
+        }
+
     def verify_text_and_layout(self, props: Dict[str, Any]) -> Dict[str, Any]:
         """Checks for headline overflow, duplicate narration, and vertical positioning."""
         issues = []
@@ -248,6 +296,7 @@ class EngineQASuite:
         logger.info(f"Starting Engine Visual & Audio QA for {video_path.name}...")
 
         geom = self.verify_video_geometry(video_path)
+        streams = self.verify_streams_and_integrity(video_path)
         loudness = self.verify_audio_loudness(video_path)
         text_layout = self.verify_text_and_layout(props)
         sync = self.verify_audio_sync(props, geom["duration_sec"])
@@ -260,7 +309,7 @@ class EngineQASuite:
             except Exception as ce:
                 logger.warning(f"Contact sheet generation error: {ce}")
 
-        all_passed = geom["passed"] and text_layout["passed"] and sync["passed"] and loudness["passed"]
+        all_passed = geom["passed"] and streams["passed"] and text_layout["passed"] and sync["passed"] and loudness["passed"]
 
         report = {
             "video_path": str(video_path.resolve()),
@@ -268,6 +317,7 @@ class EngineQASuite:
             "all_passed": all_passed,
             "checks": {
                 "geometry": geom,
+                "streams": streams,
                 "loudness": loudness,
                 "text_and_layout": text_layout,
                 "audio_video_sync": sync,

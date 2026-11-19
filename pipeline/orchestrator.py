@@ -250,7 +250,11 @@ class PipelineOrchestrator:
                     self.job.update_status("SCRIPT_APPROVAL_PENDING")
                     if bot_client:
                         decision, reply_payload = bot_client.request_script_approval(
-                            headline, current_script["full_text"], current_script.get("claim_report", {}), scenes=current_script.get("scenes")
+                            headline,
+                            current_script["full_text"],
+                            current_script.get("claim_report", {}),
+                            scenes=current_script.get("scenes"),
+                            hook_options=current_script.get("hook_options")
                         )
                         if decision in ("NEW_CYCLE", "REFRESH"):
                             print("[Orchestrator] User requested /new during script approval. Restarting fresh cycle...")
@@ -448,8 +452,53 @@ class PipelineOrchestrator:
                         story_headline=topic.get("headline")
                     )
 
-                # Audit final video with See-Back and Self-Healing
-                self.update_progress(bot_client, caller_chat_id, 95, "Video Quality Verification", "Running See-Back verification and visual integrity audit...")
+                # Audit final video with Engine QA Suite & Storyboard Contact Sheet
+                self.update_progress(bot_client, caller_chat_id, 95, "Video QA & Contact Sheet", "Running Engine QA Suite & generating visual storyboard...")
+
+                qa_report_path = PROJECT_ROOT / "evidence" / f"{self.job.job_id}_qa_report.json"
+                contact_sheet_path = PROJECT_ROOT / "evidence" / f"{self.job.job_id}_contact_sheet.jpg"
+
+                qa_report = {}
+                try:
+                    from stages.qa_engine import EngineQASuite
+                    qa_suite = EngineQASuite(PROJECT_ROOT)
+                    qa_report = qa_suite.run_full_qa(
+                        video_path=Path(out_video),
+                        props={"scenes": assets, "totalDurationInFrames": len(assets) * 90},
+                        output_report_path=qa_report_path,
+                        contact_sheet_path=contact_sheet_path
+                    )
+                    print(f"[Orchestrator] QA Result: {qa_report.get('overall_status')} (Report: {qa_report_path.name})")
+                except Exception as qae:
+                    print(f"[Orchestrator] QA Suite warning: {qae}")
+
+                # Log video to Persistent Retention Performance Tracker
+                try:
+                    from pipeline.retention_tracker import RetentionTracker
+                    tracker = RetentionTracker()
+                    script_data_obj = json.loads(rec["script_data"])
+                    geom_info = qa_report.get("checks", {}).get("geometry", {})
+                    dur_val = geom_info.get("duration_sec", 28.0)
+                    tracker.log_video({
+                        "video_id": self.job.job_id,
+                        "story_category": topic.get("category", "general_news"),
+                        "headline": topic.get("headline", ""),
+                        "entities": topic.get("entities", {}),
+                        "duration_sec": dur_val,
+                        "hook_selected": script_data_obj.get("hook_options", {}).get("recommended", "hook_a"),
+                        "hook_type": script_data_obj.get("hook_options", {}).get("recommended", "question_challenge"),
+                        "hook_options": script_data_obj.get("hook_options", {}),
+                        "script_word_count": len(script_data_obj.get("full_text", "").split()),
+                        "visual_beats_count": len(assets),
+                        "output_filename": Path(out_video).name,
+                        "qa_report_summary": {
+                            "status": qa_report.get("overall_status", "UNKNOWN"),
+                            "lufs": qa_report.get("checks", {}).get("loudness", {}).get("integrated_lufs"),
+                            "peak": qa_report.get("checks", {}).get("loudness", {}).get("true_peak_dbtp")
+                        }
+                    })
+                except Exception as track_err:
+                    print(f"[Orchestrator] Retention tracker warning: {track_err}")
 
                 from stages.see_back import inspect_and_heal_video
                 from stages.verify_video import inspect_video
@@ -484,13 +533,24 @@ class PipelineOrchestrator:
                     reliability_tier=topic["reliability_tier"]
                 )
 
+                contact_sheet_p = PROJECT_ROOT / "evidence" / f"{self.job.job_id}_contact_sheet.jpg"
+                qa_report_p = PROJECT_ROOT / "evidence" / f"{self.job.job_id}_qa_report.json"
+                qa_data = None
+                if qa_report_p.exists():
+                    try:
+                        qa_data = json.loads(qa_report_p.read_text(encoding="utf-8"))
+                    except Exception:
+                        pass
+
                 if bot_client:
                     publish_approved = bot_client.request_video_approval(
                         video_path,
                         topic["headline"],
                         description=desc_text,
                         pinned_comment=script_data.get("pinned_comment"),
-                        viral_titles=script_data.get("viral_titles")
+                        viral_titles=script_data.get("viral_titles"),
+                        qa_report=qa_data,
+                        contact_sheet_path=str(contact_sheet_p) if contact_sheet_p.exists() else None
                     )
                     if not publish_approved:
                         print("[Orchestrator] Video publication rejected by user. Returning to topic selection.")

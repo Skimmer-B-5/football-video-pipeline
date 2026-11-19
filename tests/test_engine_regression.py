@@ -370,5 +370,99 @@ class TestEngineRegression(unittest.TestCase):
 
             logger.info(f"✓ Story Format Passed: {story_id}")
 
+    def test_design_tokens_consistency(self):
+        """Verifies central layout coordinates, safe margins, and audio tokens meet broadcast standards."""
+        from config.design_tokens import LAYOUT_TOKENS, COLOR_TOKENS, AUDIO_TOKENS, PACING_TOKENS
+
+        # Ticker lowered to bottom safe area
+        self.assertEqual(LAYOUT_TOKENS["ticker"]["y"], 1730)
+        self.assertEqual(LAYOUT_TOKENS["ticker"]["height"], 110)
+        self.assertEqual(LAYOUT_TOKENS["ticker"]["track_x"], 295)
+        self.assertEqual(LAYOUT_TOKENS["ticker"]["track_width"], 785)
+
+        # Subtitles safe zone
+        self.assertEqual(LAYOUT_TOKENS["subtitles"]["y"], 1300)
+        self.assertLess(LAYOUT_TOKENS["subtitles"]["y"], LAYOUT_TOKENS["lower_third"]["y"])
+
+        # Lower-third anchor
+        self.assertEqual(LAYOUT_TOKENS["lower_third"]["y"], 1440)
+        self.assertEqual(LAYOUT_TOKENS["lower_third"]["height"], 200)
+
+        # Audio mastering invariants (zero screech, -14 LUFS, 48kHz PCM)
+        self.assertEqual(AUDIO_TOKENS["sample_rate"], 48000)
+        self.assertEqual(AUDIO_TOKENS["channels"], 2)
+        self.assertEqual(AUDIO_TOKENS["target_lufs"], -14.0)
+        self.assertEqual(AUDIO_TOKENS["true_peak_ceiling"], -1.0)
+        self.assertGreaterEqual(AUDIO_TOKENS["scene_final_hold_sec"], 0.70)
+
+        # Cadence pacing bounds
+        self.assertLessEqual(PACING_TOKENS["target_duration_min"], 24.0)
+        self.assertGreaterEqual(PACING_TOKENS["target_duration_max"], 30.0)
+        self.assertEqual(PACING_TOKENS["visual_beat_interval_sec"], (2.0, 4.0))
+
+    def test_subtitles_engine_phrase_grouping_and_ass(self):
+        """Verifies word-level grouping into rhythmic display cards and ASS safe-zone generation."""
+        from stages.subtitles_engine import group_words_into_rhythmic_phrases, generate_ass_script
+        import tempfile
+
+        mock_words = [
+            {"word": "Real", "start": 0.0, "end": 0.25},
+            {"word": "Madrid", "start": 0.26, "end": 0.55},
+            {"word": "have", "start": 0.56, "end": 0.75},
+            {"word": "enquired", "start": 0.76, "end": 1.15},
+            {"word": "about", "start": 1.16, "end": 1.35},
+            {"word": "Endrick.", "start": 1.36, "end": 1.75}
+        ]
+
+        phrases = group_words_into_rhythmic_phrases(mock_words, max_words_per_phrase=3)
+        self.assertGreater(len(phrases), 0)
+        self.assertEqual(phrases[0]["words"][0]["word"], "Real")
+
+        with tempfile.TemporaryDirectory() as td:
+            ass_path = Path(td) / "test_subs.ass"
+            generate_ass_script(phrases, ass_path, margin_v=620)
+            self.assertTrue(ass_path.exists())
+            content = ass_path.read_text(encoding="utf-8")
+            self.assertIn("PlayResX: 1080", content)
+            self.assertIn("PlayResY: 1920", content)
+            self.assertIn("MarginV, Encoding", content)
+            self.assertIn("620,1", content)
+            self.assertIn("&H0066D1FF&", content)  # Brand Yellow Highlight
+
+    def test_retention_tracker_cohort_evaluation(self):
+        """Verifies logging video DNA, recording analytics snapshots, and cohort evaluation."""
+        from pipeline.retention_tracker import RetentionTracker
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as td:
+            db_path = Path(td) / "test_retention.db"
+            tracker = RetentionTracker(db_path=db_path)
+
+            # Log 3 sample videos
+            for i in range(3):
+                vid = tracker.log_video({
+                    "video_id": f"reg_test_{i+1}",
+                    "story_category": "transfer_rumour" if i == 0 else "governance",
+                    "headline": f"Test Headline {i+1}",
+                    "duration_sec": 27.5 + i,
+                    "hook_selected": f"Hook text {i+1}",
+                    "hook_type": "question_challenge" if i % 2 == 0 else "shocking_number_fact",
+                    "script_word_count": 72 + i * 2,
+                    "visual_beats_count": 7
+                })
+                tracker.record_analytics_snapshot(vid, "24h", {
+                    "shown_in_feed": 1000 + i * 200,
+                    "stayed_to_watch_pct": 72.0 + i * 3.0,
+                    "average_percentage_viewed_pct": 75.0 + i * 2.0,
+                    "likes": 50,
+                    "comments": 10
+                })
+
+            cohort = tracker.evaluate_10_video_cohort()
+            self.assertEqual(cohort["status"], "COMPLETED")
+            self.assertEqual(cohort["cohort_size"], 3)
+            self.assertGreater(len(cohort["top_performers"]), 0)
+            self.assertGreater(len(cohort["evidence_based_recommendations"]), 0)
+
 if __name__ == "__main__":
     unittest.main()

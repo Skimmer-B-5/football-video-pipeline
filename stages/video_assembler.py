@@ -27,6 +27,8 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
 from pipeline.resource_monitor import ResourceTracker
+from config.design_tokens import LAYOUT_TOKENS, COLOR_TOKENS, AUDIO_TOKENS, PACING_TOKENS, CRT_TOKENS
+from stages.subtitles_engine import build_aligned_captions_for_video
 
 DATA_DIR = PROJECT_ROOT / "data"
 BRANDING_DIR = DATA_DIR / "branding"
@@ -180,8 +182,10 @@ def create_scene_hud(
     hud = Image.new("RGBA", (target_w, target_h), (0, 0, 0, 0))
     draw = ImageDraw.Draw(hud)
 
-    # 1. Top-Left: User Bezel TV Bug
-    hud.paste(tv_bug_img, (48, 65), mask=tv_bug_img.split()[-1])
+    # 1. Top-Left: Channel Bezel Logo Bug
+    bug_x = LAYOUT_TOKENS["logo_bug"]["x"]
+    bug_y = LAYOUT_TOKENS["logo_bug"]["y"]
+    hud.paste(tv_bug_img, (bug_x, bug_y), mask=tv_bug_img.split()[-1])
 
     # 2. Top-Right: Truthful kicker capsule (Never fake ● LIVE)
     on_screen = scene_info.get("on_screen", {})
@@ -192,11 +196,12 @@ def create_scene_hud(
     lw = bbox_live[2] - bbox_live[0]
     lh = bbox_live[3] - bbox_live[1]
 
+    kicker_cfg = LAYOUT_TOKENS["status_kicker"]
     pill_w = max(130, lw + 32)
-    pill_h = 42
-    pill_x1 = target_w - 60
+    pill_h = kicker_cfg.get("height", 44)
+    pill_x1 = target_w - kicker_cfg.get("margin_right", 55)
     pill_x0 = pill_x1 - pill_w
-    pill_y0 = 85
+    pill_y0 = kicker_cfg.get("y", 95)
     pill_y1 = pill_y0 + pill_h
 
     # Kicker styling: rich crimson red with high-visibility outline
@@ -207,22 +212,31 @@ def create_scene_hud(
     live_ty = pill_y0 + (pill_h - lh) // 2 - bbox_live[1]
     draw.text((live_tx, live_ty), kicker_text, fill=(255, 255, 255), font=font_live)
 
-    # 3. Lower Third in Barlow Condensed ExtraBold
+    # 3. Lower Third in Barlow Condensed ExtraBold (Anchored via central design tokens)
     badge_text, badge_color = determine_badge(scene_info, idx, total_scenes)
 
+    lt_cfg = LAYOUT_TOKENS["lower_third"]
+    lt_x0 = lt_cfg["x"]
+    lt_y0 = lt_cfg["y"]
+    lt_x1 = lt_x0 + lt_cfg["width"]
+    lt_y1 = lt_y0 + lt_cfg["height"]
+    accent_bar_w = lt_cfg.get("accent_bar_w", 14)
+
     # Category Badge
-    draw.rounded_rectangle([60, 1375, 460, 1435], radius=6, fill=badge_color)
+    badge_y0 = lt_cfg.get("kicker_tag_y", 1375)
+    badge_y1 = badge_y0 + lt_cfg.get("kicker_tag_h", 60)
+    draw.rounded_rectangle([lt_x0, badge_y0, lt_x0 + 400, badge_y1], radius=6, fill=badge_color)
     bbox_b = font_badge.getbbox(badge_text)
     bh = bbox_b[3] - bbox_b[1]
-    b_ty = 1375 + (60 - bh) // 2 - bbox_b[1]
-    draw.text((84, b_ty), badge_text, fill=(255, 255, 255), font=font_badge)
+    b_ty = badge_y0 + (badge_y1 - badge_y0 - bh) // 2 - bbox_b[1]
+    draw.text((lt_x0 + 24, b_ty), badge_text, fill=(255, 255, 255), font=font_badge)
 
     # Gold separator line
-    draw.rectangle([60, 1435, 460, 1440], fill=(255, 215, 0, 255))
+    draw.rectangle([lt_x0, badge_y1, lt_x0 + 400, lt_y0], fill=(255, 215, 0, 255))
 
     # Main News Box: Deep Royal Navy
-    draw.rectangle([60, 1440, 1020, 1640], fill=(0, 22, 60, 248))
-    draw.rectangle([60, 1440, 74, 1640], fill=(255, 215, 0, 255))  # Left gold accent bar
+    draw.rectangle([lt_x0, lt_y0, lt_x1, lt_y1], fill=COLOR_TOKENS.get("navy_card", (0, 22, 60, 248)))
+    draw.rectangle([lt_x0, lt_y0, lt_x0 + accent_bar_w, lt_y1], fill=(255, 215, 0, 255))  # Left gold accent bar
 
     # Headlines: Line 1 (White) & Line 2 (Gold)
     h1 = on_screen.get("headline") or scene_info.get("h1")
@@ -231,14 +245,15 @@ def create_scene_hud(
         h1, h2 = split_headline_text(scene_info.get("narration") or scene_info.get("text", "BREAKING FOOTBALL NEWS"))
 
     # Render headlines with slight shadow for readability
-    draw.text((102, 1468), h1.upper(), fill=(0, 0, 0, 180), font=font_headline)
-    draw.text((100, 1466), h1.upper(), fill=(255, 255, 255), font=font_headline)
+    draw.text((lt_x0 + 42, lt_y0 + 28), h1.upper(), fill=(0, 0, 0, 180), font=font_headline)
+    draw.text((lt_x0 + 40, lt_y0 + 26), h1.upper(), fill=(255, 255, 255), font=font_headline)
 
-    draw.text((102, 1540), h2.upper(), fill=(0, 0, 0, 180), font=font_headline)
-    draw.text((100, 1538), h2.upper(), fill=(255, 215, 0), font=font_headline)
+    draw.text((lt_x0 + 42, lt_y0 + 100), h2.upper(), fill=(0, 0, 0, 180), font=font_headline)
+    draw.text((lt_x0 + 40, lt_y0 + 98), h2.upper(), fill=(255, 215, 0), font=font_headline)
 
-    # 4. Bottom 3D Beveled Ticker Base Plate
-    hud.paste(ticker_base_img, (0, 1730), mask=ticker_base_img.split()[-1])
+    # 4. Bottom 3D Beveled Ticker Base Plate (Lowered to y=1730)
+    ticker_y = LAYOUT_TOKENS["ticker"]["y"]
+    hud.paste(ticker_base_img, (0, ticker_y), mask=ticker_base_img.split()[-1])
 
     return hud
 
@@ -321,16 +336,16 @@ def create_outro_plate(
 def generate_outro_audio(temp_dir: Path, voice_name: str = "en-GB-ThomasNeural") -> Tuple[Path, float]:
     """
     Synthesizes the official broadcast outro voiceover with calm, unhurried delivery.
-    Outputs a standardized 48kHz stereo pcm_s16le WAV with 0.25s pre-delay and 0.60s post-roll
+    Outputs a standardized 48kHz stereo pcm_s16le WAV with crisp ~1.5s total duration
     to ensure seamless concatenation without clipping, pops, or screeching.
     """
     import edge_tts
     temp_raw = temp_dir / "outro_raw.mp3"
     out_wav = temp_dir / "outro_vo.wav"
-    text = "Follow Football Plus for daily football intelligence."
+    text = "Follow for daily football news."
 
     async def _synth():
-        comm = edge_tts.Communicate(text, voice=voice_name, rate="+0%", pitch="+0Hz")
+        comm = edge_tts.Communicate(text, voice=voice_name, rate="+5%", pitch="+0Hz")
         await comm.save(str(temp_raw))
 
     try:
@@ -340,18 +355,18 @@ def generate_outro_audio(temp_dir: Path, voice_name: str = "en-GB-ThomasNeural")
         ps_cmd = (
             f"Add-Type -AssemblyName System.Speech; "
             f"$s = New-Object System.Speech.Synthesis.SpeechSynthesizer; "
-            f"$s.Rate = 0; "
+            f"$s.Rate = 1; "
             f"$s.SetOutputToWaveFile('{str(temp_raw).replace(chr(92), '/')}'); "
-            f"$s.Speak('Follow Football Plus for daily football intelligence.'); "
+            f"$s.Speak('Follow for daily football news.'); "
             f"$s.Dispose();"
         )
         subprocess.run(["powershell", "-NoProfile", "-Command", ps_cmd], check=True, capture_output=True)
 
-    # Standardize to 48kHz 16-bit stereo PCM with 0.25s pre-roll and 0.60s post-roll silence
+    # Standardize to 48kHz 16-bit stereo PCM with 0.15s pre-roll and 0.25s post-roll
     cmd_std = [
         "ffmpeg", "-y",
         "-i", str(temp_raw),
-        "-af", "adelay=250|250,apad=pad_dur=0.60",
+        "-af", "adelay=150|150,apad=pad_dur=0.25",
         "-ar", "48000", "-ac", "2", "-c:a", "pcm_s16le",
         str(out_wav)
     ]
@@ -686,14 +701,25 @@ def assemble_video_ffmpeg(
         )
         subprocess.check_call(cmd_loudnorm, shell=True)
 
-        # 7. Subtitles Generation (.srt)
-        srt_file = temp_dir / f"{output_mp4_path.stem}.srt"
-        generate_subtitles_srt(render_scenes, srt_file)
+        # 7. Word-Level Forced Alignment Subtitles Generation (.ass and .srt)
+        try:
+            ass_file, srt_file = build_aligned_captions_for_video(
+                audio_path=Path(mixed_audio),
+                output_base_path=temp_dir / f"{output_mp4_path.stem}",
+                scenes=render_scenes
+            )
+        except Exception as sub_err:
+            print(f"[Assembler] Warning: Forced alignment subtitle engine failed ({sub_err}), using fallback generator.")
+            srt_file = temp_dir / f"{output_mp4_path.stem}.srt"
+            generate_subtitles_srt(render_scenes, srt_file)
+            ass_file = None
 
-        # Copy SRT to output directory alongside MP4
+        # Copy SRT and ASS to output directory alongside MP4
         output_srt_path = output_mp4_path.with_suffix(".srt")
         import shutil
         shutil.copy2(srt_file, output_srt_path)
+        if ass_file and ass_file.exists():
+            shutil.copy2(ass_file, output_mp4_path.with_suffix(".ass"))
 
         # 8. Generate Rolling Ticker Tape
         ticker_text = build_ticker_text(headline, render_scenes, credit_source_name=credit_source_name)
@@ -705,16 +731,32 @@ def assemble_video_ffmpeg(
         ticker_file_esc = str(ticker_file).replace("\\", "/").replace(":", "\\:")
         srt_esc = str(srt_file).replace("\\", "/").replace(":", "\\:")
 
+        # Layout token coordinates
+        t_cfg = LAYOUT_TOKENS["ticker"]
+        t_y = t_cfg["y"]
+        t_track_x = t_cfg.get("track_x", 295)
+        t_track_w = t_cfg.get("track_width", 785)
+        t_height = t_cfg.get("height", 110)
+        sub_safe_y = LAYOUT_TOKENS["subtitles"]["y"]
+        margin_v = 1920 - sub_safe_y  # 1920 - 1300 = 620
+
+        # Subtitles filter: prefer ASS with active word highlight if available, else high-contrast SRT
+        if ass_file and ass_file.exists():
+            ass_esc = str(ass_file).replace("\\", "/").replace(":", "\\:")
+            sub_filter = f"[0:v]subtitles='{ass_esc}'[v_sub]; "
+        else:
+            sub_filter = f"[0:v]subtitles='{srt_esc}':force_style='FontName=BarlowCondensed-ExtraBold,FontSize=32,PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,BorderStyle=3,MarginV={margin_v},Alignment=2'[v_sub]; "
+
         # 9. Master Assembly: CRT Scanlines, Chromatic Aberration, TV Noise, Rolling Ticker & Burned-in Subtitles
-        # Ticker text is strictly bounded to an 800px transparent window (x: 280 to 1080) so it rolls cleanly and NEVER goes under the red HEADLINES tab
+        # Ticker text is strictly bounded to the transparent window (x: 295 to 1080) so it rolls cleanly and NEVER goes under the red HEADLINES tab
         cmd_master = (
             f'ffmpeg -y -i "{concat_raw_video}" -i "{tab_img_path}" -i "{crt_overlay_path}" -i "{mixed_audio}" '
             f'-filter_complex "'
-            f'[0:v]subtitles=\'{srt_esc}\':force_style=\'FontName=BarlowCondensed-ExtraBold,FontSize=26,PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,BorderStyle=3,MarginV=610,Alignment=2\'[v_sub]; '
-            f'color=c=black@0:s=785x110:d={total_video_dur:.3f}[t_canvas]; '
+            f'{sub_filter}'
+            f'color=c=black@0:s={t_track_w}x{t_height}:d={total_video_dur:.3f}[t_canvas]; '
             f'[t_canvas]drawtext=fontfile=\'{font_ticker_esc}\':textfile=\'{ticker_file_esc}\':fontcolor=0xFFD700:fontsize=32:x=\'w-t*180\':y=(h-text_h)/2[t_strip]; '
-            f'[v_sub][t_strip]overlay=295:1730[v_tick]; '
-            f'[v_tick][1:v]overlay=0:1730[v_masked]; '
+            f'[v_sub][t_strip]overlay={t_track_x}:{t_y}[v_tick]; '
+            f'[v_tick][1:v]overlay=0:{t_y}[v_masked]; '
             f'[v_masked][2:v]overlay=0:0[v_crt]; '
             f'[v_crt]chromashift=cbh=1.8:crh=-1.8,colorbalance=rs=0.04:gs=0.02:bs=-0.02,noise=alls=3:allf=t+u[v_final]" '
             f'-map "[v_final]" -map 3:a -c:v libx264 -pix_fmt yuv420p -preset medium -crf 19 '
