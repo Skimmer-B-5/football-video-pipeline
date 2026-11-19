@@ -3,9 +3,10 @@ import { spring, useCurrentFrame, useVideoConfig } from "remotion";
 
 export interface TopHUDProps {
   kicker: string;
+  logoSrc?: string;
 }
 
-export const TopHUD: React.FC<TopHUDProps> = ({ kicker }) => {
+export const TopHUD: React.FC<TopHUDProps> = ({ kicker, logoSrc }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
 
@@ -23,9 +24,9 @@ export const TopHUD: React.FC<TopHUDProps> = ({ kicker }) => {
     <div
       style={{
         position: "absolute",
-        top: 195,
-        left: 90,
-        right: 90,
+        top: 80,
+        left: 55,
+        right: 55,
         display: "flex",
         justifyContent: "space-between",
         alignItems: "center",
@@ -34,46 +35,66 @@ export const TopHUD: React.FC<TopHUDProps> = ({ kicker }) => {
         opacity,
       }}
     >
-      {/* Channel Bug / Brand */}
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: 12,
-          background: "rgba(11, 19, 43, 0.92)",
-          padding: "10px 18px",
-          borderLeft: "4px solid #D90429",
-          borderRadius: 4,
-          boxShadow: "0 4px 16px rgba(0, 0, 0, 0.6)",
-        }}
-      >
-        <span
+      {/* Top-Left: Channel Bezel Logo Bug */}
+      {logoSrc ? (
+        <div
           style={{
-            background: "#D90429",
-            color: "#FFFFFF",
-            fontFamily: "'Barlow Condensed', 'Arial Black', sans-serif",
-            fontWeight: 900,
-            fontSize: 22,
-            padding: "2px 8px",
-            borderRadius: 2,
-            letterSpacing: "1px",
+            display: "flex",
+            alignItems: "center",
+            filter: "drop-shadow(0 6px 18px rgba(0, 0, 0, 0.85))",
           }}
         >
-          30s
-        </span>
-        <span
+          <img
+            src={logoSrc}
+            alt="Channel Logo"
+            style={{
+              height: 105,
+              width: "auto",
+              objectFit: "contain",
+            }}
+          />
+        </div>
+      ) : (
+        <div
           style={{
-            color: "#FFFFFF",
-            fontFamily: "'Barlow Condensed', sans-serif",
-            fontWeight: 800,
-            fontSize: 24,
-            letterSpacing: "2px",
-            textTransform: "uppercase",
+            display: "flex",
+            alignItems: "center",
+            gap: 12,
+            background: "rgba(11, 19, 43, 0.92)",
+            padding: "10px 18px",
+            borderLeft: "4px solid #D90429",
+            borderRadius: 4,
+            boxShadow: "0 4px 16px rgba(0, 0, 0, 0.6)",
           }}
         >
-          FOOTBALL IN 30 SECONDS
-        </span>
-      </div>
+          <span
+            style={{
+              background: "#D90429",
+              color: "#FFFFFF",
+              fontFamily: "'Barlow Condensed', 'Arial Black', sans-serif",
+              fontWeight: 900,
+              fontSize: 22,
+              padding: "2px 8px",
+              borderRadius: 2,
+              letterSpacing: "1px",
+            }}
+          >
+            30s
+          </span>
+          <span
+            style={{
+              color: "#FFFFFF",
+              fontFamily: "'Barlow Condensed', sans-serif",
+              fontWeight: 800,
+              fontSize: 24,
+              letterSpacing: "2px",
+              textTransform: "uppercase",
+            }}
+          >
+            FOOTBALL IN 30 SECONDS
+          </span>
+        </div>
+      )}
 
       {/* Truthful Kicker / Badge */}
       <div

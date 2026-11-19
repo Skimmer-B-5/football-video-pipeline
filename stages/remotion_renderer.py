@@ -115,6 +115,26 @@ def prepare_remotion_props(
     headline = story.get("headline", "Milan line up €60m Endrick bid")
     ticker_text = f"CORRIERE DELLO SPORT: {headline.upper()} ✦ €60M BID + €10M ADD-ONS ✦ €80M BUY-BACK CLAUSE ✦"
 
+    # Load authentic branding assets (Top-Left TV Bug, Outro Master Logo, CRT Scanlines)
+    logo_file = workspace_root / "data" / "branding" / "user_bezel_tv_bug.png"
+    master_logo_file = workspace_root / "data" / "branding" / "user_bezel_logo_master.png"
+    scanlines_file = workspace_root / "data" / "retro_90s" / "crt_scanlines.png"
+
+    logo_data_uri = None
+    if logo_file.exists():
+        with open(logo_file, "rb") as f:
+            logo_data_uri = f"data:image/png;base64,{base64.b64encode(f.read()).decode('ascii')}"
+
+    master_logo_data_uri = None
+    if master_logo_file.exists():
+        with open(master_logo_file, "rb") as f:
+            master_logo_data_uri = f"data:image/png;base64,{base64.b64encode(f.read()).decode('ascii')}"
+
+    scanlines_data_uri = None
+    if scanlines_file.exists():
+        with open(scanlines_file, "rb") as f:
+            scanlines_data_uri = f"data:image/png;base64,{base64.b64encode(f.read()).decode('ascii')}"
+
     return {
         "story_id": story.get("story_id", "endrick_milan_short"),
         "headline": headline,
@@ -122,7 +142,11 @@ def prepare_remotion_props(
         "scenes": remotion_scenes,
         "tickerText": ticker_text,
         "subtitles": subtitles,
-        "kicker": kicker
+        "kicker": kicker,
+        "logoSrc": logo_data_uri,
+        "masterLogoSrc": master_logo_data_uri,
+        "scanlinesSrc": scanlines_data_uri,
+        "enableRetroEffects": True
     }
 
 
@@ -162,9 +186,13 @@ def master_audio_and_mux(
     raw_video_path: Path,
     scenes: List[Dict[str, Any]],
     output_master_path: Path,
-    temp_dir: Path
+    temp_dir: Path,
+    apply_retro_grading: bool = True
 ) -> Path:
-    """Concatenates scene audio, normalizes to -14 LUFS, and muxes with the Remotion video."""
+    """
+    Concatenates scene audio, normalizes to -14 LUFS, applies authentic 90s broadcast
+    analog color grading and chromatic aberration, and muxes with the Remotion video.
+    """
     temp_dir.mkdir(parents=True, exist_ok=True)
     
     # 1. Build ffmpeg concat list for scene audio
@@ -197,18 +225,40 @@ def master_audio_and_mux(
     ]
     subprocess.run(loudnorm_cmd, capture_output=True, check=True)
     
-    # 3. Mux mastered audio with Remotion video
-    mux_cmd = [
-        "ffmpeg", "-y",
-        "-i", str(raw_video_path),
-        "-i", str(mastered_audio),
-        "-c:v", "copy",
-        "-c:a", "aac",
-        "-b:a", "192k",
-        "-shortest",
-        "-movflags", "+faststart",
-        str(output_master_path)
-    ]
+    # 3. Mux mastered audio with Remotion video (with optional 90s analog broadcast grading)
+    if apply_retro_grading:
+        # Authentic 90s analog broadcast chain:
+        # - chromashift: real CRT horizontal chromatic fringing (red/blue misalignment)
+        # - colorbalance: cathode ray tube warm broadcast analog grading
+        # - noise: micro-scale TV broadcast RF/phosphor grain
+        retro_filter = "chromashift=cbh=1.8:crh=-1.8,colorbalance=rs=0.04:gs=0.02:bs=-0.02,noise=alls=2.5:allf=t+u"
+        mux_cmd = [
+            "ffmpeg", "-y",
+            "-i", str(raw_video_path),
+            "-i", str(mastered_audio),
+            "-vf", retro_filter,
+            "-c:v", "libx264",
+            "-preset", "fast",
+            "-crf", "18",
+            "-pix_fmt", "yuv420p",
+            "-c:a", "aac",
+            "-b:a", "192k",
+            "-shortest",
+            "-movflags", "+faststart",
+            str(output_master_path)
+        ]
+    else:
+        mux_cmd = [
+            "ffmpeg", "-y",
+            "-i", str(raw_video_path),
+            "-i", str(mastered_audio),
+            "-c:v", "copy",
+            "-c:a", "aac",
+            "-b:a", "192k",
+            "-shortest",
+            "-movflags", "+faststart",
+            str(output_master_path)
+        ]
     subprocess.run(mux_cmd, capture_output=True, check=True)
     logger.info(f"Final mastered video produced: {output_master_path}")
     return output_master_path

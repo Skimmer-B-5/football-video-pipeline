@@ -46,4 +46,8 @@ export interface FootballShortProps {
   tickerText: string;
   subtitles: SubtitleCue[];
   kicker: string;
+  logoSrc?: string;
+  masterLogoSrc?: string;
+  scanlinesSrc?: string;
+  enableRetroEffects?: boolean;
 }

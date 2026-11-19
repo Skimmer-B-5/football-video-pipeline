@@ -7,6 +7,7 @@ import { LowerThird } from "./components/LowerThird";
 import { ContractExplainer } from "./components/ContractExplainer";
 import { SubtitleCard } from "./components/SubtitleCard";
 import { RollingTicker } from "./components/RollingTicker";
+import { RetroOverlay } from "./components/RetroOverlay";
 
 export const FootballShort: React.FC<FootballShortProps> = ({
   headline,
@@ -14,6 +15,10 @@ export const FootballShort: React.FC<FootballShortProps> = ({
   tickerText,
   subtitles = [],
   kicker = "TRANSFER WATCH",
+  logoSrc,
+  masterLogoSrc,
+  scanlinesSrc,
+  enableRetroEffects = true,
 }) => {
   const frame = useCurrentFrame();
   const { fps, durationInFrames } = useVideoConfig();
@@ -64,8 +69,8 @@ export const FootballShort: React.FC<FootballShortProps> = ({
         ))}
       </Series>
 
-      {/* 2. Top HUD (Channel Bug & Truthful Status Kicker) */}
-      <TopHUD kicker={kicker} />
+      {/* 2. Top HUD (Channel Bezel Bug & Truthful Status Kicker) */}
+      <TopHUD kicker={kicker} logoSrc={logoSrc} />
 
       {/* 3. Subtitle Cards (Caption Zone) */}
       <SubtitleCard subtitles={subtitles} />
@@ -88,34 +93,51 @@ export const FootballShort: React.FC<FootballShortProps> = ({
             opacity: Math.min(outroSpring * 1.2, 1),
           }}
         >
-          <div
-            style={{
-              background: "#D90429",
-              color: "#FFFFFF",
-              fontFamily: "'Barlow Condensed', sans-serif",
-              fontWeight: 900,
-              fontSize: 64,
-              padding: "8px 24px",
-              borderRadius: 6,
-              marginBottom: 16,
-              transform: `scale(${0.9 + outroSpring * 0.1})`,
-            }}
-          >
-            30s
-          </div>
-          <div
-            style={{
-              color: "#FFFFFF",
-              fontFamily: "'Barlow Condensed', sans-serif",
-              fontWeight: 900,
-              fontSize: 52,
-              letterSpacing: "3px",
-              textTransform: "uppercase",
-              marginBottom: 8,
-            }}
-          >
-            FOOTBALL IN 30 SECONDS
-          </div>
+          {masterLogoSrc ? (
+            <img
+              src={masterLogoSrc}
+              alt="Channel Master Logo"
+              style={{
+                width: 520,
+                height: "auto",
+                objectFit: "contain",
+                marginBottom: 28,
+                transform: `scale(${0.92 + outroSpring * 0.08})`,
+                filter: "drop-shadow(0 8px 24px rgba(0, 0, 0, 0.8))",
+              }}
+            />
+          ) : (
+            <>
+              <div
+                style={{
+                  background: "#D90429",
+                  color: "#FFFFFF",
+                  fontFamily: "'Barlow Condensed', sans-serif",
+                  fontWeight: 900,
+                  fontSize: 64,
+                  padding: "8px 24px",
+                  borderRadius: 6,
+                  marginBottom: 16,
+                  transform: `scale(${0.9 + outroSpring * 0.1})`,
+                }}
+              >
+                30s
+              </div>
+              <div
+                style={{
+                  color: "#FFFFFF",
+                  fontFamily: "'Barlow Condensed', sans-serif",
+                  fontWeight: 900,
+                  fontSize: 52,
+                  letterSpacing: "3px",
+                  textTransform: "uppercase",
+                  marginBottom: 8,
+                }}
+              >
+                FOOTBALL IN 30 SECONDS
+              </div>
+            </>
+          )}
           <div
             style={{
               color: "#FFD166",
@@ -129,6 +151,16 @@ export const FootballShort: React.FC<FootballShortProps> = ({
             FOLLOW FOR DAILY TRANSFERS & TACTICS
           </div>
         </div>
+      )}
+
+      {/* 6. Authentic Retro 90s CRT Scanlines & Tube Vignette Overlay */}
+      {enableRetroEffects && (
+        <RetroOverlay
+          scanlinesSrc={scanlinesSrc}
+          enableScanlines={true}
+          enableVignette={true}
+          enableFlicker={true}
+        />
       )}
     </div>
   );

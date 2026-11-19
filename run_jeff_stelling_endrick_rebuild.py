@@ -66,21 +66,34 @@ def main():
     script_data = json.loads(script_file.read_text(encoding="utf-8"))
     scenes = script_data.get("scenes", [])
     
-    logger.info("=== STEP 1: Synthesizing 7 Scenes with Jeff Stelling (Qwen3-TTS Clone) ===")
-    synth_results = synthesize_jeff_stelling_script(
-        scenes=scenes,
-        output_dir=audio_dir,
-        speed_factor=1.08
-    )
-    
-    # Map physical durations
-    scene_durations = []
-    for s, res in zip(scenes, synth_results):
-        scene_durations.append({
-            "scene_id": s["scene_id"],
-            "narration": s["narration"],
-            "duration_sec": res["audio_duration_sec"]
-        })
+    logger.info("=== STEP 1: Checking / Synthesizing 7 Scenes with Jeff Stelling ===")
+    all_audio_exist = all((audio_dir / f"scene_{s['scene_id']}.wav").exists() for s in scenes)
+    if all_audio_exist:
+        logger.info("Existing Jeff Stelling audio files verified in data/audio/. Reusing pristine 48kHz masters.")
+        scene_durations = []
+        for s in scenes:
+            a_f = audio_dir / f"scene_{s['scene_id']}.wav"
+            cmd = ["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "default=noprint_wrappers=1:nokey=1", str(a_f)]
+            dur = float(subprocess.check_output(cmd, text=True).strip())
+            scene_durations.append({
+                "scene_id": s["scene_id"],
+                "narration": s["narration"],
+                "duration_sec": round(dur, 3)
+            })
+    else:
+        logger.info("Synthesizing 7 Scenes with Jeff Stelling (Qwen3-TTS Clone)...")
+        synth_results = synthesize_jeff_stelling_script(
+            scenes=scenes,
+            output_dir=audio_dir,
+            speed_factor=1.08
+        )
+        scene_durations = []
+        for s, res in zip(scenes, synth_results):
+            scene_durations.append({
+                "scene_id": s["scene_id"],
+                "narration": s["narration"],
+                "duration_sec": res["audio_duration_sec"]
+            })
         
     logger.info("=== STEP 2: Generating Time-Aligned Subtitle File ===")
     srt_file = evidence_dir / "endrick_milan_v2_rebuild.srt"
