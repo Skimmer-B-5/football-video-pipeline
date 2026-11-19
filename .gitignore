@@ -66,6 +66,9 @@ data/images/*
 data/inspect_frames/
 data/storyboard_frames/
 data/temp_assembly/
+data/temp_remotion_assembly/
+remotion/node_modules/
+remotion/temp_render_props.json
 temp/
 output/
 scratch/
@@ -82,4 +85,3 @@ Desktop.ini
 .idea/
 *.swp
 *.swo
-.agents/
