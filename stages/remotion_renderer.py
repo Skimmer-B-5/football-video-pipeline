@@ -303,13 +303,21 @@ def master_audio_and_mux(
     """
     temp_dir.mkdir(parents=True, exist_ok=True)
     
-    # 1. Build ffmpeg concat list for scene audio
+    # 1. Standardize all scene audio to 48kHz stereo pcm_s16le and build concat list
     concat_txt = temp_dir / "audio_concat.txt"
+    std_audio_files = []
     with open(concat_txt, "w", encoding="utf-8") as f:
-        for s in scenes:
+        for idx, s in enumerate(scenes):
             a_path = s.get("audio_path")
             if a_path and os.path.exists(a_path):
-                clean_path = a_path.replace("\\", "/")
+                std_file = temp_dir / f"rem_std_{idx}.wav"
+                subprocess.run([
+                    "ffmpeg", "-y",
+                    "-i", str(a_path),
+                    "-ar", "48000", "-ac", "2", "-c:a", "pcm_s16le",
+                    str(std_file)
+                ], check=True, capture_output=True)
+                clean_path = std_file.resolve().as_posix()
                 f.write(f"file '{clean_path}'\n")
                 
     unmastered_audio = temp_dir / "unmastered_audio.wav"

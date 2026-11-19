@@ -319,14 +319,19 @@ def create_outro_plate(
     return plate
 
 def generate_outro_audio(temp_dir: Path, voice_name: str = "en-GB-ThomasNeural") -> Tuple[Path, float]:
-    """Synthesizes the official broadcast outro voiceover with calm, unhurried delivery."""
+    """
+    Synthesizes the official broadcast outro voiceover with calm, unhurried delivery.
+    Outputs a standardized 48kHz stereo pcm_s16le WAV with 0.25s pre-delay and 0.60s post-roll
+    to ensure seamless concatenation without clipping, pops, or screeching.
+    """
     import edge_tts
-    out_mp3 = temp_dir / "outro_vo.mp3"
-    text = "Follow Football in Thirty Seconds for daily breaking news."
+    temp_raw = temp_dir / "outro_raw.mp3"
+    out_wav = temp_dir / "outro_vo.wav"
+    text = "Follow Football Plus for daily football intelligence."
 
     async def _synth():
         comm = edge_tts.Communicate(text, voice=voice_name, rate="+0%", pitch="+0Hz")
-        await comm.save(str(out_mp3))
+        await comm.save(str(temp_raw))
 
     try:
         asyncio.run(_synth())
@@ -336,14 +341,25 @@ def generate_outro_audio(temp_dir: Path, voice_name: str = "en-GB-ThomasNeural")
             f"Add-Type -AssemblyName System.Speech; "
             f"$s = New-Object System.Speech.Synthesis.SpeechSynthesizer; "
             f"$s.Rate = 0; "
-            f"$s.SetOutputToWaveFile('{str(out_mp3).replace(chr(92), '/')}'); "
-            f"$s.Speak('Follow Football in thirty seconds for daily breaking news.'); "
+            f"$s.SetOutputToWaveFile('{str(temp_raw).replace(chr(92), '/')}'); "
+            f"$s.Speak('Follow Football Plus for daily football intelligence.'); "
             f"$s.Dispose();"
         )
         subprocess.run(["powershell", "-NoProfile", "-Command", ps_cmd], check=True, capture_output=True)
 
-    dur = get_audio_duration(str(out_mp3))
-    return out_mp3, dur
+    # Standardize to 48kHz 16-bit stereo PCM with 0.25s pre-roll and 0.60s post-roll silence
+    cmd_std = [
+        "ffmpeg", "-y",
+        "-i", str(temp_raw),
+        "-af", "adelay=250|250,apad=pad_dur=0.60",
+        "-ar", "48000", "-ac", "2", "-c:a", "pcm_s16le",
+        str(out_wav)
+    ]
+    subprocess.run(cmd_std, check=True, capture_output=True)
+    temp_raw.unlink(missing_ok=True)
+
+    dur = get_audio_duration(str(out_wav))
+    return out_wav, dur
 
 def build_ticker_text(headline: str, scenes: List[Dict[str, Any]], credit_source_name: str = "Football Plus") -> str:
     """Build clean rolling news ticker text with concise, factual bullets (never whole narration dumps)."""
@@ -483,7 +499,6 @@ def assemble_video_ffmpeg(
                 if (alt_dir / "crt_scanlines.png").exists():
                     crt_overlay_path = alt_dir / "crt_scanlines.png"
                     break
-        whoosh_sfx_path = SFX_DIR / "meme_whoosh_swoosh.wav"
 
         # 2. Extract Exact Audio Durations & Prepare Scene Still Plates
         render_scenes = [dict(s) for s in scenes]
@@ -505,13 +520,33 @@ def assemble_video_ffmpeg(
             if not audio_path or not os.path.exists(audio_path):
                 raise FileNotFoundError(f"Missing audio path for scene {s_id}: {audio_path}")
 
-            # Audio duration: enforce exact physical duration of the audio file to avoid drift
+            # Audio standardization to 48kHz stereo pcm_s16le:
+            # If final scene before channel outro, add 0.75s silence padding so closing punchline breathes
+            if idx == total_scenes_count - 1 and include_logo_outro:
+                std_scene_wav = temp_dir / f"scene_{s_id}_padded.wav"
+                subprocess.run([
+                    "ffmpeg", "-y",
+                    "-i", str(audio_path),
+                    "-af", "apad=pad_dur=0.75",
+                    "-ar", "48000", "-ac", "2", "-c:a", "pcm_s16le",
+                    str(std_scene_wav)
+                ], check=True, capture_output=True)
+            else:
+                std_scene_wav = temp_dir / f"scene_{s_id}_std.wav"
+                subprocess.run([
+                    "ffmpeg", "-y",
+                    "-i", str(audio_path),
+                    "-ar", "48000", "-ac", "2", "-c:a", "pcm_s16le",
+                    str(std_scene_wav)
+                ], check=True, capture_output=True)
+
+            audio_path = str(std_scene_wav)
             a_dur = get_audio_duration(audio_path)
             sc["audio_duration_sec"] = a_dur
             audio_durations.append(a_dur)
             audio_clip_paths.append(audio_path)
 
-            # Frame budget strictly locked to audio duration
+            # Frame budget strictly locked to standardized audio duration
             frame_count = round(a_dur * fps)
 
             # Motion pattern: read from schema v2.0 or context
@@ -552,13 +587,13 @@ def assemble_video_ffmpeg(
 
         # 3. Append Outro Scene
         if include_logo_outro:
-            outro_mp3, outro_a_dur = generate_outro_audio(temp_dir)
-            audio_clip_paths.append(str(outro_mp3))
+            outro_wav, outro_a_dur = generate_outro_audio(temp_dir)
+            audio_clip_paths.append(str(outro_wav))
             audio_durations.append(outro_a_dur)
 
-            # Match outro video duration to speech duration so voice is never cut off
-            outro_v_dur = outro_a_dur + 0.15
-            outro_frames = round(outro_v_dur * fps)
+            # Frame budget strictly locked to outro audio duration
+            outro_frames = round(outro_a_dur * fps)
+            outro_v_dur = outro_frames / fps
 
             outro_still = create_outro_plate(logo_master_img, ticker_base_img, font_follow, font_sub, width, height)
             outro_still_path = temp_dir / "scene_comp_outro.png"
@@ -625,18 +660,19 @@ def assemble_video_ffmpeg(
         audio_concat_txt = temp_dir / "audio_concat.txt"
         with open(audio_concat_txt, "w", encoding="utf-8") as f:
             for ap in audio_clip_paths:
-                f.write(f"file '{ap.replace(chr(92), '/')}'\n")
+                clean_p = Path(ap).resolve().as_posix()
+                f.write(f"file '{clean_p}'\n")
 
         raw_vo_wav = temp_dir / "master_vo_raw.wav"
         cmd_a_concat = f'ffmpeg -y -f concat -safe 0 -i "{audio_concat_txt}" -c:a pcm_s16le "{raw_vo_wav}"'
         subprocess.check_call(cmd_a_concat, shell=True)
 
-        # Clean broadcast audio: NO loud meme whooshes, smooth fade-out at outro
+        # Clean broadcast audio: NO loud meme whooshes, smooth 0.35s fade-out at outro
         mixed_audio_raw = temp_dir / "master_audio_raw_mix.wav"
-        fade_start = max(0.0, total_video_dur - 0.25)
+        fade_start = max(0.0, total_video_dur - 0.35)
         cmd_audio_mix = (
             f'ffmpeg -y -i "{raw_vo_wav}" '
-            f'-af "afade=t=out:st={fade_start:.3f}:d=0.25,apad=whole_dur={total_video_dur:.3f}" '
+            f'-af "afade=t=out:st={fade_start:.3f}:d=0.35,apad=whole_dur={total_video_dur:.3f}" '
             f'-c:a pcm_s16le "{mixed_audio_raw}"'
         )
         subprocess.check_call(cmd_audio_mix, shell=True)
