@@ -1,5 +1,6 @@
 import React from "react";
 import { spring, useCurrentFrame, useVideoConfig } from "remotion";
+import { tokens } from "../design/tokens";
 
 export interface TopHUDProps {
   kicker: string;
@@ -14,7 +15,7 @@ export const TopHUD: React.FC<TopHUDProps> = ({ kicker, logoSrc }) => {
   const hudProgress = spring({
     frame,
     fps,
-    config: { damping: 14, mass: 0.5, stiffness: 120 },
+    config: tokens.animation.springBrisk,
   });
 
   const translateY = (1 - hudProgress) * -20;
@@ -24,15 +25,16 @@ export const TopHUD: React.FC<TopHUDProps> = ({ kicker, logoSrc }) => {
     <div
       style={{
         position: "absolute",
-        top: 80,
-        left: 55,
-        right: 55,
+        top: tokens.layout.topHud.top,
+        left: tokens.layout.topHud.left,
+        right: tokens.layout.topHud.right,
         display: "flex",
         justifyContent: "space-between",
         alignItems: "center",
-        zIndex: 50,
+        zIndex: tokens.layout.topHud.zIndex,
         transform: `translateY(${translateY}px)`,
         opacity,
+        fontFamily: tokens.typography.fontPrimary,
       }}
     >
       {/* Top-Left: Channel Bezel Logo Bug */}
@@ -46,9 +48,9 @@ export const TopHUD: React.FC<TopHUDProps> = ({ kicker, logoSrc }) => {
         >
           <img
             src={logoSrc}
-            alt="Channel Logo"
+            alt="30 Football Plus"
             style={{
-              height: 105,
+              height: tokens.layout.topHud.height,
               width: "auto",
               objectFit: "contain",
             }}
@@ -60,53 +62,51 @@ export const TopHUD: React.FC<TopHUDProps> = ({ kicker, logoSrc }) => {
             display: "flex",
             alignItems: "center",
             gap: 12,
-            background: "rgba(11, 19, 43, 0.92)",
-            padding: "10px 18px",
-            borderLeft: "4px solid #D90429",
+            background: tokens.colors.navyCard,
+            padding: "8px 16px",
+            borderLeft: `4px solid ${tokens.colors.redNews}`,
             borderRadius: 4,
-            boxShadow: "0 4px 16px rgba(0, 0, 0, 0.6)",
+            boxShadow: tokens.colors.shadowCard,
           }}
         >
           <span
             style={{
-              background: "#D90429",
-              color: "#FFFFFF",
-              fontFamily: "'Barlow Condensed', 'Arial Black', sans-serif",
-              fontWeight: 900,
-              fontSize: 22,
+              background: tokens.colors.redNews,
+              color: tokens.colors.textWhite,
+              fontWeight: tokens.typography.weights.black,
+              fontSize: tokens.typography.sizes.hudBadge,
               padding: "2px 8px",
               borderRadius: 2,
-              letterSpacing: "1px",
+              letterSpacing: tokens.typography.letterSpacing.normal,
             }}
           >
-            30s
+            30+
           </span>
           <span
             style={{
-              color: "#FFFFFF",
-              fontFamily: "'Barlow Condensed', sans-serif",
-              fontWeight: 800,
-              fontSize: 24,
-              letterSpacing: "2px",
+              color: tokens.colors.textWhite,
+              fontWeight: tokens.typography.weights.extraBold,
+              fontSize: tokens.typography.sizes.hudBadge + 2,
+              letterSpacing: tokens.typography.letterSpacing.wide,
               textTransform: "uppercase",
             }}
           >
-            FOOTBALL IN 30 SECONDS
+            30 FOOTBALL PLUS
           </span>
         </div>
       )}
 
-      {/* Truthful Kicker / Badge */}
+      {/* Top-Right: Truthful Category Kicker / Status Indicator */}
       <div
         style={{
           display: "flex",
           alignItems: "center",
-          gap: 8,
-          background: "rgba(11, 19, 43, 0.92)",
-          padding: "10px 20px",
-          borderRight: "4px solid #FFD166",
+          gap: 10,
+          background: tokens.colors.navyCard,
+          padding: "8px 18px",
+          borderRight: `4px solid ${tokens.colors.yellowHighlight}`,
           borderRadius: 4,
-          boxShadow: "0 4px 16px rgba(0, 0, 0, 0.6)",
+          boxShadow: tokens.colors.shadowCard,
         }}
       >
         <span
@@ -114,17 +114,16 @@ export const TopHUD: React.FC<TopHUDProps> = ({ kicker, logoSrc }) => {
             width: 10,
             height: 10,
             borderRadius: "50%",
-            background: "#FFD166",
-            boxShadow: "0 0 10px #FFD166",
+            background: tokens.colors.yellowHighlight,
+            boxShadow: tokens.colors.shadowGlowYellow,
           }}
         />
         <span
           style={{
-            color: "#FFD166",
-            fontFamily: "'Barlow Condensed', sans-serif",
-            fontWeight: 800,
-            fontSize: 22,
-            letterSpacing: "1.5px",
+            color: tokens.colors.yellowHighlight,
+            fontWeight: tokens.typography.weights.extraBold,
+            fontSize: tokens.typography.sizes.hudBadge,
+            letterSpacing: tokens.typography.letterSpacing.wide,
             textTransform: "uppercase",
           }}
         >

@@ -1,49 +1,55 @@
 import React from "react";
 import { useCurrentFrame } from "remotion";
+import { tokens } from "../design/tokens";
 
 export interface RollingTickerProps {
   text: string;
+  badgeLabel?: string;
 }
 
-export const RollingTicker: React.FC<RollingTickerProps> = ({ text }) => {
+export const RollingTicker: React.FC<RollingTickerProps> = ({
+  text,
+  badgeLabel = "LATEST NEWS",
+}) => {
   const frame = useCurrentFrame();
 
-  // Scroll speed in pixels per frame
-  const scrollOffset = (frame * 5) % 2500;
+  // Controlled scroll speed from design tokens
+  const scrollOffset = (frame * tokens.layout.ticker.scrollSpeedPxPerFrame) % 3000;
 
   return (
     <div
       style={{
         position: "absolute",
-        left: 0,
-        right: 0,
-        bottom: 330, // Directly above the 320px bottom safe zone
-        height: 48,
+        left: tokens.layout.ticker.left,
+        right: tokens.layout.ticker.right,
+        bottom: tokens.layout.ticker.bottom, // LOWERED to 90px to restore 90s TV broadcast layout
+        height: tokens.layout.ticker.height,
         display: "flex",
         alignItems: "center",
-        zIndex: 50,
-        boxShadow: "0 -4px 16px rgba(0, 0, 0, 0.6)",
+        zIndex: tokens.layout.ticker.zIndex,
+        boxShadow: "0 -4px 18px rgba(0, 0, 0, 0.75)",
+        fontFamily: tokens.typography.fontPrimary,
       }}
     >
       {/* Red Ticker Lead Badge */}
       <div
         style={{
-          background: "#D90429",
-          color: "#FFFFFF",
-          fontFamily: "'Barlow Condensed', sans-serif",
-          fontWeight: 900,
-          fontSize: 22,
-          letterSpacing: "1.5px",
-          padding: "0 24px",
+          background: tokens.colors.redNews,
+          color: tokens.colors.textWhite,
+          fontWeight: tokens.typography.weights.black,
+          fontSize: tokens.typography.sizes.tickerText - 1,
+          letterSpacing: tokens.typography.letterSpacing.wide,
+          padding: "0 22px",
           height: "100%",
           display: "flex",
           alignItems: "center",
           zIndex: 2,
           whiteSpace: "nowrap",
-          boxShadow: "4px 0 12px rgba(0, 0, 0, 0.4)",
+          boxShadow: "4px 0 12px rgba(0, 0, 0, 0.5)",
+          textTransform: "uppercase",
         }}
       >
-        LATEST NEWS
+        {badgeLabel}
       </div>
 
       {/* Navy Rolling Text Container */}
@@ -51,9 +57,9 @@ export const RollingTicker: React.FC<RollingTickerProps> = ({ text }) => {
         style={{
           flex: 1,
           height: "100%",
-          background: "#0B132B",
-          borderTop: "1px solid rgba(255, 209, 102, 0.3)",
-          borderBottom: "1px solid rgba(255, 209, 102, 0.3)",
+          background: tokens.colors.navyCardOpaque,
+          borderTop: `1px solid ${tokens.colors.yellowSubtle}`,
+          borderBottom: `1px solid ${tokens.colors.yellowSubtle}`,
           overflow: "hidden",
           position: "relative",
           display: "flex",
@@ -63,17 +69,16 @@ export const RollingTicker: React.FC<RollingTickerProps> = ({ text }) => {
         <div
           style={{
             position: "absolute",
-            left: 1080 - scrollOffset,
+            left: tokens.canvas.width - scrollOffset,
             whiteSpace: "nowrap",
-            color: "#FFFFFF",
-            fontFamily: "'Barlow Condensed', sans-serif",
-            fontWeight: 700,
-            fontSize: 24,
-            letterSpacing: "1px",
+            color: tokens.colors.textWhite,
+            fontWeight: tokens.typography.weights.bold,
+            fontSize: tokens.typography.sizes.tickerText,
+            letterSpacing: tokens.typography.letterSpacing.normal,
             textTransform: "uppercase",
           }}
         >
-          {text} &nbsp;&nbsp;✦&nbsp;&nbsp; {text}
+          {text} &nbsp;&nbsp;✦&nbsp;&nbsp; {text} &nbsp;&nbsp;✦&nbsp;&nbsp; {text}
         </div>
       </div>
     </div>

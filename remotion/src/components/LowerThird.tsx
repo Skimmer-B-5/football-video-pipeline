@@ -1,6 +1,7 @@
 import React from "react";
 import { spring, useCurrentFrame, useVideoConfig } from "remotion";
 import { SceneOnScreen } from "../types";
+import { tokens } from "../design/tokens";
 
 export interface LowerThirdProps {
   onScreen: SceneOnScreen;
@@ -14,49 +15,70 @@ export const LowerThird: React.FC<LowerThirdProps> = ({ onScreen }) => {
   const entrance = spring({
     frame,
     fps,
-    config: { damping: 14, mass: 0.7, stiffness: 120 },
+    config: tokens.animation.springSmooth,
   });
 
-  const translateX = (1 - entrance) * -80;
+  const translateX = (1 - entrance) * -70;
   const opacity = Math.min(entrance * 1.5, 1);
 
-  const { headline, subheadline, data_callout, status_badge } = onScreen;
+  const { headline, subheadline, data_callout, status_badge, source_credit } = onScreen;
+
+  // Determine badge color theme
+  const getBadgeBg = (badge?: string) => {
+    switch (badge?.toUpperCase()) {
+      case "OFFICIAL":
+      case "CONFIRMED":
+        return tokens.colors.greenOfficial;
+      case "RUMOUR":
+      case "REPORT":
+        return tokens.colors.amberRumour;
+      case "TACTICAL":
+        return tokens.colors.cyanTactical;
+      case "BREAKING":
+      case "EXCLUSIVE":
+      default:
+        return tokens.colors.redNews;
+    }
+  };
 
   return (
     <div
       style={{
         position: "absolute",
-        left: 90,
-        right: 90,
-        bottom: 390, // Resting cleanly above subtitle/ticker band
+        left: tokens.layout.lowerThird.left,
+        right: tokens.layout.lowerThird.right,
+        bottom: tokens.layout.lowerThird.bottom, // Resting cleanly above the ticker
+        maxHeight: tokens.layout.lowerThird.maxHeight,
         transform: `translateX(${translateX}px)`,
         opacity,
-        zIndex: 40,
+        zIndex: tokens.layout.lowerThird.zIndex,
+        fontFamily: tokens.typography.fontPrimary,
       }}
     >
       <div
         style={{
-          background: "rgba(11, 19, 43, 0.94)",
-          borderLeft: "8px solid #D90429",
+          background: tokens.colors.navyCard,
+          borderLeft: `8px solid ${tokens.colors.redNews}`,
           borderRadius: "0 8px 8px 0",
-          padding: "20px 28px",
-          boxShadow: "0 12px 32px rgba(0, 0, 0, 0.75)",
+          padding: "18px 24px",
+          boxShadow: tokens.colors.shadowHeavy,
           display: "flex",
           flexDirection: "column",
           gap: 6,
         }}
       >
         {/* Top Badges Row */}
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
           {status_badge && (
             <span
               style={{
-                background: status_badge === "RUMOUR" ? "#F77F00" : "#D90429",
-                color: "#FFFFFF",
-                fontFamily: "'Barlow Condensed', sans-serif",
-                fontWeight: 900,
-                fontSize: 18,
-                letterSpacing: "1.5px",
+                background: getBadgeBg(status_badge),
+                color: status_badge.toUpperCase() === "OFFICIAL" || status_badge.toUpperCase() === "TACTICAL"
+                  ? tokens.colors.navyPrimary
+                  : tokens.colors.textWhite,
+                fontSize: tokens.typography.sizes.dataCallout,
+                fontWeight: tokens.typography.weights.black,
+                letterSpacing: tokens.typography.letterSpacing.normal,
                 padding: "3px 10px",
                 borderRadius: 3,
                 textTransform: "uppercase",
@@ -69,12 +91,11 @@ export const LowerThird: React.FC<LowerThirdProps> = ({ onScreen }) => {
           {data_callout && (
             <span
               style={{
-                background: "#FFD166",
-                color: "#0B132B",
-                fontFamily: "'Barlow Condensed', sans-serif",
-                fontWeight: 900,
-                fontSize: 18,
-                letterSpacing: "1px",
+                background: tokens.colors.yellowHighlight,
+                color: tokens.colors.navyPrimary,
+                fontSize: tokens.typography.sizes.dataCallout,
+                fontWeight: tokens.typography.weights.black,
+                letterSpacing: tokens.typography.letterSpacing.normal,
                 padding: "3px 10px",
                 borderRadius: 3,
                 textTransform: "uppercase",
@@ -83,36 +104,55 @@ export const LowerThird: React.FC<LowerThirdProps> = ({ onScreen }) => {
               {data_callout}
             </span>
           )}
+
+          {source_credit && (
+            <span
+              style={{
+                color: tokens.colors.textMuted,
+                fontSize: 16,
+                fontWeight: tokens.typography.weights.bold,
+                letterSpacing: "0.5px",
+                textTransform: "uppercase",
+                marginLeft: "auto",
+              }}
+            >
+              SRC: {source_credit}
+            </span>
+          )}
         </div>
 
-        {/* Primary Headline */}
+        {/* Primary Broadcast Headline (Barlow Condensed ExtraBold/Black) */}
         <div
           style={{
-            color: "#FFFFFF",
-            fontFamily: "'Barlow Condensed', 'Arial Black', sans-serif",
-            fontWeight: 900,
-            fontSize: 54,
-            lineHeight: 1.05,
-            letterSpacing: "0.5px",
+            color: tokens.colors.textWhite,
+            fontWeight: tokens.typography.weights.black,
+            fontSize: headline.length > 36 ? tokens.typography.sizes.headlineMedium : tokens.typography.sizes.headlineLarge,
+            lineHeight: tokens.typography.lineHeights.compact,
+            letterSpacing: tokens.typography.letterSpacing.tight,
             textTransform: "uppercase",
-            textShadow: "0 2px 8px rgba(0, 0, 0, 0.8)",
+            textShadow: "0 2px 10px rgba(0, 0, 0, 0.9)",
+            overflow: "hidden",
+            display: "-webkit-box",
+            WebkitLineClamp: 2,
+            WebkitBoxOrient: "vertical",
           }}
         >
           {headline}
         </div>
 
-        {/* Supporting Subheadline */}
+        {/* Supporting Secondary Headline (Yellow High-Contrast Highlight) */}
         {subheadline && (
           <div
             style={{
-              color: "#FFD166",
-              fontFamily: "'Barlow Condensed', sans-serif",
-              fontWeight: 700,
-              fontSize: 32,
-              lineHeight: 1.15,
-              letterSpacing: "1px",
+              color: tokens.colors.yellowHighlight,
+              fontWeight: tokens.typography.weights.bold,
+              fontSize: tokens.typography.sizes.subheadline,
+              lineHeight: tokens.typography.lineHeights.headline,
+              letterSpacing: tokens.typography.letterSpacing.normal,
               textTransform: "uppercase",
-              opacity: 0.95,
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
             }}
           >
             {subheadline}

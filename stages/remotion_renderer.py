@@ -3,6 +3,7 @@ remotion_renderer.py - Programmatic Remotion Video Composition & Mastering Engin
 
 Integrates Remotion (React) as the visual motion graphics engine with local FFmpeg
 for audio mastering (-14 LUFS) and quality verification, orchestrated via Python.
+Supports all 7 football news formats dynamically.
 """
 
 import base64
@@ -12,7 +13,7 @@ import os
 import re
 import subprocess
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger(__name__)
@@ -67,12 +68,51 @@ def parse_srt_to_frame_cues(srt_path: Path, fps: float = 30.0) -> List[Dict[str,
     return cues
 
 
+def generate_cues_from_narration(scenes: List[Dict[str, Any]], fps: float = 30.0) -> List[Dict[str, Any]]:
+    """Dynamically generates subtitle cues from scene narrations and durations when no SRT is present."""
+    cues = []
+    current_frame = 0
+    cue_id = 1
+    
+    for s in scenes:
+        dur_frames = s.get("durationInFrames", int(round(4.0 * fps)))
+        narration = (s.get("narration") or "").strip()
+        if not narration or s.get("scene_id") == "outro":
+            current_frame += dur_frames
+            continue
+            
+        # Split into short, punchy caption chunks (~4 to 7 words each)
+        words = narration.split()
+        if not words:
+            current_frame += dur_frames
+            continue
+            
+        chunk_size = 5
+        chunks = [" ".join(words[i:i + chunk_size]) for i in range(0, len(words), chunk_size)]
+        frames_per_chunk = max(15, dur_frames // len(chunks))
+        
+        for c_idx, chunk in enumerate(chunks):
+            start_f = current_frame + c_idx * frames_per_chunk
+            end_f = min(current_frame + dur_frames, start_f + frames_per_chunk)
+            cues.append({
+                "id": cue_id,
+                "start_frame": start_f,
+                "end_frame": end_f,
+                "text": chunk.upper()
+            })
+            cue_id += 1
+            
+        current_frame += dur_frames
+    return cues
+
+
 def prepare_remotion_props(
     script_data: Dict[str, Any],
     workspace_root: Path,
-    fps: float = 30.0
+    fps: float = 30.0,
+    srt_file: Optional[Path] = None
 ) -> Dict[str, Any]:
-    """Builds typed Remotion props from the Schema v2.0 scene plan."""
+    """Builds typed Remotion props dynamically for any of the 7 football story formats."""
     story = script_data.get("story", {})
     scenes_in = script_data.get("scenes", [])
     
@@ -81,20 +121,37 @@ def prepare_remotion_props(
     
     for s in scenes_in:
         scene_id = s.get("scene_id", "s01")
-        audio_file = workspace_root / "data" / "audio" / f"scene_{scene_id}.wav"
-        image_file = workspace_root / "data" / "images" / f"scene_{scene_id}.png"
         
+        # Audio file resolution: explicit audio_path or data/audio fallback
+        audio_candidate = s.get("audio_path")
+        if audio_candidate and Path(audio_candidate).exists():
+            audio_file = Path(audio_candidate)
+        else:
+            audio_file = workspace_root / "data" / "audio" / f"scene_{scene_id}.wav"
+            
         # Exact frame duration locked to physical audio file
-        dur_sec = get_physical_audio_duration(str(audio_file)) if audio_file.exists() else 4.0
+        dur_sec = get_physical_audio_duration(str(audio_file)) if audio_file.exists() else float(s.get("duration_sec", 4.0))
         frame_dur = int(round(dur_sec * fps))
         total_frames += frame_dur
         
-        # Convert image to base64 data URI to bypass Chromium file:/// security restrictions
+        # Image resolution: explicit image_path or data/images fallback
+        image_candidate = s.get("image_path")
+        image_file = None
+        if image_candidate and Path(image_candidate).exists():
+            image_file = Path(image_candidate)
+        else:
+            default_img = workspace_root / "data" / "images" / f"scene_{scene_id}.png"
+            if default_img.exists():
+                image_file = default_img
+                
+        # Convert image to base64 data URI to bypass Chromium file:/// sandbox restrictions
         image_data_uri = None
-        if image_file.exists():
+        if image_file and image_file.exists():
             with open(image_file, "rb") as img_f:
                 b64_content = base64.b64encode(img_f.read()).decode("ascii")
-                image_data_uri = f"data:image/png;base64,{b64_content}"
+                ext = image_file.suffix.lower().replace(".", "")
+                mime = "jpeg" if ext in ["jpg", "jpeg"] else "png"
+                image_data_uri = f"data:image/{mime};base64,{b64_content}"
         
         remotion_scenes.append({
             "scene_id": scene_id,
@@ -129,14 +186,28 @@ def prepare_remotion_props(
             "motion": {"type": "static"}
         })
 
-    srt_path = workspace_root / "evidence" / "endrick_milan_v2_rebuild.srt"
-    subtitles = parse_srt_to_frame_cues(srt_path, fps=fps)
+    # Subtitles resolution
+    subtitles = []
+    if srt_file and srt_file.exists():
+        subtitles = parse_srt_to_frame_cues(srt_file, fps=fps)
+    elif "subtitles" in script_data and isinstance(script_data["subtitles"], list):
+        subtitles = script_data["subtitles"]
+    else:
+        subtitles = generate_cues_from_narration(remotion_scenes, fps=fps)
     
-    kicker = remotion_scenes[0]["on_screen"].get("kicker", "TRANSFER WATCH") if remotion_scenes else "TRANSFER WATCH"
-    headline = story.get("headline", "Milan line up €60m Endrick bid")
-    ticker_text = f"CORRIERE DELLO SPORT: {headline.upper()} ✦ €60M BID + €10M ADD-ONS ✦ €80M BUY-BACK CLAUSE ✦"
+    first_on_screen = remotion_scenes[0]["on_screen"] if remotion_scenes else {}
+    kicker = first_on_screen.get("kicker") or story.get("kicker") or "BREAKING NEWS"
+    headline = story.get("headline") or first_on_screen.get("headline", "FOOTBALL IN 30 SECONDS")
+    
+    # Dynamic factual ticker text
+    if "ticker_text" in story:
+        ticker_text = story["ticker_text"]
+    else:
+        source_label = story.get("source", "30 FOOTBALL PLUS")
+        key_fact = story.get("key_fact", headline)
+        ticker_text = f"{source_label.upper()}: {headline.upper()} ✦ {key_fact.upper()} ✦"
 
-    # Load authentic branding assets (Top-Left TV Bug, Outro Master Logo, Ticker Base Plate, CRT Scanlines)
+    # Load authentic branding assets (TV Bug, Outro Master Logo, Ticker Base Plate, CRT Scanlines)
     logo_file = workspace_root / "data" / "branding" / "user_bezel_tv_bug.png"
     master_logo_file = workspace_root / "data" / "branding" / "user_bezel_logo_master.png"
     ticker_base_file = workspace_root / "data" / "branding" / "ticker_base_3d.png"
@@ -163,7 +234,7 @@ def prepare_remotion_props(
             scanlines_data_uri = f"data:image/png;base64,{base64.b64encode(f.read()).decode('ascii')}"
 
     return {
-        "story_id": story.get("story_id", "endrick_milan_short"),
+        "story_id": story.get("story_id", "football_short"),
         "headline": headline,
         "totalDurationInFrames": total_frames,
         "scenes": remotion_scenes,
@@ -255,7 +326,8 @@ def master_audio_and_mux(
     ]
     subprocess.run(loudnorm_cmd, capture_output=True, check=True)
     
-    # 3. Mux mastered audio with Remotion video (with optional 90s analog broadcast grading)
+    # 3. Mux mastered audio with Remotion video
+    output_master_path.parent.mkdir(parents=True, exist_ok=True)
     if apply_retro_grading:
         # Authentic 90s analog broadcast chain:
         # - chromashift: real CRT horizontal chromatic fringing (red/blue misalignment)
@@ -292,44 +364,3 @@ def master_audio_and_mux(
     subprocess.run(mux_cmd, capture_output=True, check=True)
     logger.info(f"Final mastered video produced: {output_master_path}")
     return output_master_path
-
-
-def generate_remotion_storyboard(
-    video_path: Path,
-    output_storyboard: Path,
-    num_samples: int = 6
-) -> Path:
-    """Extracts evenly spaced keyframes and tiles them into a high-res storyboard contact sheet."""
-    dur = get_physical_audio_duration(str(video_path))
-    step = dur / (num_samples + 1)
-    timestamps = [round(step * (i + 1), 2) for i in range(num_samples)]
-    
-    temp_frames_dir = video_path.parent / "temp_remotion_frames"
-    temp_frames_dir.mkdir(parents=True, exist_ok=True)
-    frame_files = []
-    
-    for i, ts in enumerate(timestamps):
-        out_f = temp_frames_dir / f"frame_{i:02d}.jpg"
-        cmd = [
-            "ffmpeg", "-y",
-            "-ss", str(ts),
-            "-i", str(video_path),
-            "-vframes", "1",
-            "-q:v", "2",
-            str(out_f)
-        ]
-        subprocess.run(cmd, capture_output=True, check=True)
-        if out_f.exists():
-            frame_files.append(out_f)
-            
-    # Tile into a 3x2 contact sheet
-    tile_cmd = [
-        "ffmpeg", "-y",
-        "-i", str(temp_frames_dir / "frame_%02d.jpg"),
-        "-filter_complex", "scale=540:960,tile=3x2:padding=10:color=black",
-        "-q:v", "2",
-        str(output_storyboard)
-    ]
-    subprocess.run(tile_cmd, capture_output=True, check=True)
-    logger.info(f"Remotion storyboard generated: {output_storyboard}")
-    return output_storyboard

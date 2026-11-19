@@ -289,10 +289,13 @@ def synthesize_scenes_expressive(
         AUDIO_DIR.mkdir(parents=True, exist_ok=True)
         results = []
 
+        use_presenter = False
         use_jeff_stelling = False
         use_martin_tyler = False
         use_qwen = False
-        if preferred_engine in ("jeff_stelling", "auto") and (JEFF_STELLING_PROMPT.exists() or JEFF_STELLING_VOICE_DIR.exists()):
+        if preferred_engine in ("presenter", "classic_football_presenter", "des_lynam"):
+            use_presenter = True
+        elif preferred_engine in ("jeff_stelling", "auto") and (JEFF_STELLING_PROMPT.exists() or JEFF_STELLING_VOICE_DIR.exists()):
             use_jeff_stelling = True
         elif preferred_engine == "martin_tyler" and MARTIN_TYLER_WEIGHTS.exists():
             use_martin_tyler = True
@@ -306,6 +309,20 @@ def synthesize_scenes_expressive(
 
             start_t = time.time()
             success = False
+
+            # 0. Try Signature Classic Football Presenter (Des Lynam Style Reference)
+            if use_presenter:
+                try:
+                    from stages.presenter_voice import ClassicFootballPresenter
+                    presenter = ClassicFootballPresenter()
+                    mode = s.get("delivery_mode", "NEWS")
+                    print(f"[TTS-Presenter] Synthesizing Scene {scene_id} (Classic Football Presenter / {mode}): \"{text[:45]}...\"")
+                    res_p = presenter.synthesize_scene(text, out_path, mode=mode, pad_sec=pad_sec)
+                    total_dur = res_p["total_duration_sec"]
+                    spoken_dur = res_p["spoken_duration_sec"]
+                    success = True
+                except Exception as pe:
+                    print(f"[TTS-Presenter] Scene {scene_id} note: {pe}. Falling back to default engines.")
 
             # 1. Try Jeff Stelling Cloned Voice (Qwen3 Base with pristine studio audio)
             if use_jeff_stelling:
@@ -359,7 +376,10 @@ def synthesize_scenes_expressive(
             dur_time = round(time.time() - start_t, 2)
             print(f"[TTS] Scene {scene_id} rendered in {dur_time}s | Spoken: {spoken_dur}s | Total slide with pad: {total_dur}s")
 
-            if use_jeff_stelling and success:
+            if use_presenter and success:
+                used_engine = "ClassicFootballPresenter"
+                used_voice = f"classic_football_presenter ({s.get('delivery_mode', 'NEWS')})"
+            elif use_jeff_stelling and success:
                 used_engine = "JeffStelling-Qwen3"
                 used_voice = "Jeff Stelling (Sky Sports Studio 1.08x)"
             elif use_martin_tyler and success:

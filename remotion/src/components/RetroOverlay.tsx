@@ -1,11 +1,14 @@
 import React from "react";
 import { useCurrentFrame } from "remotion";
+import { tokens } from "../design/tokens";
 
 export interface RetroOverlayProps {
   scanlinesSrc?: string;
   enableScanlines?: boolean;
   enableVignette?: boolean;
   enableFlicker?: boolean;
+  scanlineOpacity?: number;
+  vignetteIntensity?: number;
 }
 
 export const RetroOverlay: React.FC<RetroOverlayProps> = ({
@@ -13,11 +16,13 @@ export const RetroOverlay: React.FC<RetroOverlayProps> = ({
   enableScanlines = true,
   enableVignette = true,
   enableFlicker = true,
+  scanlineOpacity = tokens.crt.scanlineOpacity,
+  vignetteIntensity = tokens.crt.vignetteIntensity,
 }) => {
   const frame = useCurrentFrame();
 
-  // Subtle analog CRT phosphor shimmer (imperceptible 1-2% fluctuation)
-  const flicker = enableFlicker ? Math.sin(frame * 0.45) * 0.02 + 0.98 : 1.0;
+  // Subtle analog CRT phosphor shimmer (restrained 1.5% fluctuation)
+  const flicker = enableFlicker ? Math.sin(frame * 0.45) * tokens.crt.flickerDepth + (1 - tokens.crt.flickerDepth) : 1.0;
 
   return (
     <div
@@ -25,11 +30,11 @@ export const RetroOverlay: React.FC<RetroOverlayProps> = ({
         position: "absolute",
         inset: 0,
         pointerEvents: "none",
-        zIndex: 75,
+        zIndex: tokens.layout.crtOverlay.zIndex,
         overflow: "hidden",
       }}
     >
-      {/* 1. CRT Scanlines Overlay Texture */}
+      {/* 1. CRT Horizontal Scanlines (Subtle & Restrained) */}
       {enableScanlines && (
         scanlinesSrc ? (
           <img
@@ -41,7 +46,7 @@ export const RetroOverlay: React.FC<RetroOverlayProps> = ({
               width: "100%",
               height: "100%",
               objectFit: "cover",
-              opacity: 0.52 * flicker,
+              opacity: scanlineOpacity * flicker,
               mixBlendMode: "multiply",
             }}
           />
@@ -51,40 +56,41 @@ export const RetroOverlay: React.FC<RetroOverlayProps> = ({
               position: "absolute",
               inset: 0,
               background:
-                "repeating-linear-gradient(0deg, rgba(0,0,0,0.22) 0px, rgba(0,0,0,0.22) 2px, transparent 2px, transparent 4px)",
-              opacity: 0.7 * flicker,
+                "repeating-linear-gradient(0deg, rgba(0,0,0,0.18) 0px, rgba(0,0,0,0.18) 2px, transparent 2px, transparent 4px)",
+              opacity: scanlineOpacity * flicker,
               mixBlendMode: "multiply",
             }}
           />
         )
       )}
 
-      {/* 2. Authentic CRT Curved Screen Vignette */}
+      {/* 2. Authentic CRT Curved Screen Tube Vignette (No plastic frame) */}
       {enableVignette && (
         <div
           style={{
             position: "absolute",
             inset: 0,
-            background:
-              "radial-gradient(ellipse 85% 85% at 50% 50%, rgba(0, 0, 0, 0) 60%, rgba(0, 0, 0, 0.48) 95%, rgba(0, 0, 0, 0.8) 100%)",
+            background: `radial-gradient(ellipse 85% 85% at 50% 50%, rgba(0, 0, 0, 0) 65%, rgba(0, 0, 0, ${vignetteIntensity * 0.85}) 96%, rgba(0, 0, 0, ${vignetteIntensity}) 100%)`,
             mixBlendMode: "multiply",
           }}
         />
       )}
 
-      {/* 3. Subtle TV Glass Reflection / Tube Edge Highlight */}
-      <div
-        style={{
-          position: "absolute",
-          top: 0,
-          left: 0,
-          right: 0,
-          height: 120,
-          background:
-            "linear-gradient(180deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0) 100%)",
-          mixBlendMode: "screen",
-        }}
-      />
+      {/* 3. Subtle Glass Reflection Highlight along top tube bevel */}
+      {tokens.crt.tubeEdgeReflection && (
+        <div
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            height: 100,
+            background:
+              "linear-gradient(180deg, rgba(255, 255, 255, 0.04) 0%, rgba(255, 255, 255, 0) 100%)",
+            mixBlendMode: "screen",
+          }}
+        />
+      )}
     </div>
   );
 };

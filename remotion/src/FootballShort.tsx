@@ -1,14 +1,15 @@
 import React from "react";
-import { Series, Sequence, useCurrentFrame, spring, useVideoConfig } from "remotion";
+import { Series, useCurrentFrame, useVideoConfig } from "remotion";
 import { FootballShortProps } from "./types";
 import { TopHUD } from "./components/TopHUD";
 import { BackgroundMedia } from "./components/BackgroundMedia";
 import { LowerThird } from "./components/LowerThird";
-import { ContractExplainer } from "./components/ContractExplainer";
+import { InfographicDirector } from "./components/infographics/InfographicDirector";
 import { SubtitleCard } from "./components/SubtitleCard";
 import { RollingTicker } from "./components/RollingTicker";
 import { RetroOverlay } from "./components/RetroOverlay";
 import { OutroPlate } from "./components/OutroPlate";
+import { tokens } from "./design/tokens";
 
 export const FootballShort: React.FC<FootballShortProps> = ({
   headline,
@@ -23,11 +24,11 @@ export const FootballShort: React.FC<FootballShortProps> = ({
   enableRetroEffects = true,
 }) => {
   const frame = useCurrentFrame();
-  const { fps, durationInFrames } = useVideoConfig();
+  const { durationInFrames } = useVideoConfig();
 
   // Find if an explicit outro scene exists
   const outroScene = scenes.find((s) => s.scene_id === "outro");
-  const outroDurationFrames = outroScene ? outroScene.durationInFrames : 45;
+  const outroDurationFrames = outroScene ? outroScene.durationInFrames : tokens.animation.outroDurationFrames;
   const outroStartFrame = Math.max(0, durationInFrames - outroDurationFrames);
   const isOutroActive = frame >= outroStartFrame;
 
@@ -35,11 +36,11 @@ export const FootballShort: React.FC<FootballShortProps> = ({
     <div
       style={{
         position: "relative",
-        width: 1080,
-        height: 1920,
-        backgroundColor: "#0B132B",
+        width: tokens.canvas.width,
+        height: tokens.canvas.height,
+        backgroundColor: tokens.colors.navyPrimary,
         overflow: "hidden",
-        fontFamily: "'Barlow Condensed', sans-serif",
+        fontFamily: tokens.typography.fontPrimary,
       }}
     >
       {/* 1. Sequential Editorial Scenes */}
@@ -56,19 +57,17 @@ export const FootballShort: React.FC<FootballShortProps> = ({
               />
             ) : (
               <>
-                {/* Background Media */}
+                {/* Full-Height Football Photography / Background Media */}
                 <BackgroundMedia
                   imagePath={scene.image_path}
                   motion={scene.motion}
                   durationInFrames={scene.durationInFrames}
                 />
 
-                {/* Special Contract Explainer Diagram */}
-                {scene.visual?.kind === "contract_or_clause_graphic" && (
-                  <ContractExplainer />
-                )}
+                {/* Vertical Native Infographic Engine (Stage y: 210 to 1340) */}
+                <InfographicDirector visual={scene.visual} />
 
-                {/* Lower Third Headline Plate */}
+                {/* Reusable Broadcast Lower-Third Headline Plate (Anchored at y: 1400) */}
                 <LowerThird onScreen={scene.on_screen} />
               </>
             )}
@@ -79,13 +78,13 @@ export const FootballShort: React.FC<FootballShortProps> = ({
       {/* 2. Top HUD (Channel Bezel Bug & Truthful Status Kicker) - Hidden during outro */}
       {!isOutroActive && <TopHUD kicker={kicker} logoSrc={logoSrc} />}
 
-      {/* 3. Subtitle Cards (Caption Zone) - Hidden during outro */}
+      {/* 3. Subtitle Cards (Caption Zone y: 1300) - Hidden during outro */}
       {!isOutroActive && <SubtitleCard subtitles={subtitles} />}
 
-      {/* 4. Rolling Factual Ticker - Hidden during outro */}
+      {/* 4. Rolling Factual Ticker (Lowered to y: 1778, bottom: 90px) - Hidden during outro */}
       {!isOutroActive && <RollingTicker text={tickerText || headline} />}
 
-      {/* 5. Authentic Retro 90s CRT Scanlines & Tube Vignette Overlay */}
+      {/* 5. Authentic Retro 90s CRT Scanlines & Tube Layer */}
       {enableRetroEffects && (
         <RetroOverlay
           scanlinesSrc={scanlinesSrc}
