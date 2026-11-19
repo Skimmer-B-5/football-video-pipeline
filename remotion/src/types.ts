@@ -157,6 +157,7 @@ export interface FootballShortProps {
   logoSrc?: string;
   masterLogoSrc?: string;
   tickerBaseSrc?: string;
+  headlinesTabSrc?: string;
   scanlinesSrc?: string;
   enableRetroEffects?: boolean;
   [key: string]: unknown;

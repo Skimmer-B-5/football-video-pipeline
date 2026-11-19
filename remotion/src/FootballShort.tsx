@@ -20,6 +20,7 @@ export const FootballShort: React.FC<FootballShortProps> = ({
   logoSrc,
   masterLogoSrc,
   tickerBaseSrc,
+  headlinesTabSrc,
   scanlinesSrc,
   enableRetroEffects = true,
 }) => {
@@ -54,6 +55,8 @@ export const FootballShort: React.FC<FootballShortProps> = ({
               <OutroPlate
                 masterLogoSrc={masterLogoSrc}
                 tickerBaseSrc={tickerBaseSrc}
+                headlinesTabSrc={headlinesTabSrc}
+                tickerText="FOLLOW FOR DAILY BREAKING NEWS ✦ EXCLUSIVE INTERVIEWS ✦ BREAKING TRANSFERS ✦"
               />
             ) : (
               <>

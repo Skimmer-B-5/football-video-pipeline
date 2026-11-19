@@ -211,6 +211,7 @@ def prepare_remotion_props(
     logo_file = workspace_root / "data" / "branding" / "user_bezel_tv_bug.png"
     master_logo_file = workspace_root / "data" / "branding" / "user_bezel_logo_master.png"
     ticker_base_file = workspace_root / "data" / "branding" / "ticker_base_3d.png"
+    headlines_tab_file = workspace_root / "data" / "branding" / "headlines_tab_3d.png"
     scanlines_file = workspace_root / "data" / "retro_90s" / "crt_scanlines.png"
 
     logo_data_uri = None
@@ -228,6 +229,11 @@ def prepare_remotion_props(
         with open(ticker_base_file, "rb") as f:
             ticker_base_data_uri = f"data:image/png;base64,{base64.b64encode(f.read()).decode('ascii')}"
 
+    headlines_tab_data_uri = None
+    if headlines_tab_file.exists():
+        with open(headlines_tab_file, "rb") as f:
+            headlines_tab_data_uri = f"data:image/png;base64,{base64.b64encode(f.read()).decode('ascii')}"
+
     scanlines_data_uri = None
     if scanlines_file.exists():
         with open(scanlines_file, "rb") as f:
@@ -244,6 +250,7 @@ def prepare_remotion_props(
         "logoSrc": logo_data_uri,
         "masterLogoSrc": master_logo_data_uri,
         "tickerBaseSrc": ticker_base_data_uri,
+        "headlinesTabSrc": headlines_tab_data_uri,
         "scanlinesSrc": scanlines_data_uri,
         "enableRetroEffects": True
     }
