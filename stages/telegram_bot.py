@@ -480,6 +480,26 @@ class TelegramBotClient:
             lines_bin.append(f"--{boundary}\r\nContent-Disposition: form-data; name=\"reply_markup\"\r\n\r\n{json.dumps(reply_markup)}\r\n".encode("utf-8"))
 
         mime_type = mimetypes.guess_type(str(path))[0] or "video/mp4"
+
+        try:
+            import requests
+            data = {"chat_id": cid, "parse_mode": "HTML"}
+            if caption:
+                data["caption"] = caption
+            if reply_markup:
+                data["reply_markup"] = json.dumps(reply_markup)
+            with open(path, "rb") as vf:
+                files = {"video": (path.name, vf, mime_type)}
+                resp = requests.post(f"{self.base_url}/sendVideo", data=data, files=files, timeout=180)
+                res = resp.json()
+                mid = res.get("result", {}).get("message_id", 0)
+                fid = res.get("result", {}).get("video", {}).get("file_id")
+                if return_file_id:
+                    return mid, fid
+                return mid
+        except Exception as req_err:
+            print(f"[TelegramBot] requests upload fallback ({req_err}), trying urllib...")
+
         file_header = (
             f"--{boundary}\r\n"
             f'Content-Disposition: form-data; name="video"; filename="{path.name}"\r\n'
