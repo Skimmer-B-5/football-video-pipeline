@@ -307,13 +307,18 @@ def synthesize_scenes_expressive(
             dur_time = round(time.time() - start_t, 2)
             print(f"[TTS] Scene {scene_id} rendered in {dur_time}s | Spoken: {spoken_dur}s | Total slide with pad: {total_dur}s")
 
+            used_engine = "MartinTyler-Qwen3" if (use_martin_tyler and success) else ("EdgeTTS" if success else "Kokoro")
+            used_voice = "Martin Tyler (Cloned 1.14x)" if used_engine == "MartinTyler-Qwen3" else voice_name
+
             results.append({
                 "scene_id": scene_id,
                 "text": text,
                 "type": s.get("type", "body"),
                 "audio_path": str(out_path),
                 "audio_duration_sec": spoken_dur,
-                "slide_duration_sec": total_dur
+                "slide_duration_sec": total_dur,
+                "engine": used_engine,
+                "voice": used_voice
             })
 
         return results

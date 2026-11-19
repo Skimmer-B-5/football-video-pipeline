@@ -1,28 +1,27 @@
 """
-Stage 7: 90s Retro Sports Broadcast Video Assembler.
-Definitive Production Pipeline Engine for "Football in 30 Seconds" / "Football Plus":
-1. 1080x1920 90s Sports Broadcast Aesthetic (Sky Sports / BBC Sport DNA).
-2. User's Bezelified Transparent Channel Logo (top-left TV bug & outro plate).
-3. Sleek, minimalist glowing red ● LIVE capsule (top-right).
-4. Two-Tier Royal Navy Lower-Third Breaking News Card with Gold Accent & Barlow Condensed ExtraBold typography.
-5. Continuous 3D Beveled Ticker Base with Smooth Rolling Ticker Tape (Clean ● bullets, zero '***', zero obsolete references).
-6. 3D Embossed HEADLINES Tab Overlay.
-7. Authentic CRT Scanlines, Subtle Chromatic Aberration & TV Broadcast Grain.
-8. Exact Frame-Budgeted Synchronization: Audio and video locked to sub-frames with zero cutoff.
-9. Outro Scene with Midnight Radial Spotlight, Centered 3D Logo, Centered Follow Card, and Outro Whoosh SFX.
+Stage 7: 90s Retro Sports Broadcast Master Video Assembler (v2.0 Rebuild).
+Assembles a broadcast-grade vertical Short (1080x1920, 30fps) with:
+- Top-Left: Channel Bezel Logo Bug
+- Top-Right: Dynamic, truthful kicker capsule (e.g. ● TRANSFER WATCH or ● NEWS UPDATE, NEVER fake ● LIVE)
+- Lower Third: Two-tier broadcast box in Barlow Condensed ExtraBold (Line 1 White, Line 2 Gold)
+- Truthful Category Badge (REPORTED, RUMOUR, TACTICAL ANALYSIS, OFFICIALLY CONFIRMED, CONTRACT CLAUSE)
+- Subtitles: Synchronized burned-in phrase captions (.srt generated alongside video)
+- Ticker Tape: Concise factual bullets (NO whole narration paragraphs)
+- Explainer Graphics integration (Transfer flowcharts, buy-back clauses, stat cards)
+- Mastered Audio: -14 LUFS integrated loudness, -1.0 dBTP true-peak ceiling, 48 kHz stereo, zero pink noise hiss
+- Frame-locked A/V synchronization with zero drift
+- Outro: Crisp 1.0–1.2s broadcast branding card (never 4.6s long)
 """
 
 import sys
 import os
 import re
 import json
-import time
 import asyncio
 import subprocess
 from pathlib import Path
-from typing import List, Dict, Any, Optional, Tuple
+from typing import Dict, List, Any, Optional, Tuple
 from PIL import Image, ImageDraw, ImageFont, ImageFilter
-import numpy as np
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
@@ -31,73 +30,101 @@ from pipeline.resource_monitor import ResourceTracker
 
 DATA_DIR = PROJECT_ROOT / "data"
 BRANDING_DIR = DATA_DIR / "branding"
-FONTS_DIR = DATA_DIR / "fonts"
-RETRO_DIR = DATA_DIR / "retro_90s"
+RETRO_DIR = DATA_DIR / "retro_90s" if (DATA_DIR / "retro_90s").exists() else DATA_DIR / "retro_effects"
 SFX_DIR = DATA_DIR / "sfx"
-EVIDENCE_DIR = PROJECT_ROOT / "evidence"
+FONT_HEADLINE_PATH = DATA_DIR / "fonts" / "BarlowCondensed-ExtraBold.ttf"
+FONT_TICKER_PATH = DATA_DIR / "fonts" / "BarlowCondensed-Bold.ttf"
 
-# Font paths
-FONT_HEADLINE_PATH = FONTS_DIR / "BarlowCondensed-ExtraBold.ttf"
-FONT_TICKER_PATH = FONTS_DIR / "BarlowCondensed-Bold.ttf"
-
-def get_audio_duration(file_path: str) -> float:
-    """Extract exact audio duration in seconds via ffprobe."""
-    cmd = f'ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "{file_path}"'
-    out = subprocess.check_output(cmd, shell=True).decode().strip()
-    return float(out)
+def get_audio_duration(audio_path: str) -> float:
+    """Extracts exact physical duration of an audio file using ffprobe."""
+    cmd = [
+        "ffprobe", "-v", "error",
+        "-show_entries", "format=duration",
+        "-of", "default=noprint_wrappers=1:nokey=1",
+        str(audio_path)
+    ]
+    try:
+        res = subprocess.check_output(cmd, stderr=subprocess.STDOUT).decode("utf-8").strip()
+        return float(res)
+    except Exception as e:
+        print(f"[Assembler] Warning: ffprobe duration read error on {audio_path}: {e}")
+        return 3.0
 
 def split_headline_text(text: str) -> Tuple[str, str]:
-    """Split a sentence or headline into two balanced, punchy uppercase lines."""
-    clean = text.strip().replace('"', '').replace("'", "").upper()
-    for sep in [': ', ' - ', '? ', '! ']:
-        if sep in clean:
-            parts = clean.split(sep, 1)
-            p0, p1 = parts[0].strip(), parts[1].strip()
-            if p0 and p1:
-                return p0[:38], p1[:38]
+    """Fallback: Splits long headline text into two punchy, balanced broadcast lines."""
+    clean = re.sub(r'[^\w\s\d€$£\-!?]', '', text).strip().upper()
     words = clean.split()
+    if not words:
+        return ("BREAKING NEWS", "SPECIAL REPORT")
     if len(words) <= 4:
-        mid = max(1, len(words) // 2)
-        return ' '.join(words[:mid]), ' '.join(words[mid:])
+        return (" ".join(words[:2]), " ".join(words[2:])) if len(words) > 2 else (" ".join(words), "EXCLUSIVE")
+
     mid = len(words) // 2
-    return ' '.join(words[:mid])[:38], ' '.join(words[mid:])[:38]
+    line1 = " ".join(words[:mid])
+    line2 = " ".join(words[mid:])
+    if len(line1) > 34:
+        line1 = line1[:31] + "..."
+    if len(line2) > 34:
+        line2 = line2[:31] + "..."
+    return (line1, line2)
 
-def determine_badge(scene: Dict[str, Any], idx: int, total_scenes: int) -> Tuple[str, Tuple[int, int, int, int]]:
-    """Determine category badge text and color based on scene content."""
-    if scene.get("badge"):
-        color = scene.get("badge_color", (204, 0, 0, 255) if idx == 0 else (0, 45, 120, 255))
-        return scene["badge"].upper(), color
+def determine_badge(scene_info: Dict[str, Any], idx: int, total_scenes: int) -> Tuple[str, Tuple[int, int, int, int]]:
+    """
+    Derives an authentic, truth-anchored status badge from scene metadata.
+    NEVER defaults scene 0 to 'BREAKING EXCLUSIVE' unless officially confirmed exclusive.
+    """
+    on_screen = scene_info.get("on_screen", {})
+    explicit_badge = on_screen.get("status_badge") or scene_info.get("badge")
+    role = scene_info.get("role", "")
 
-    text_lower = scene.get("text", "").lower()
-    s_type = scene.get("type", "").lower()
+    # 1. Check explicit status_badge from Schema v2.0
+    if explicit_badge:
+        b_upper = str(explicit_badge).upper().strip()
+        if b_upper in ("CONFIRMED", "OFFICIALLY CONFIRMED"):
+            return "OFFICIALLY CONFIRMED", (0, 130, 50, 255)
+        elif b_upper in ("REPORTED", "TRANSFER REPORT", "TRANSFER WATCH"):
+            return "REPORTED", (0, 45, 120, 255)
+        elif b_upper in ("RUMOUR", "TRANSFER RUMOUR"):
+            return "RUMOUR / TALKS", (180, 85, 0, 255)
+        elif b_upper in ("ANALYSIS", "TACTICAL ANALYSIS"):
+            return "TACTICAL ANALYSIS", (50, 50, 90, 255)
+        elif b_upper in ("CONTRACT CLAUSE", "CLAUSE BREAKDOWN"):
+            return "CONTRACT CLAUSE", (120, 20, 140, 255)
+        elif b_upper in ("DEBATE", "FINAL VERDICT", "VERDICT"):
+            return "THE FINAL VERDICT", (204, 0, 0, 255)
+        else:
+            return b_upper, (0, 45, 120, 255)
 
-    if idx == 0 or s_type == "hook":
-        return "BREAKING EXCLUSIVE", (204, 0, 0, 255)
-    elif "debt" in text_lower or "crisis" in text_lower or s_type == "crisis":
-        return "FINANCIAL CRISIS", (204, 0, 0, 255)
-    elif "mourinho" in text_lower:
-        return "SPECIAL ONE REACTION", (0, 45, 120, 255)
-    elif "boehly" in text_lower or "amortization" in text_lower:
-        return "CHELSEA AMORTIZATION", (0, 45, 120, 255)
-    elif "bale" in text_lower and "golf" in text_lower:
-        return "THE WELSH ORDER", (204, 0, 0, 255)
-    elif "board" in text_lower or "takeover" in text_lower or "control" in text_lower:
-        return "BOARDROOM POWER", (0, 45, 120, 255)
-    elif idx == total_scenes - 1 or s_type in ("climax", "verdict"):
+    # 2. Contextual derivation based on role or narration text
+    s_type = str(scene_info.get("type", "")).lower()
+    text_lower = (scene_info.get("narration") or scene_info.get("text", "")).lower()
+
+    if idx == total_scenes - 1 or s_type in ("climax", "verdict") or role == "debate":
         return "THE FINAL VERDICT", (204, 0, 0, 255)
+    elif "clause" in text_lower or "buy-back" in text_lower or "contract" in text_lower:
+        return "CONTRACT CLAUSE", (120, 20, 140, 255)
+    elif "tactics" in text_lower or "squad" in text_lower or role == "tactical_fit":
+        return "TACTICAL ANALYSIS", (50, 50, 90, 255)
+    elif "rumour" in text_lower or "speculation" in text_lower:
+        return "RUMOUR / TALKS", (180, 85, 0, 255)
     else:
-        return "TRANSFER REPORT", (0, 45, 120, 255)
+        return "REPORTED", (0, 45, 120, 255)
 
 def create_scene_base_canvas(img_path: str, target_w: int = 1080, target_h: int = 1920) -> Image.Image:
     """
-    Format image to 1080x1920:
-    If wide landscape, apply broadcast pillar-box with smooth blurred background.
-    If tall/portrait, crop and center cleanly.
+    Format visual asset to 1080x1920:
+    - If already 1080x1920 (e.g. explainer graphic): return directly.
+    - If wide landscape: apply broadcast pillar-box with smooth blurred background and sharp bordered window.
+    - If tall/portrait: center crop cleanly.
     """
     orig = Image.open(img_path).convert("RGB")
     ow, oh = orig.size
-    aspect = ow / oh
 
+    # Check if image is already formatted to target canvas
+    if ow == target_w and oh == target_h:
+        return orig.convert("RGBA")
+
+    aspect = ow / oh
     canvas = Image.new("RGBA", (target_w, target_h), (8, 12, 24, 255))
 
     if aspect > 1.25:
@@ -123,7 +150,7 @@ def create_scene_base_canvas(img_path: str, target_w: int = 1080, target_h: int 
         draw_b.rectangle([0, 0, fg_w + 15, fg_h + 15], outline=(100, 145, 210), width=3)
         fg_bordered.paste(fg.convert("RGBA"), (8, 8))
 
-        fg_y = 420
+        fg_y = 380
         canvas.paste(fg_bordered, ((target_w - fg_w - 16) // 2, fg_y))
     else:
         # Vertical or square image: center crop
@@ -149,51 +176,66 @@ def create_scene_hud(
     target_w: int = 1080,
     target_h: int = 1920
 ) -> Image.Image:
-    """Renders pixel-perfect 90s Sports Broadcast HUD."""
+    """Renders pixel-perfect 90s Sports Broadcast HUD with authentic typography and badges."""
     hud = Image.new("RGBA", (target_w, target_h), (0, 0, 0, 0))
     draw = ImageDraw.Draw(hud)
 
-    # 1. Top-Left: User Bezel TV Bug (Width 360, Height 147)
+    # 1. Top-Left: User Bezel TV Bug
     hud.paste(tv_bug_img, (48, 65), mask=tv_bug_img.split()[-1])
 
-    # 2. Top-Right: Sleek, minimalist glowing red ● LIVE capsule (Centered)
-    pill_x0, pill_y0, pill_w, pill_h = 920, 85, 110, 42
-    pill_x1, pill_y1 = pill_x0 + pill_w, pill_y0 + pill_h
+    # 2. Top-Right: Truthful kicker capsule (Never fake ● LIVE)
+    on_screen = scene_info.get("on_screen", {})
+    kicker_raw = on_screen.get("kicker") or scene_info.get("kicker") or "NEWS UPDATE"
+    kicker_text = f"● {kicker_raw.upper().strip()}"
+
+    bbox_live = font_live.getbbox(kicker_text)
+    lw = bbox_live[2] - bbox_live[0]
+    lh = bbox_live[3] - bbox_live[1]
+
+    pill_w = max(130, lw + 32)
+    pill_h = 42
+    pill_x1 = target_w - 60
+    pill_x0 = pill_x1 - pill_w
+    pill_y0 = 85
+    pill_y1 = pill_y0 + pill_h
+
+    # Kicker styling: rich crimson red with high-visibility outline
     draw.rounded_rectangle([pill_x0, pill_y0, pill_x1, pill_y1], radius=8, fill=(215, 10, 10, 240))
     draw.rounded_rectangle([pill_x0, pill_y0, pill_x1, pill_y1], radius=8, outline=(255, 120, 120, 200), width=1)
 
-    bbox_live = font_live.getbbox("● LIVE")
-    lw = bbox_live[2] - bbox_live[0]
-    lh = bbox_live[3] - bbox_live[1]
     live_tx = pill_x0 + (pill_w - lw) // 2
     live_ty = pill_y0 + (pill_h - lh) // 2 - bbox_live[1]
-    draw.text((live_tx, live_ty), "● LIVE", fill=(255, 255, 255), font=font_live)
+    draw.text((live_tx, live_ty), kicker_text, fill=(255, 255, 255), font=font_live)
 
     # 3. Lower Third in Barlow Condensed ExtraBold
     badge_text, badge_color = determine_badge(scene_info, idx, total_scenes)
 
     # Category Badge
-    draw.rounded_rectangle([60, 1375, 430, 1435], radius=6, fill=badge_color)
+    draw.rounded_rectangle([60, 1375, 460, 1435], radius=6, fill=badge_color)
     bbox_b = font_badge.getbbox(badge_text)
     bh = bbox_b[3] - bbox_b[1]
     b_ty = 1375 + (60 - bh) // 2 - bbox_b[1]
     draw.text((84, b_ty), badge_text, fill=(255, 255, 255), font=font_badge)
 
     # Gold separator line
-    draw.rectangle([60, 1435, 430, 1440], fill=(255, 215, 0, 255))
+    draw.rectangle([60, 1435, 460, 1440], fill=(255, 215, 0, 255))
 
     # Main News Box: Deep Royal Navy
     draw.rectangle([60, 1440, 1020, 1640], fill=(0, 22, 60, 248))
     draw.rectangle([60, 1440, 74, 1640], fill=(255, 215, 0, 255))  # Left gold accent bar
 
     # Headlines: Line 1 (White) & Line 2 (Gold)
-    h1 = scene_info.get("h1")
-    h2 = scene_info.get("h2")
+    h1 = on_screen.get("headline") or scene_info.get("h1")
+    h2 = on_screen.get("subheadline") or scene_info.get("h2")
     if not h1 or not h2:
-        h1, h2 = split_headline_text(scene_info.get("text", "BREAKING FOOTBALL NEWS"))
+        h1, h2 = split_headline_text(scene_info.get("narration") or scene_info.get("text", "BREAKING FOOTBALL NEWS"))
 
-    draw.text((100, 1466), h1, fill=(255, 255, 255), font=font_headline)
-    draw.text((100, 1538), h2, fill=(255, 215, 0), font=font_headline)
+    # Render headlines with slight shadow for readability
+    draw.text((102, 1468), h1.upper(), fill=(0, 0, 0, 180), font=font_headline)
+    draw.text((100, 1466), h1.upper(), fill=(255, 255, 255), font=font_headline)
+
+    draw.text((102, 1540), h2.upper(), fill=(0, 0, 0, 180), font=font_headline)
+    draw.text((100, 1538), h2.upper(), fill=(255, 215, 0), font=font_headline)
 
     # 4. Bottom 3D Beveled Ticker Base Plate
     hud.paste(ticker_base_img, (0, 1730), mask=ticker_base_img.split()[-1])
@@ -277,13 +319,13 @@ def create_outro_plate(
     return plate
 
 def generate_outro_audio(temp_dir: Path, voice_name: str = "en-GB-RyanNeural") -> Tuple[Path, float]:
-    """Synthesizes the official broadcast outro voiceover with high-energy broadcast punch."""
+    """Synthesizes the official broadcast outro voiceover with rapid punch (clamped to ~1.0-1.2s)."""
     import edge_tts
     out_mp3 = temp_dir / "outro_vo.mp3"
-    text = "This is Football in 30 Seconds. Follow for daily breaking news."
+    text = "Follow Football in Thirty Seconds for daily breaking news."
 
     async def _synth():
-        comm = edge_tts.Communicate(text, voice=voice_name, rate="+18%", pitch="+3Hz")
+        comm = edge_tts.Communicate(text, voice=voice_name, rate="+25%", pitch="+3Hz")
         await comm.save(str(out_mp3))
 
     try:
@@ -293,8 +335,9 @@ def generate_outro_audio(temp_dir: Path, voice_name: str = "en-GB-RyanNeural") -
         ps_cmd = (
             f"Add-Type -AssemblyName System.Speech; "
             f"$s = New-Object System.Speech.Synthesis.SpeechSynthesizer; "
+            f"$s.Rate = 2; "
             f"$s.SetOutputToWaveFile('{str(out_mp3).replace(chr(92), '/')}'); "
-            f"$s.Speak('This is Football in thirty seconds. Follow for daily breaking news.'); "
+            f"$s.Speak('Follow Football in thirty seconds for daily breaking news.'); "
             f"$s.Dispose();"
         )
         subprocess.run(["powershell", "-NoProfile", "-Command", ps_cmd], check=True, capture_output=True)
@@ -302,16 +345,96 @@ def generate_outro_audio(temp_dir: Path, voice_name: str = "en-GB-RyanNeural") -
     dur = get_audio_duration(str(out_mp3))
     return out_mp3, dur
 
-def build_ticker_text(headline: str, scenes: List[Dict[str, Any]]) -> str:
-    """Build clean rolling news ticker text with sports bullets ●, zero ***, zero obsolete dates."""
-    bullets = [f"FOOTBALL PLUS BREAKING  ●  {headline.upper()}"]
-    for s in scenes[:4]:
-        t = s.get("text", "").replace('"', '').replace("'", "").strip().upper()
-        if t:
-            bullets.append(t)
+def build_ticker_text(headline: str, scenes: List[Dict[str, Any]], credit_source_name: str = "Football Plus") -> str:
+    """Build clean rolling news ticker text with concise, factual bullets ● (never whole narration dumps)."""
+    bullets = [
+        f"FOOTBALL UPDATE  ●  {headline.upper()}",
+        f"SOURCE: {credit_source_name.upper()}  ●  STATUS: REPORTED"
+    ]
+    for s in scenes:
+        on_screen = s.get("on_screen", {})
+        h = on_screen.get("headline")
+        sub = on_screen.get("subheadline")
+        callout = on_screen.get("data_callout")
+        if callout:
+            bullets.append(f"{callout.upper()}")
+        elif h and len(h) <= 45:
+            bullets.append(h.upper())
+        elif sub and len(sub) <= 45:
+            bullets.append(sub.upper())
+
     bullets.append("THIS IS FOOTBALL IN 30 SECONDS")
     bullets.append("FOLLOW FOR DAILY BREAKING NEWS  ●")
     return "  ●  ".join(bullets)
+
+def generate_subtitles_srt(scenes: List[Dict[str, Any]], srt_out_path: Path) -> Path:
+    """
+    Generates timed .srt subtitles for the entire video from scene narration and exact audio durations.
+    Splits scene sentences into natural 3-5 word rhythmic phrases with accurate start/end timestamps.
+    """
+    entries = []
+    global_time = 0.0
+    sub_index = 1
+
+    for sc in scenes:
+        narration = (sc.get("narration") or sc.get("text", "")).strip()
+        dur = float(sc.get("audio_duration_sec") or sc.get("duration", 3.0))
+        if not narration or dur <= 0:
+            global_time += dur
+            continue
+
+        words = narration.split()
+        if not words:
+            global_time += dur
+            continue
+
+        # Group words into 3 to 5 words per subtitle card
+        chunks = []
+        cur_chunk = []
+        for w in words:
+            cur_chunk.append(w)
+            if len(cur_chunk) >= 4 or w.endswith((".", "!", "?", ",", ";", ":")):
+                chunks.append(" ".join(cur_chunk))
+                cur_chunk = []
+        if cur_chunk:
+            if chunks and len(cur_chunk) <= 2:
+                chunks[-1] += " " + " ".join(cur_chunk)
+            else:
+                chunks.append(" ".join(cur_chunk))
+
+        # Distribute scene duration across chunks based on character length
+        total_chars = sum(len(c) for c in chunks)
+        chunk_start = global_time
+
+        for c_idx, c in enumerate(chunks):
+            weight = len(c) / max(1, total_chars)
+            c_dur = dur * weight
+            c_end = chunk_start + c_dur
+            if c_idx == len(chunks) - 1:
+                c_end = global_time + dur
+
+            def fmt_time(t_sec: float) -> str:
+                hours = int(t_sec // 3600)
+                minutes = int((t_sec % 3600) // 60)
+                seconds = int(t_sec % 60)
+                millis = int(round((t_sec - int(t_sec)) * 1000))
+                return f"{hours:02d}:{minutes:02d}:{seconds:02d},{millis:03d}"
+
+            start_str = fmt_time(chunk_start)
+            end_str = fmt_time(c_end)
+
+            clean_phrase = c.upper().replace('"', '').strip()
+            entries.append(f"{sub_index}\n{start_str} --> {end_str}\n{clean_phrase}\n")
+            sub_index += 1
+            chunk_start = c_end
+
+        global_time += dur
+
+    srt_out_path.parent.mkdir(parents=True, exist_ok=True)
+    with open(srt_out_path, "w", encoding="utf-8") as f:
+        f.write("\n".join(entries))
+
+    return srt_out_path
 
 def assemble_video_ffmpeg(
     scenes: List[Dict[str, Any]],
@@ -327,11 +450,13 @@ def assemble_video_ffmpeg(
     """
     Assembles a broadcast-grade 90s sports TV video Short with:
     - User's beveled transparent channel logo
-    - Minimalist glowing red ● LIVE capsule
+    - Minimalist glowing red ● KICKER capsule (Never fake ● LIVE)
     - Two-tier lower third breaking news box with Barlow Condensed ExtraBold typography
-    - 3D embossed rolling ticker tape
-    - CRT scanlines, chromatic aberration, and TV noise
-    - Sub-frame audio-visual synchronization with zero cutoff
+    - 3D embossed rolling ticker tape with concise bullets
+    - Timed burned-in subtitles (.srt) positioned in safe vertical zone
+    - CRT scanlines, chromatic aberration, and authentic TV analog grading
+    - Frame-locked audio-visual synchronization with zero boundary drift
+    - Mastered audio at -14 LUFS, -1.0 dBTP true-peak ceiling, 48 kHz stereo (zero pink noise hiss)
     """
     with ResourceTracker("Video_Assembly_90s_Broadcast"):
         output_mp4_path = Path(output_mp4_path)
@@ -350,16 +475,20 @@ def assemble_video_ffmpeg(
 
         tv_bug_img = Image.open(BRANDING_DIR / "user_bezel_tv_bug.png").convert("RGBA") if (BRANDING_DIR / "user_bezel_tv_bug.png").exists() else None
         if tv_bug_img is None:
-            # Fallback
             tv_bug_img = Image.open(BRANDING_DIR / "tv_bug_football_plus_v3.png").convert("RGBA")
 
         logo_master_img = Image.open(BRANDING_DIR / "user_bezel_logo_master.png").convert("RGBA") if (BRANDING_DIR / "user_bezel_logo_master.png").exists() else tv_bug_img
         ticker_base_img = Image.open(BRANDING_DIR / "ticker_base_3d.png").convert("RGBA")
         tab_img_path = BRANDING_DIR / "headlines_tab_3d.png"
         crt_overlay_path = RETRO_DIR / "crt_scanlines.png"
+        if not crt_overlay_path.exists():
+            for alt_dir in [DATA_DIR / "retro_90s", DATA_DIR / "retro_effects"]:
+                if (alt_dir / "crt_scanlines.png").exists():
+                    crt_overlay_path = alt_dir / "crt_scanlines.png"
+                    break
         whoosh_sfx_path = SFX_DIR / "meme_whoosh_swoosh.wav"
 
-        # 2. Extract Audio Durations & Prepare Scene Still Plates
+        # 2. Extract Exact Audio Durations & Prepare Scene Still Plates
         render_scenes = [dict(s) for s in scenes]
         total_scenes_count = len(render_scenes)
 
@@ -367,7 +496,7 @@ def assemble_video_ffmpeg(
         audio_clip_paths = []
         audio_durations = []
 
-        headline = story_headline or render_scenes[0].get("text", "Football Breaking News")
+        headline = story_headline or render_scenes[0].get("narration") or render_scenes[0].get("text", "Football Breaking News")
 
         for idx, sc in enumerate(render_scenes):
             s_id = sc.get("scene_id", idx + 1)
@@ -379,22 +508,27 @@ def assemble_video_ffmpeg(
             if not audio_path or not os.path.exists(audio_path):
                 raise FileNotFoundError(f"Missing audio path for scene {s_id}: {audio_path}")
 
-            # Audio duration
-            a_dur = sc.get("audio_duration_sec") or get_audio_duration(audio_path)
+            # Audio duration: enforce exact physical duration of the audio file to avoid drift
+            a_dur = get_audio_duration(audio_path)
+            sc["audio_duration_sec"] = a_dur
             audio_durations.append(a_dur)
             audio_clip_paths.append(audio_path)
 
-            # Frame budget
+            # Frame budget strictly locked to audio duration
             frame_count = round(a_dur * fps)
 
-            # Motion pattern:
-            # Scene 2 (crisis) -> push_in
-            # Second to last scene -> lateral_pan
-            # Others -> static (crisp, zero camera jitter)
-            if idx == 1:
+            # Motion pattern: read from schema v2.0 or context
+            motion_data = sc.get("motion", {})
+            m_type = motion_data.get("type", "").lower() if isinstance(motion_data, dict) else str(motion_data).lower()
+
+            if "push" in m_type or "zoom_in" in m_type or idx == 1:
                 motion = "push_in"
-            elif idx == total_scenes_count - 1 and total_scenes_count > 3:
+            elif "pan" in m_type or (idx == total_scenes_count - 1 and total_scenes_count > 3):
                 motion = "lateral_pan"
+            elif "pull" in m_type or "zoom_out" in m_type:
+                motion = "pull_out"
+            elif "ease" in m_type:
+                motion = "subtle_ease"
             else:
                 motion = "static"
 
@@ -417,14 +551,14 @@ def assemble_video_ffmpeg(
             })
             print(f"[Assembler] Prepared Scene {s_id}: {frame_count} frames ({a_dur:.3f}s, motion: {motion})")
 
-        # 3. Append Outro Scene (if requested)
+        # 3. Append Outro Scene (crisp 1.0–1.2s total)
         if include_logo_outro:
             outro_mp3, outro_a_dur = generate_outro_audio(temp_dir)
             audio_clip_paths.append(str(outro_mp3))
             audio_durations.append(outro_a_dur)
 
-            # Tail breathing room: +0.60s so speech finishes cleanly before video cut
-            outro_v_dur = outro_a_dur + 0.60
+            # Clamp outro duration so video branding plate is tightly 1.0–1.3s
+            outro_v_dur = min(outro_a_dur + 0.20, 1.35)
             outro_frames = round(outro_v_dur * fps)
 
             outro_still = create_outro_plate(logo_master_img, ticker_base_img, font_follow, font_sub, width, height)
@@ -454,7 +588,10 @@ def assemble_video_ffmpeg(
             still_p = c["still_path"]
 
             if motion == "push_in":
-                vf = f"zoompan=z='min(zoom+0.0003,1.04)':d={frames}:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':s={width}x{height}:fps={fps}"
+                vf = f"zoompan=z='min(zoom+0.0004,1.05)':d={frames}:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':s={width}x{height}:fps={fps}"
+                cmd = f'ffmpeg -y -i "{still_p}" -vf "{vf}" -frames:v {frames} -c:v libx264 -pix_fmt yuv420p -preset fast "{c_out}"'
+            elif motion == "pull_out":
+                vf = f"zoompan=z='max(1.05-on*0.0004,1.0)':d={frames}:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':s={width}x{height}:fps={fps}"
                 cmd = f'ffmpeg -y -i "{still_p}" -vf "{vf}" -frames:v {frames} -c:v libx264 -pix_fmt yuv420p -preset fast "{c_out}"'
             elif motion == "lateral_pan":
                 vf = f"zoompan=z=1.03:x='min(on*0.25,30)':y='ih/2-(ih/zoom/2)':d={frames}:s={width}x{height}:fps={fps}"
@@ -479,7 +616,7 @@ def assemble_video_ffmpeg(
         cmd_concat = f'ffmpeg -y -f concat -safe 0 -i "{concat_txt}" -c copy "{concat_raw_video}"'
         subprocess.check_call(cmd_concat, shell=True)
 
-        # 6. Concatenate Audio & Mix Outro Whoosh
+        # 6. Concatenate Audio & Master to -14 LUFS, True Peak -1.0 dBTP, 48kHz Stereo
         audio_concat_txt = temp_dir / "audio_concat.txt"
         with open(audio_concat_txt, "w", encoding="utf-8") as f:
             for ap in audio_clip_paths:
@@ -489,35 +626,57 @@ def assemble_video_ffmpeg(
         cmd_a_concat = f'ffmpeg -y -f concat -safe 0 -i "{audio_concat_txt}" -c:a pcm_s16le "{raw_vo_wav}"'
         subprocess.check_call(cmd_a_concat, shell=True)
 
-        # Mix with outro whoosh and pad to exact video duration
-        mixed_audio = temp_dir / "master_audio_mixed.wav"
+        # Mix with outro whoosh (NO pink noise hiss)
+        mixed_audio_raw = temp_dir / "master_audio_raw_mix.wav"
         whoosh_delay_ms = round(sum(audio_durations[:total_scenes_count]) * 1000)
 
-        cmd_audio_mix = (
-            f'ffmpeg -y -i "{raw_vo_wav}" -i "{whoosh_sfx_path}" -f lavfi -i "anoisesrc=d={total_video_dur+1.0}:c=pink:r=44100:a=0.005" '
-            f'-filter_complex "'
-            f'[0:a]highpass=f=120,volume=1.25,apad=whole_dur={total_video_dur:.3f}[vo]; '
-            f'[1:a]adelay={whoosh_delay_ms}|{whoosh_delay_ms},volume=0.95[sfx]; '
-            f'[2:a]highpass=f=400,lowpass=f=3000,volume=0.15[hiss]; '
-            f'[vo][sfx][hiss]amix=inputs=3:duration=first:weights=1.0 0.90 0.12[aout]" '
-            f'-map "[aout]" -c:a pcm_s16le "{mixed_audio}"'
-        )
+        if whoosh_sfx_path.exists():
+            cmd_audio_mix = (
+                f'ffmpeg -y -i "{raw_vo_wav}" -i "{whoosh_sfx_path}" '
+                f'-filter_complex "'
+                f'[0:a]highpass=f=100,volume=1.1,apad=whole_dur={total_video_dur:.3f}[vo]; '
+                f'[1:a]adelay={whoosh_delay_ms}|{whoosh_delay_ms},volume=0.75[sfx]; '
+                f'[vo][sfx]amix=inputs=2:duration=first:weights=1.0 0.8[aout]" '
+                f'-map "[aout]" -c:a pcm_s16le "{mixed_audio_raw}"'
+            )
+        else:
+            cmd_audio_mix = f'ffmpeg -y -i "{raw_vo_wav}" -af "apad=whole_dur={total_video_dur:.3f}" -c:a pcm_s16le "{mixed_audio_raw}"'
         subprocess.check_call(cmd_audio_mix, shell=True)
 
-        # 7. Generate Rolling Ticker Tape
-        ticker_text = build_ticker_text(headline, render_scenes)
+        # Master with loudnorm: target -14 LUFS, true peak -1.0 dBTP, 48kHz stereo
+        mixed_audio = temp_dir / "master_audio_mastered.wav"
+        cmd_loudnorm = (
+            f'ffmpeg -y -i "{mixed_audio_raw}" '
+            f'-af "loudnorm=I=-14:TP=-1.0:LRA=7,aformat=sample_rates=48000:channel_layouts=stereo" '
+            f'-c:a pcm_s16le "{mixed_audio}"'
+        )
+        subprocess.check_call(cmd_loudnorm, shell=True)
+
+        # 7. Subtitles Generation (.srt)
+        srt_file = temp_dir / f"{output_mp4_path.stem}.srt"
+        generate_subtitles_srt(render_scenes, srt_file)
+
+        # Copy SRT to output directory alongside MP4
+        output_srt_path = output_mp4_path.with_suffix(".srt")
+        import shutil
+        shutil.copy2(srt_file, output_srt_path)
+
+        # 8. Generate Rolling Ticker Tape
+        ticker_text = build_ticker_text(headline, render_scenes, credit_source_name=credit_source_name)
         ticker_file = temp_dir / "ticker_tape.txt"
         with open(ticker_file, "w", encoding="utf-8") as f:
             f.write(ticker_text)
 
         font_ticker_esc = str(FONT_TICKER_PATH).replace("\\", "/").replace(":", "\\:")
         ticker_file_esc = str(ticker_file).replace("\\", "/").replace(":", "\\:")
+        srt_esc = str(srt_file).replace("\\", "/").replace(":", "\\:")
 
-        # 8. Master Assembly: CRT Scanlines, Chromatic Aberration, TV Noise & Rolling Ticker
+        # 9. Master Assembly: CRT Scanlines, Chromatic Aberration, TV Noise, Rolling Ticker & Burned-in Subtitles
         cmd_master = (
             f'ffmpeg -y -i "{concat_raw_video}" -i "{tab_img_path}" -i "{crt_overlay_path}" -i "{mixed_audio}" '
             f'-filter_complex "'
-            f'[0:v]drawtext=fontfile=\'{font_ticker_esc}\':textfile=\'{ticker_file_esc}\':fontcolor=0xFFD700:fontsize=38:x=\'w-t*195\':y=1766[v_tick]; '
+            f'[0:v]subtitles=\'{srt_esc}\':force_style=\'FontName=BarlowCondensed-ExtraBold,FontSize=26,PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,BorderStyle=3,MarginV=610,Alignment=2\'[v_sub]; '
+            f'[v_sub]drawtext=fontfile=\'{font_ticker_esc}\':textfile=\'{ticker_file_esc}\':fontcolor=0xFFD700:fontsize=38:x=\'w-t*195\':y=1766[v_tick]; '
             f'[v_tick][1:v]overlay=0:1730[v_masked]; '
             f'[v_masked][2:v]overlay=0:0[v_crt]; '
             f'[v_crt]chromashift=cbh=1.8:crh=-1.8,colorbalance=rs=0.04:gs=0.02:bs=-0.02,noise=alls=3:allf=t+u[v_final]" '
@@ -530,9 +689,10 @@ def assemble_video_ffmpeg(
         final_dur = get_audio_duration(str(output_mp4_path))
         final_size = os.path.getsize(output_mp4_path)
         print(f"[Assembler] <<< Master 90s Broadcast Render Complete!")
-        print(f"[Assembler] Output: {output_mp4_path} ({final_dur:.2f}s, {final_size / (1024*1024):.2f} MB)")
+        print(f"[Assembler] Output MP4: {output_mp4_path} ({final_dur:.2f}s, {final_size / (1024*1024):.2f} MB)")
+        print(f"[Assembler] Output SRT: {output_srt_path}")
 
         return output_mp4_path
 
 if __name__ == "__main__":
-    print("Testing 90s Retro Sports Broadcast Assembler module...")
+    print("Testing 90s Retro Sports Broadcast Assembler v2.0...")

@@ -220,6 +220,16 @@ class PipelineOrchestrator:
                         else:
                             article_text = headline
 
+                # Guard: Insufficient evidence check (min 35 words required)
+                word_count = len(article_text.split()) if article_text else 0
+                if word_count < 35:
+                    err_msg = f"Insufficient evidence for topic '{headline}': article text has only {word_count} words (< 35 required). Generation stopped."
+                    print(f"[Orchestrator] ERROR: {err_msg}")
+                    if bot_client:
+                        bot_client.send_message(f"⚠️ <b>Generation halted:</b> Insufficient article evidence ({word_count} words). Please select a story with full reporting.")
+                    self.job.update_status("FAILED", error_message=err_msg)
+                    return
+
                 # Upgrade 4: Reddit Outrage Harvester - weaponize fan debates
                 from stages.reddit_harvester import harvest_reddit_outrage
                 fan_outrage = harvest_reddit_outrage(headline)
@@ -261,9 +271,9 @@ class PipelineOrchestrator:
                             self._ai_rewrite_count = rewrite_counter
                             print(f"[Orchestrator] User requested AI Rewrite #{rewrite_counter}...")
                             ai_directive = (
-                                f"Rewrite this script completely from a fresh alternate tactical angle (revision #{rewrite_counter}). "
-                                "Keep strictly 7 scenes, 8 to 14 words per scene, inject savage tactical banter in the middle, "
-                                "and end scene 7 on: 'Tell us in the comments: yes or no.'"
+                                f"Rewrite this script from a fresh alternate tactical angle (revision #{rewrite_counter}). "
+                                "Plan 5 to 8 dynamic scenes matching narrative beats. Provide deep tactical and squad analysis grounded in evidence, "
+                                "and end on a provocative YES/NO debate question."
                             )
                             current_script = generate_script_llm(
                                 title=headline,
@@ -344,12 +354,13 @@ class PipelineOrchestrator:
                 # Reset visual registries for clean cycle
                 reset_image_registry()
 
-                # Sourcing visual images per scene with candidate auditing
+                # Sourcing visual images per scene with candidate auditing & metadata preservation
                 sourced_scenes = []
                 for idx, s in enumerate(scenes_list):
                     s_id = s.get("scene_id", idx + 1)
                     scene_pct = 15 + int(((idx + 1) / total_scenes) * 45)
-                    ent = s.get("search_entity") or "Match Stills"
+                    scene_text = s.get("narration") or s.get("text", "")
+                    ent = s.get("visual", {}).get("primary_subject") or s.get("search_entity") or "Match Stills"
                     self.update_progress(
                         bot_client,
                         caller_chat_id,
@@ -360,19 +371,25 @@ class PipelineOrchestrator:
                     img_entry = source_scene_image(
                         scene_id=s_id,
                         headline=topic["headline"],
-                        scene_text=s["text"],
-                        visual_prompt=s.get("visual_prompt", "football stadium"),
+                        scene_text=scene_text,
+                        visual_prompt=s.get("visual", {}).get("action_or_context") or s.get("visual_prompt", "football stadium"),
                         source_name=topic["source"],
                         backend_name="editorial",
-                        search_entity=s.get("search_entity"),
-                        search_context=s.get("search_context")
+                        search_entity=ent,
+                        search_context=s.get("visual", {}).get("action_or_context") or s.get("search_context"),
+                        scene_data=s
                     )
-                    sourced_scenes.append({
+                    
+                    # Safe copy/merge to preserve all Schema v2.0 fields
+                    sc_merged = dict(s)
+                    sc_merged.update({
                         "scene_id": s_id,
-                        "text": s["text"],
+                        "text": scene_text,
+                        "narration": scene_text,
                         "image_path": img_entry["chosen_image"],
-                        "visual_prompt": s.get("visual_prompt")
+                        "asset_manifest": img_entry.get("asset_manifest")
                     })
+                    sourced_scenes.append(sc_merged)
 
                 # Synthesize Audio via expressive neural British commentator voice
                 self.update_progress(bot_client, caller_chat_id, 65, "British Voiceover Narration", "Synthesizing expressive British anchor audio & broadcast mastering...")
@@ -383,9 +400,13 @@ class PipelineOrchestrator:
                     audio_scenes = synthesize_scenes_sapi(sourced_scenes)
 
                 for idx, ascene in enumerate(audio_scenes):
-                    sourced_scenes[idx]["audio_path"] = ascene["audio_path"]
-                    sourced_scenes[idx]["audio_duration_sec"] = ascene["audio_duration_sec"]
-                    sourced_scenes[idx]["slide_duration_sec"] = ascene["slide_duration_sec"]
+                    sourced_scenes[idx].update({
+                        "audio_path": ascene["audio_path"],
+                        "audio_duration_sec": ascene["audio_duration_sec"],
+                        "slide_duration_sec": ascene["slide_duration_sec"],
+                        "tts_engine": ascene.get("engine", "EdgeTTS-Thomas"),
+                        "tts_voice": ascene.get("voice", "en-GB-ThomasNeural")
+                    })
 
                 self.job.update_status("ASSETS_SOURCED", assets_data=sourced_scenes)
                 status = "ASSETS_SOURCED"
@@ -420,7 +441,7 @@ class PipelineOrchestrator:
                 from stages.verify_video import inspect_video
 
                 see_back_report = inspect_and_heal_video(out_video, scenes=assets)
-                inspect_video(out_video)
+                inspect_video(out_video, scenes=assets)
 
                 self.update_progress(bot_client, caller_chat_id, 100, "Rendering Complete", "Packaging video with viral titles and description...")
 

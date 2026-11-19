@@ -63,6 +63,9 @@ data/audio/*
 !data/audio/.gitkeep
 data/images/*
 !data/images/.gitkeep
+data/inspect_frames/
+data/storyboard_frames/
+data/temp_assembly/
 temp/
 output/
 scratch/

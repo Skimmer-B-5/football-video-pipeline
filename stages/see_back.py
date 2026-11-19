@@ -140,7 +140,7 @@ def inspect_and_heal_video(
 
     # Overall verdict
     total_shots = len(scenes)
-    rapid_cuts_passed = (total_shots >= 12)
+    rapid_cuts_passed = (4 <= total_shots <= 14)
     overall_passed = (len(issues_detected) == 0) and av_sync_ok
 
     healed_actions = []

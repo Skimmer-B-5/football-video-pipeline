@@ -22,10 +22,26 @@ HEADERS_BASE = {
 }
 
 def get_groq_keys() -> List[str]:
-    """Retrieve primary and backup Groq keys strictly from environment."""
+    """Retrieve primary and backup Groq keys strictly from environment or .env file."""
     keys = []
     k1 = os.environ.get("GROQ_API_KEY", "").strip()
     k2 = os.environ.get("GROQ_API_KEY_BACKUP", "").strip()
+
+    if not k1 or not k2:
+        env_path = PROJECT_ROOT / ".env"
+        if env_path.exists():
+            with open(env_path, "r", encoding="utf-8") as f:
+                for line in f:
+                    line = line.strip()
+                    if line.startswith("GROQ_API_KEY="):
+                        val = line.split("=", 1)[1].strip().strip('"').strip("'")
+                        if val and not k1:
+                            k1 = val
+                    elif line.startswith("GROQ_API_KEY_BACKUP="):
+                        val = line.split("=", 1)[1].strip().strip('"').strip("'")
+                        if val and not k2:
+                            k2 = val
+
     if k1:
         keys.append(k1)
     if k2 and k2 != k1:
