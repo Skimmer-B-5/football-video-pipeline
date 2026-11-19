@@ -40,20 +40,20 @@ def run_e2e_pipeline_verification():
     output_report = output_dir / "master_engine_test_qa.json"
     output_storyboard = output_dir / "master_engine_test_storyboard.jpg"
 
-    # Define 4 authentic scenes matching existing test media
+    # Define 5 authentic FIFA Presidency scenes matching existing media
     scenes = [
         {
             "scene_id": "s01",
             "role": "hook",
             "image_path": str(img_dir / "scene_s01.png"),
             "audio_path": str(audio_dir / "scene_s01.wav"),
-            "narration": "Reports in Italy claim AC Milan have made formal enquiries for Real Madrid forward Endrick.",
+            "narration": "The FIFA presidency race just got real. Three candidates have officially confirmed their bids for the 2027 election.",
             "on_screen": {
-                "headline": "MILAN LAUNCH BID FOR ENDRICK",
-                "subheadline": "EXCLUSIVE: ROSSONERI OPEN TALKS OVER RECORD LOAN",
-                "kicker": "TRANSFER WATCH",
+                "headline": "FIFA RACE: 3 CANDIDATES IN",
+                "subheadline": "ELECTION SET FOR MARCH 2027",
+                "kicker": "BREAKING NEWS",
                 "status_badge": "REPORTED",
-                "source_credit": "CORRIERE DELLO SPORT"
+                "source_credit": "BESOCCER"
             },
             "motion": "push_in"
         },
@@ -62,13 +62,13 @@ def run_e2e_pipeline_verification():
             "role": "context",
             "image_path": str(img_dir / "scene_s02.png"),
             "audio_path": str(audio_dir / "scene_s02.wav"),
-            "narration": "The Brazilian prodigy has found playing time hard to come by under Carlo Ancelotti this season.",
+            "narration": "Reports confirm that Gianni Infantino is facing two serious challengers: France's Philippe Diallo and Japan's Tashima.",
             "on_screen": {
-                "headline": "LIMITED MINUTES AT BERNABEU",
-                "subheadline": "TEENAGER STRUGGLING FOR REGULAR STARTING ROLE",
-                "kicker": "SQUAD CONTEXT",
-                "status_badge": "ANALYSIS",
-                "source_credit": "MARCA"
+                "headline": "INFANTINO VS DIALLO & TASHIMA",
+                "subheadline": "VEGA DROPS OUT OF RACE",
+                "kicker": "THE CANDIDATES",
+                "status_badge": "REPORTED",
+                "source_credit": "BESOCCER"
             },
             "motion": "pull_out"
         },
@@ -77,30 +77,45 @@ def run_e2e_pipeline_verification():
             "role": "deal_mechanics",
             "image_path": str(img_dir / "scene_s03.png"),
             "audio_path": str(audio_dir / "scene_s03.wav"),
-            "narration": "Real Madrid would strictly require a guaranteed buy-back clause in any permanent loan arrangement.",
+            "narration": "The deadline for candidacies closed at midnight, and the electoral committee is now reviewing their eligibility.",
             "on_screen": {
-                "headline": "MANDATORY BUY-BACK DEMANDED",
-                "subheadline": "MADRID PROTECTING LONG-TERM STAKE IN FORWARD",
-                "kicker": "CONTRACT CLAUSE",
-                "status_badge": "CONTRACT CLAUSE",
-                "source_credit": "CADENA SER"
+                "headline": "COMMITTEE REVIEW UNDERWAY",
+                "subheadline": "ELIGIBILITY CHECK IN PROGRESS",
+                "kicker": "THE PROCESS",
+                "status_badge": "REPORTED",
+                "source_credit": "BESOCCER"
             },
             "motion": "lateral_pan"
         },
         {
             "scene_id": "s04",
-            "role": "debate",
+            "role": "risk_obstacle",
             "image_path": str(img_dir / "scene_s04.png"),
             "audio_path": str(audio_dir / "scene_s04.wav"),
-            "narration": "Is San Siro the right move for his development? Let us know below.",
+            "narration": "Infantino needs 106 votes to stay in power. But with the FFE controversy still fresh, can he hold the majority?",
             "on_screen": {
-                "headline": "WOULD YOU LET ENDRICK LEAVE?",
-                "subheadline": "HAVE YOUR SAY IN THE COMMENTS BELOW",
-                "kicker": "FINAL VERDICT",
-                "status_badge": "THE FINAL VERDICT",
-                "source_credit": "30 FOOTBALL PLUS"
+                "headline": "106 VOTES NEEDED TO WIN",
+                "subheadline": "FFE BACKLASH LOOMS LARGE",
+                "kicker": "THE STAKES",
+                "status_badge": "ANALYSIS",
+                "source_credit": "BESOCCER"
             },
             "motion": "subtle_ease"
+        },
+        {
+            "scene_id": "s05",
+            "role": "debate",
+            "image_path": str(img_dir / "scene_s05.png"),
+            "audio_path": str(audio_dir / "scene_s05.wav"),
+            "narration": "Will Infantino survive his first real challenge? YES OR NO?",
+            "on_screen": {
+                "headline": "INFANTINO: SECURE OR AT RISK?",
+                "subheadline": "HAVE YOUR SAY IN THE COMMENTS BELOW",
+                "kicker": "FINAL VERDICT",
+                "status_badge": "ANALYSIS",
+                "source_credit": "30 FOOTBALL PLUS"
+            },
+            "motion": "static"
         }
     ]
 
@@ -109,9 +124,9 @@ def run_e2e_pipeline_verification():
     rendered_path = assemble_video_ffmpeg(
         scenes=scenes,
         output_mp4_path=output_mp4,
-        credit_source_name="Corriere dello Sport",
+        credit_source_name="BeSoccer",
         include_logo_outro=True,
-        story_headline="Real Madrid Considering Endrick AC Milan Loan"
+        story_headline="Official: Three candidates confirm bids for FIFA presidency"
     )
     assert Path(rendered_path).exists(), f"Render output missing: {rendered_path}"
     logger.info(f"✓ Video rendered successfully: {rendered_path}")
@@ -119,9 +134,13 @@ def run_e2e_pipeline_verification():
     # 2. Execute Automated QA Suite
     logger.info("Step 2: Executing Automated Engine QA Suite...")
     qa = EngineQASuite(PROJECT_ROOT)
+    cmd_dur = ["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "default=noprint_wrappers=1:nokey=1", str(rendered_path)]
+    actual_dur = float(subprocess.check_output(cmd_dur).decode().strip())
+    expected_frames = round(actual_dur * 30.0)
+
     qa_report = qa.run_full_qa(
         video_path=Path(rendered_path),
-        props={"scenes": scenes, "totalDurationInFrames": len(scenes) * 90},
+        props={"scenes": scenes, "totalDurationInFrames": expected_frames},
         output_report_path=output_report,
         contact_sheet_path=output_storyboard
     )
@@ -138,12 +157,12 @@ def run_e2e_pipeline_verification():
     logger.info("Step 3: Logging to Retention Performance Tracker...")
     tracker = RetentionTracker()
     vid_id = tracker.log_video({
-        "video_id": "test_e2e_endrick_001",
-        "story_category": "transfer_rumour",
-        "headline": "Real Madrid Considering Endrick AC Milan Loan",
+        "video_id": "test_e2e_fifa_presidency_001",
+        "story_category": "breaking_election",
+        "headline": "Official: Three candidates confirm bids for FIFA presidency",
         "duration_sec": qa_report["checks"]["geometry"]["duration_sec"],
-        "hook_selected": "Reports in Italy claim AC Milan have made formal enquiries for Endrick.",
-        "hook_type": "question_challenge",
+        "hook_selected": "The FIFA presidency race just got real. Three candidates have officially confirmed their bids for the 2027 election.",
+        "hook_type": "breaking_news",
         "script_word_count": sum(len(s["narration"].split()) for s in scenes),
         "visual_beats_count": len(scenes),
         "output_filename": Path(rendered_path).name,

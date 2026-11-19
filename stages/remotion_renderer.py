@@ -397,9 +397,12 @@ def render_remotion_video(
     temp_dir.mkdir(parents=True, exist_ok=True)
     raw_video = temp_dir / "temp_raw_stream.mp4"
 
-    # Synthesize outro audio if missing
+    # Golden smooth outro audio: "This is Football in 30 Seconds. Goodbye, and follow for more."
     outro_audio = PROJECT_ROOT / "data" / "audio" / "scene_outro.wav"
-    if not outro_audio.exists():
+    branding_outro = PROJECT_ROOT / "data" / "branding" / "official_smooth_outro.wav"
+    if branding_outro.exists():
+        shutil.copy2(branding_outro, outro_audio)
+    elif not outro_audio.exists():
         try:
             from stages.video_assembler import generate_outro_audio
             generate_outro_audio(outro_audio.parent, voice_name="en-GB-RyanNeural")

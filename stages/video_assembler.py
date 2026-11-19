@@ -19,6 +19,7 @@ import re
 import json
 import asyncio
 import subprocess
+import shutil
 from pathlib import Path
 from typing import Dict, List, Any, Optional, Tuple
 from PIL import Image, ImageDraw, ImageFont, ImageFilter
@@ -312,7 +313,7 @@ def create_outro_plate(
     draw.rounded_rectangle([card_x0, card_y0, card_x1, card_y1], radius=14, outline=(255, 215, 0, 230), width=2)
     draw.line([(card_x0 + 14, card_y0 + 2), (card_x1 - 14, card_y0 + 2)], fill=(120, 190, 255, 180), width=1)
 
-    follow_text = "FOLLOW FOR DAILY BREAKING NEWS"
+    follow_text = "GOODBYE & FOLLOW FOR MORE"
     bbox_f = font_follow.getbbox(follow_text)
     text_w = bbox_f[2] - bbox_f[0]
     text_h = bbox_f[3] - bbox_f[1]
@@ -321,7 +322,7 @@ def create_outro_plate(
     draw.text((text_x, text_y), follow_text, fill=(255, 215, 0), font=font_follow)
 
     # 4. Sub-tagline below pill (Centered)
-    sub_text = "DAILY TRANSFERS  |  EXCLUSIVE SCOOPS  |  BREAKING DRAMA"
+    sub_text = "THIS IS FOOTBALL IN 30 SECONDS  |  DAILY BREAKING NEWS"
     bbox_s = font_sub.getbbox(sub_text)
     sub_w = bbox_s[2] - bbox_s[0]
     sub_x = (target_w - sub_w) // 2
@@ -333,40 +334,49 @@ def create_outro_plate(
 
     return plate
 
-def generate_outro_audio(temp_dir: Path, voice_name: str = "en-GB-ThomasNeural") -> Tuple[Path, float]:
+def generate_outro_audio(temp_dir: Path, voice_name: str = "en-GB-RyanNeural") -> Tuple[Path, float]:
     """
-    Synthesizes the official broadcast outro voiceover with calm, unhurried delivery.
-    Outputs a standardized 48kHz stereo pcm_s16le WAV with crisp ~1.5s total duration
-    to ensure seamless concatenation without clipping, pops, or screeching.
+    Returns the official broadcast outro voiceover with calm, articulate British neural delivery.
+    Outputs a standardized 48kHz stereo pcm_s16le WAV.
+    Text: 'This is Football in 30 Seconds. Goodbye, and follow for more.'
+    ZERO robotic SAPI David. Uses pre-mastered golden asset or EdgeTTS with retries.
     """
+    golden_outro = BRANDING_DIR / "official_smooth_outro.wav"
+    out_wav = temp_dir / "outro_vo.wav"
+
+    # 1. Use pre-mastered golden asset if present
+    if golden_outro.exists():
+        shutil.copy2(golden_outro, out_wav)
+        dur = get_audio_duration(str(out_wav))
+        print(f"[Assembler] Using pre-mastered official smooth outro ({dur:.2f}s)")
+        return out_wav, dur
+
+    # 2. Synthesize via EdgeTTS en-GB-RyanNeural with retries
     import edge_tts
     temp_raw = temp_dir / "outro_raw.mp3"
-    out_wav = temp_dir / "outro_vo.wav"
-    text = "Follow for daily football news."
+    text = "This is Football in 30 Seconds. Goodbye, and follow for more."
 
     async def _synth():
-        comm = edge_tts.Communicate(text, voice=voice_name, rate="+5%", pitch="+0Hz")
+        comm = edge_tts.Communicate(text, voice=voice_name, rate="+8%", pitch="+0Hz")
         await comm.save(str(temp_raw))
 
-    try:
-        asyncio.run(_synth())
-    except Exception as e:
-        print(f"[Assembler] Outro TTS error ({e}), using SAPI fallback...")
-        ps_cmd = (
-            f"Add-Type -AssemblyName System.Speech; "
-            f"$s = New-Object System.Speech.Synthesis.SpeechSynthesizer; "
-            f"$s.Rate = 1; "
-            f"$s.SetOutputToWaveFile('{str(temp_raw).replace(chr(92), '/')}'); "
-            f"$s.Speak('Follow for daily football news.'); "
-            f"$s.Dispose();"
-        )
-        subprocess.run(["powershell", "-NoProfile", "-Command", ps_cmd], check=True, capture_output=True)
+    for attempt in range(3):
+        try:
+            asyncio.run(_synth())
+            if temp_raw.exists() and temp_raw.stat().st_size > 1000:
+                break
+        except Exception as e:
+            print(f"[Assembler] EdgeTTS outro attempt {attempt+1} failed: {e}")
+            import time
+            time.sleep(1.0)
+    else:
+        raise RuntimeError("[Assembler] Failed to synthesize outro neural audio. SAPI robot fallback is permanently disabled.")
 
-    # Standardize to 48kHz 16-bit stereo PCM with 0.15s pre-roll and 0.25s post-roll
+    # Standardize to 48kHz 16-bit stereo PCM with silence trimming and broadcast loudness
     cmd_std = [
         "ffmpeg", "-y",
         "-i", str(temp_raw),
-        "-af", "adelay=150|150,apad=pad_dur=0.25",
+        "-af", "silenceremove=stop_periods=-1:stop_duration=0.15:stop_threshold=-45dB,adelay=150|150,apad=pad_dur=0.25,loudnorm=I=-14:TP=-1.0:LRA=7",
         "-ar", "48000", "-ac", "2", "-c:a", "pcm_s16le",
         str(out_wav)
     ]
@@ -392,7 +402,7 @@ def build_ticker_text(headline: str, scenes: List[Dict[str, Any]], credit_source
             bullets.append(sub.upper())
 
     bullets.append("THIS IS FOOTBALL IN 30 SECONDS")
-    bullets.append("FOLLOW FOR DAILY BREAKING NEWS")
+    bullets.append("GOODBYE & FOLLOW FOR MORE")
     return "   |   ".join(bullets) + "   |   "
 
 def generate_subtitles_srt(scenes: List[Dict[str, Any]], srt_out_path: Path) -> Path:

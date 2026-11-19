@@ -250,27 +250,12 @@ def synthesize_with_kokoro(
     spoken_dur = max(0.1, round(total_dur - pad_sec, 3))
     return (total_dur, spoken_dur)
 
-def synthesize_scenes_sapi(scenes: List[Dict[str, Any]], pad_sec: float = 0.3) -> List[Dict[str, Any]]:
-    """Offline fallback using Windows SAPI SpeechSynthesizer."""
-    AUDIO_DIR.mkdir(parents=True, exist_ok=True)
-    results = []
-    for s in scenes:
-        scene_id = s.get("scene_id", 1)
-        text = s.get("text", "").strip()
-        out_wav = AUDIO_DIR / f"scene_{scene_id}.wav"
-        clean_text = text.replace("’", "'").replace("'", "").replace('"', '').replace('`', '')
-        ps_cmd = f"Add-Type -AssemblyName System.Speech; $s = New-Object System.Speech.Synthesis.SpeechSynthesizer; $s.SetOutputToWaveFile('{str(out_wav).replace(chr(92), '/')}'); $s.Speak('{clean_text}'); $s.Dispose();"
-        subprocess.run(["powershell", "-NoProfile", "-Command", ps_cmd], check=True, capture_output=True)
-        dur = get_audio_duration_wave(out_wav)
-        results.append({
-            "scene_id": scene_id,
-            "text": text,
-            "type": s.get("type", "body"),
-            "audio_path": str(out_wav),
-            "audio_duration_sec": dur,
-            "slide_duration_sec": round(dur + pad_sec, 3)
-        })
-    return results
+def synthesize_scenes_sapi(scenes: List[Dict[str, Any]], pad_sec: float = 0.15) -> List[Dict[str, Any]]:
+    """
+    Fallback neural synthesizer using EdgeTTS RyanNeural (SAPI Microsoft David is permanently eliminated).
+    """
+    print("[TTS] Fallback synthesizer invoked: routing to EdgeTTS en-GB-RyanNeural (Zero SAPI David)")
+    return synthesize_scenes_expressive(scenes, voice_name="en-GB-RyanNeural", rate="+5%", pitch="+0Hz", pad_sec=pad_sec)
 
 def synthesize_scenes_expressive(
     scenes: List[Dict[str, Any]],
