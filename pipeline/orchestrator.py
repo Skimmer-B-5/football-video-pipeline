@@ -394,7 +394,7 @@ class PipelineOrchestrator:
                 # Synthesize Audio via expressive neural British commentator voice
                 self.update_progress(bot_client, caller_chat_id, 65, "British Voiceover Narration", "Synthesizing expressive British anchor audio & broadcast mastering...")
                 try:
-                    audio_scenes = synthesize_scenes_expressive(sourced_scenes, voice_name="en-GB-ThomasNeural", rate="+5%", pitch="+0Hz")
+                    audio_scenes = synthesize_scenes_expressive(sourced_scenes, voice_name="en-GB-ThomasNeural", rate="+0%", pitch="+0Hz")
                 except Exception as e:
                     print(f"[Orchestrator] Expressive neural TTS failed ({e}), falling back to offline SAPI...")
                     audio_scenes = synthesize_scenes_sapi(sourced_scenes)

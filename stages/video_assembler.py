@@ -318,14 +318,14 @@ def create_outro_plate(
 
     return plate
 
-def generate_outro_audio(temp_dir: Path, voice_name: str = "en-GB-RyanNeural") -> Tuple[Path, float]:
-    """Synthesizes the official broadcast outro voiceover with rapid punch (clamped to ~1.0-1.2s)."""
+def generate_outro_audio(temp_dir: Path, voice_name: str = "en-GB-ThomasNeural") -> Tuple[Path, float]:
+    """Synthesizes the official broadcast outro voiceover with calm, unhurried delivery."""
     import edge_tts
     out_mp3 = temp_dir / "outro_vo.mp3"
     text = "Follow Football in Thirty Seconds for daily breaking news."
 
     async def _synth():
-        comm = edge_tts.Communicate(text, voice=voice_name, rate="+25%", pitch="+3Hz")
+        comm = edge_tts.Communicate(text, voice=voice_name, rate="+0%", pitch="+0Hz")
         await comm.save(str(out_mp3))
 
     try:
@@ -335,7 +335,7 @@ def generate_outro_audio(temp_dir: Path, voice_name: str = "en-GB-RyanNeural") -
         ps_cmd = (
             f"Add-Type -AssemblyName System.Speech; "
             f"$s = New-Object System.Speech.Synthesis.SpeechSynthesizer; "
-            f"$s.Rate = 2; "
+            f"$s.Rate = 0; "
             f"$s.SetOutputToWaveFile('{str(out_mp3).replace(chr(92), '/')}'); "
             f"$s.Speak('Follow Football in thirty seconds for daily breaking news.'); "
             f"$s.Dispose();"
@@ -529,33 +529,35 @@ def assemble_video_ffmpeg(
             else:
                 motion = "static"
 
-            # Create Base Canvas & Composite HUD
+            # Create Base Canvas & Static HUD Layer separately
             base_frame = create_scene_base_canvas(img_path, width, height)
             hud = create_scene_hud(
                 sc, tv_bug_img, ticker_base_img,
                 font_headline, font_badge, font_live,
                 idx, total_scenes_count, width, height
             )
-            comp = Image.alpha_composite(base_frame, hud)
-            still_path = temp_dir / f"scene_comp_{idx+1}.png"
-            comp.save(still_path)
+            base_path = temp_dir / f"scene_base_{idx+1}.png"
+            hud_path = temp_dir / f"scene_hud_{idx+1}.png"
+            base_frame.save(base_path)
+            hud.save(hud_path)
 
             scene_composites.append({
-                "still_path": str(still_path),
+                "base_path": str(base_path),
+                "hud_path": str(hud_path),
                 "duration": a_dur,
                 "frames": frame_count,
                 "motion": motion
             })
             print(f"[Assembler] Prepared Scene {s_id}: {frame_count} frames ({a_dur:.3f}s, motion: {motion})")
 
-        # 3. Append Outro Scene (crisp 1.0–1.2s total)
+        # 3. Append Outro Scene
         if include_logo_outro:
             outro_mp3, outro_a_dur = generate_outro_audio(temp_dir)
             audio_clip_paths.append(str(outro_mp3))
             audio_durations.append(outro_a_dur)
 
-            # Clamp outro duration so video branding plate is tightly 1.0–1.3s
-            outro_v_dur = min(outro_a_dur + 0.20, 1.35)
+            # Match outro video duration to speech duration so voice is never cut off
+            outro_v_dur = outro_a_dur + 0.15
             outro_frames = round(outro_v_dur * fps)
 
             outro_still = create_outro_plate(logo_master_img, ticker_base_img, font_follow, font_sub, width, height)
@@ -563,10 +565,11 @@ def assemble_video_ffmpeg(
             outro_still.save(outro_still_path)
 
             scene_composites.append({
-                "still_path": str(outro_still_path),
+                "base_path": str(outro_still_path),
+                "hud_path": None,
                 "duration": outro_v_dur,
                 "frames": outro_frames,
-                "motion": "subtle_ease"
+                "motion": "static"
             })
             print(f"[Assembler] Prepared Outro Scene: {outro_frames} frames ({outro_v_dur:.3f}s, audio: {outro_a_dur:.3f}s)")
 
@@ -575,30 +578,35 @@ def assemble_video_ffmpeg(
         total_speech_dur = sum(audio_durations)
         print(f"[Assembler] Total Planned Video: {total_video_dur:.3f}s ({total_video_frames} frames) | Speech: {total_speech_dur:.3f}s")
 
-        # 4. Render Individual Frame-Accurate Video Clips
+        # 4. Render Individual Frame-Accurate Video Clips (Background zooms, HUD stays 100% FIXED)
         clip_paths = []
         for i, c in enumerate(scene_composites):
             c_out = temp_dir / f"clip_{i+1}.mp4"
             frames = c["frames"]
             dur = c["duration"]
             motion = c["motion"]
-            still_p = c["still_path"]
+            base_p = c["base_path"]
+            hud_p = c.get("hud_path")
 
-            if motion == "push_in":
-                vf = f"zoompan=z='min(zoom+0.0004,1.05)':d={frames}:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':s={width}x{height}:fps={fps}"
-                cmd = f'ffmpeg -y -i "{still_p}" -vf "{vf}" -frames:v {frames} -c:v libx264 -pix_fmt yuv420p -preset fast "{c_out}"'
-            elif motion == "pull_out":
-                vf = f"zoompan=z='max(1.05-on*0.0004,1.0)':d={frames}:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':s={width}x{height}:fps={fps}"
-                cmd = f'ffmpeg -y -i "{still_p}" -vf "{vf}" -frames:v {frames} -c:v libx264 -pix_fmt yuv420p -preset fast "{c_out}"'
-            elif motion == "lateral_pan":
-                vf = f"zoompan=z=1.03:x='min(on*0.25,30)':y='ih/2-(ih/zoom/2)':d={frames}:s={width}x{height}:fps={fps}"
-                cmd = f'ffmpeg -y -i "{still_p}" -vf "{vf}" -frames:v {frames} -c:v libx264 -pix_fmt yuv420p -preset fast "{c_out}"'
-            elif motion == "subtle_ease":
-                vf = f"zoompan=z='min(zoom+0.0005,1.03)':d={frames}:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':s={width}x{height}:fps={fps}"
-                cmd = f'ffmpeg -y -i "{still_p}" -vf "{vf}" -frames:v {frames} -c:v libx264 -pix_fmt yuv420p -preset fast "{c_out}"'
+            if hud_p and os.path.exists(hud_p):
+                # Normal scene: zoom the background photo ONLY, overlay HUD statically so lower-third & ticker stay completely fixed
+                if motion == "push_in":
+                    zoom_expr = f"zoompan=z='min(zoom+0.0004,1.05)':d={frames}:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':s={width}x{height}:fps={fps}"
+                elif motion == "pull_out":
+                    zoom_expr = f"zoompan=z='max(1.05-on*0.0004,1.0)':d={frames}:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':s={width}x{height}:fps={fps}"
+                elif motion == "lateral_pan":
+                    zoom_expr = f"zoompan=z=1.03:x='min(on*0.25,30)':y='ih/2-(ih/zoom/2)':d={frames}:s={width}x{height}:fps={fps}"
+                elif motion == "subtle_ease":
+                    zoom_expr = f"zoompan=z='min(zoom+0.0005,1.03)':d={frames}:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':s={width}x{height}:fps={fps}"
+                else:
+                    zoom_expr = f"scale={width}:{height},fps={fps}"
+
+                vf = f"[0:v]{zoom_expr}[v_zoomed]; [v_zoomed][1:v]overlay=0:0[v_out]"
+                cmd = f'ffmpeg -y -i "{base_p}" -i "{hud_p}" -filter_complex "{vf}" -map "[v_out]" -frames:v {frames} -c:v libx264 -pix_fmt yuv420p -preset fast "{c_out}"'
             else:
+                # Outro still plate: static render with zero drifting
                 vf = f"scale={width}:{height},fps={fps}"
-                cmd = f'ffmpeg -y -loop 1 -t {dur:.3f} -i "{still_p}" -vf "{vf}" -frames:v {frames} -c:v libx264 -pix_fmt yuv420p -preset fast "{c_out}"'
+                cmd = f'ffmpeg -y -loop 1 -t {dur:.3f} -i "{base_p}" -vf "{vf}" -frames:v {frames} -c:v libx264 -pix_fmt yuv420p -preset fast "{c_out}"'
 
             subprocess.check_call(cmd, shell=True)
             clip_paths.append(str(c_out))
@@ -613,7 +621,7 @@ def assemble_video_ffmpeg(
         cmd_concat = f'ffmpeg -y -f concat -safe 0 -i "{concat_txt}" -c copy "{concat_raw_video}"'
         subprocess.check_call(cmd_concat, shell=True)
 
-        # 6. Concatenate Audio & Master to -14 LUFS, True Peak -1.0 dBTP, 48kHz Stereo
+        # 6. Concatenate Audio & Master to -14 LUFS (Clean broadcast sound, zero shrieking noise)
         audio_concat_txt = temp_dir / "audio_concat.txt"
         with open(audio_concat_txt, "w", encoding="utf-8") as f:
             for ap in audio_clip_paths:
@@ -623,21 +631,14 @@ def assemble_video_ffmpeg(
         cmd_a_concat = f'ffmpeg -y -f concat -safe 0 -i "{audio_concat_txt}" -c:a pcm_s16le "{raw_vo_wav}"'
         subprocess.check_call(cmd_a_concat, shell=True)
 
-        # Mix with outro whoosh (NO pink noise hiss)
+        # Clean broadcast audio: NO loud meme whooshes, smooth fade-out at outro
         mixed_audio_raw = temp_dir / "master_audio_raw_mix.wav"
-        whoosh_delay_ms = round(sum(audio_durations[:total_scenes_count]) * 1000)
-
-        if whoosh_sfx_path.exists():
-            cmd_audio_mix = (
-                f'ffmpeg -y -i "{raw_vo_wav}" -i "{whoosh_sfx_path}" '
-                f'-filter_complex "'
-                f'[0:a]highpass=f=100,volume=1.1,apad=whole_dur={total_video_dur:.3f}[vo]; '
-                f'[1:a]adelay={whoosh_delay_ms}|{whoosh_delay_ms},volume=0.75[sfx]; '
-                f'[vo][sfx]amix=inputs=2:duration=first:weights=1.0 0.8[aout]" '
-                f'-map "[aout]" -c:a pcm_s16le "{mixed_audio_raw}"'
-            )
-        else:
-            cmd_audio_mix = f'ffmpeg -y -i "{raw_vo_wav}" -af "apad=whole_dur={total_video_dur:.3f}" -c:a pcm_s16le "{mixed_audio_raw}"'
+        fade_start = max(0.0, total_video_dur - 0.25)
+        cmd_audio_mix = (
+            f'ffmpeg -y -i "{raw_vo_wav}" '
+            f'-af "afade=t=out:st={fade_start:.3f}:d=0.25,apad=whole_dur={total_video_dur:.3f}" '
+            f'-c:a pcm_s16le "{mixed_audio_raw}"'
+        )
         subprocess.check_call(cmd_audio_mix, shell=True)
 
         # Master with loudnorm: target -14 LUFS, true peak -1.0 dBTP, 48kHz stereo
