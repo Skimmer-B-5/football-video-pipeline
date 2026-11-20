@@ -47,20 +47,42 @@ def main():
     active_job = JobState.get_latest_active_job()
     if active_job:
         job_status = active_job.get_status()
-        print(f"[Service] Resuming active unfinished job: {active_job.job_id} (Status: {job_status})")
-        try:
-            bot.send_message(
-                f"🔄 <b>RESUMING UNFINISHED JOB</b>\n\n"
-                f"Job ID: <code>{active_job.job_id}</code>\n"
-                f"Status: <b>{job_status}</b>\n\n"
-                f"<i>Picking up pipeline execution right where it was paused...</i>"
-            )
-            orch = PipelineOrchestrator(job=active_job)
-            orch.execute_pipeline(skip_telegram=False)
-            if active_job.get_status() == "COMPLETED":
-                bot.send_message("⚡ <b>CYCLE FINISHED</b>\n<i>Standing by. Send /new anytime to launch the next video!</i>")
-        except Exception as re:
-            print(f"[Service] Resume execution note: {re}")
+        rec = active_job.get_record()
+        created_str = rec.get("created_at")
+        is_stale = False
+        age_hours = 0.0
+        if created_str:
+            try:
+                import datetime
+                dt = datetime.datetime.strptime(created_str, "%Y-%m-%d %H:%M:%S")
+                age_hours = (datetime.datetime.now() - dt).total_seconds() / 3600.0
+                if age_hours > 1.0:
+                    is_stale = True
+            except Exception:
+                pass
+
+        if is_stale:
+            print(f"[Service] Stale unfinished job detected: {active_job.job_id} ({age_hours:.1f}h old). Archiving automatically...")
+            active_job.update_status("ARCHIVED")
+            active_job = None
+            print("[Service] Studio initialized in clean STANDBY mode.")
+        else:
+            print(f"[Service] Resuming active unfinished job: {active_job.job_id} (Status: {job_status})")
+            try:
+                bot.send_message(
+                    f"🔄 <b>RESUMING ACTIVE JOB</b>\n\n"
+                    f"Job ID: <code>{active_job.job_id}</code>\n"
+                    f"Status: <b>{job_status}</b>\n\n"
+                    f"<i>Picking up pipeline execution... Send /cancel anytime to abort and start fresh!</i>"
+                )
+                orch = PipelineOrchestrator(job=active_job)
+                orch.execute_pipeline(skip_telegram=False)
+                if active_job.get_status() == "COMPLETED":
+                    bot.send_message("⚡ <b>CYCLE FINISHED</b>\n<i>Standing by. Send /new anytime to launch the next video!</i>")
+                elif active_job.get_status() == "CANCELLED":
+                    print(f"[Service] Active job {active_job.job_id} was successfully cancelled. Returning to standby.")
+            except Exception as re:
+                print(f"[Service] Resume execution note: {re}")
     else:
         print("[Service] No pending unfinished jobs. Studio initialized in pure STANDBY mode.")
 

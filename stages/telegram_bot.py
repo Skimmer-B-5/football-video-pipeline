@@ -818,7 +818,10 @@ class TelegramBotClient:
                         elif clean_cmd in ("/status", "status", "/quota", "quota", "/credits", "credits"):
                             self.send_message(self.format_status_message(), chat_id=msg_chat_id)
                         elif clean_cmd in ("/cancel", "cancel", "/reset", "reset"):
-                            self.send_message("ℹ️ <b>Pipeline is already in STANDBY.</b>\n<i>Send /new to launch a new video cycle!</i>", chat_id=msg_chat_id)
+                            with get_db_connection() as conn:
+                                conn.execute("UPDATE jobs SET status = 'CANCELLED' WHERE status NOT IN ('COMPLETED', 'ARCHIVED', 'FAILED', 'REJECTED')")
+                                conn.commit()
+                            self.send_message("❌ <b>ALL ACTIVE JOBS CANCELLED & CLEARED.</b>\n<i>Pipeline is in clean STANDBY mode. Send /new anytime to launch fresh!</i>", chat_id=msg_chat_id)
                         elif clean_cmd in ("/rewrite", "rewrite", "ai rewrite", "/ai_rewrite"):
                             self.send_message("ℹ️ <b>No active script draft to rewrite right now.</b>\n<i>Send /new or paste an article URL to launch a fresh cycle!</i>", chat_id=msg_chat_id)
                         elif clean_cmd in ("/matchday", "matchday", "/scores", "scores"):
@@ -985,6 +988,24 @@ class TelegramBotClient:
                     self.broadcast_message(f"🧠 <b>Qwen:</b>\n\n{reply}\n\n<i>Choose a story from above to proceed with the video.</i>")
                     continue
 
+            # Cancellation & Refresh handlers
+            if action in ("CANCEL", "CANCELLED"):
+                print("[Telegram] User cancelled topic approval via Telegram.")
+                for cid, mid in current_msg_ids.items():
+                    try:
+                        self.edit_message_text(
+                            "❌ <b>TOPIC RADAR CANCELLED</b>\n<i>Active cycle cancelled and archived. Send /new anytime to start fresh.</i>",
+                            message_id=mid,
+                            reply_markup=None,
+                            chat_id=cid
+                        )
+                    except Exception:
+                        pass
+                return "CANCEL"
+
+            if action in ("NEW_CYCLE", "REFRESH"):
+                return "REFRESH"
+
             # 2. Pagination: Order next 3 stories
             if action == "next_3":
                 offset = (offset + 3) if (offset + 3) < total else 0
@@ -1006,6 +1027,10 @@ class TelegramBotClient:
                 return None
 
             # 4. Selected story -> INSTANT RESULT RENDERING
+            if not action.startswith("story_"):
+                print(f"[Telegram] Unrecognized topic action: {action}. Returning to standby.")
+                return "CANCEL"
+
             picked_global_idx = int(action.split("_")[1])
             picked_story = top_stories[picked_global_idx]
             display_num = picked_global_idx + 1
@@ -1087,14 +1112,14 @@ class TelegramBotClient:
             for cid, mid in script_msg_ids.items():
                 try:
                     self.edit_message_text(
-                        f"❌ <b>SCRIPT CANCELLED</b>\n\n<i>Cycle aborted. Standing by...</i>",
+                        f"❌ <b>SCRIPT CANCELLED</b>\n\n<i>Cycle aborted and archived. Standing by...</i>",
                         message_id=mid,
                         reply_markup=None,
                         chat_id=cid
                     )
                 except Exception:
                     pass
-            return "REJECTED", ""
+            return "CANCEL", ""
         elif action == "NEW_CYCLE":
             for cid, mid in script_msg_ids.items():
                 try:
@@ -1254,7 +1279,10 @@ class TelegramBotClient:
         action, _, _ = self.wait_for_decision(["video_publish", "video_reject"], allow_text_reply=True)
         if action == "video_publish":
             self.broadcast_message("🚀 <b>VIDEO APPROVED</b>\n<i>Publishing to YouTube as Private with synthetic media tags...</i>")
-            return True
+            return "PUBLISH"
+        elif action in ("CANCEL", "NEW_CYCLE"):
+            self.broadcast_message("❌ <b>VIDEO CANCELLED</b>\n<i>Active cycle cancelled and archived. Returning to standby. Send /new anytime to launch fresh!</i>")
+            return "CANCEL"
         else:
-            self.broadcast_message("❌ <b>VIDEO ARCHIVED</b>\n<i>Video rejected or cancelled. Returning to standby.</i>")
-            return False
+            self.broadcast_message("❌ <b>VIDEO REJECTED</b>\n<i>Video rejected. Returning to topic selection...</i>")
+            return "REJECT"

@@ -263,6 +263,10 @@ class PipelineOrchestrator:
                             status = "INIT"
                             script_rejected = True
                             break
+                        elif decision in ("CANCEL", "CANCELLED"):
+                            print("[Orchestrator] Script approval cancelled by user via Telegram.")
+                            self.job.update_status("CANCELLED")
+                            return
                         elif decision == "REJECTED":
                             print("[Orchestrator] Script rejected by user. Returning to topic selection.")
                             bot_client.send_message("❌ <b>Script rejected.</b> Returning to story selection so you can pick another topic...")
@@ -543,7 +547,7 @@ class PipelineOrchestrator:
                         pass
 
                 if bot_client:
-                    publish_approved = bot_client.request_video_approval(
+                    decision = bot_client.request_video_approval(
                         video_path,
                         topic["headline"],
                         description=desc_text,
@@ -552,12 +556,18 @@ class PipelineOrchestrator:
                         qa_report=qa_data,
                         contact_sheet_path=str(contact_sheet_p) if contact_sheet_p.exists() else None
                     )
-                    if not publish_approved:
+                    if decision in ("CANCEL", "CANCELLED"):
+                        print("[Orchestrator] Video publication cancelled by user via Telegram.")
+                        self.job.update_status("CANCELLED")
+                        return
+                    elif decision != "PUBLISH" and decision is not True:
                         print("[Orchestrator] Video publication rejected by user. Returning to topic selection.")
                         bot_client.send_message("❌ <b>Video rejected.</b> Returning to story selection so you can pick a different topic...")
                         self.job.update_status("RANKED")
                         status = "RANKED"
                         continue
+                    else:
+                        publish_approved = True
 
                 self.job.record_approval("VIDEO", "PUBLISH_APPROVED" if publish_approved else "REJECTED")
                 self.job.update_status("VIDEO_APPROVED")
