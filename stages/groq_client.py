@@ -54,30 +54,47 @@ def get_groq_keys() -> List[str]:
     return keys
 
 def call_groq_chat(
-    messages: List[Dict[str, str]],
+    messages: Optional[List[Dict[str, str]]] = None,
     preferred_model: str = "openai/gpt-oss-120b",
     fallback_model: str = "qwen/qwen3.8-27b",
     max_tokens: int = 3500,
     temperature: float = 0.4,
-    timeout: int = 25
+    timeout: int = 25,
+    system_prompt: Optional[str] = None,
+    user_prompt: Optional[str] = None,
+    model: Optional[str] = None,
 ) -> Optional[str]:
     """
     Execute chat completion on Groq with multi-key redundancy and automatic model failover.
     Attempts preferred_model on primary key -> backup key, then fallback_model on primary -> backup.
+    Supports both messages list format and system_prompt/user_prompt/model keyword arguments.
     """
+    if model:
+        preferred_model = model
+
+    if messages is None:
+        messages = []
+        if system_prompt:
+            messages.append({"role": "system", "content": system_prompt})
+        if user_prompt:
+            messages.append({"role": "user", "content": user_prompt})
+
     keys = get_groq_keys()
     models_to_try = [preferred_model]
-    if fallback_model and fallback_model != preferred_model:
+    if fallback_model and fallback_model not in models_to_try:
         models_to_try.append(fallback_model)
+    for m in ("openai/gpt-oss-120b", "qwen/qwen3.8-27b", "openai/gpt-oss-20b"):
+        if m not in models_to_try:
+            models_to_try.append(m)
 
-    for model in models_to_try:
+    for current_model in models_to_try:
         for key in keys:
             try:
                 headers = dict(HEADERS_BASE)
                 headers["Authorization"] = f"Bearer {key}"
 
                 payload = {
-                    "model": model,
+                    "model": current_model,
                     "messages": messages,
                     "max_tokens": max_tokens,
                     "temperature": temperature
@@ -99,14 +116,13 @@ def call_groq_chat(
                     content = re.sub(r'<think>.*?</think>', '', content, flags=re.DOTALL).strip()
 
                     if content:
-                        # Log success silently or with minimal notice
                         return content
 
             except urllib.error.HTTPError as he:
                 error_body = he.read().decode("utf-8", errors="ignore")
-                print(f"[GroqClient] Model '{model}' with key ...{key[-6:]} returned HTTP {he.code}: {error_body[:100]}")
+                print(f"[GroqClient] Model '{current_model}' with key ...{key[-6:]} returned HTTP {he.code}: {error_body[:100]}")
             except Exception as e:
-                print(f"[GroqClient] Model '{model}' with key ...{key[-6:]} failed: {e}")
+                print(f"[GroqClient] Model '{current_model}' with key ...{key[-6:]} failed: {e}")
 
     return None
 

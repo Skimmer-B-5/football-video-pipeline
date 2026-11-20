@@ -263,26 +263,34 @@ class TelegramBotClient:
             return False
 
     def get_authorized_users(self) -> List[str]:
-        """Return list of all authorized user IDs."""
-        users = set()
-        if self.default_chat_id:
-            for admin_id in str(self.default_chat_id).split(","):
-                if admin_id.strip():
-                    users.add(admin_id.strip())
-        if getattr(self, "active_chat_id", None) and str(self.active_chat_id).strip():
-            users.add(str(self.active_chat_id).strip())
+        """Return list of all authorized user IDs with primary admin first."""
+        primary_admin = str(self.default_chat_id or "").strip()
+        ordered_users = []
+        if primary_admin:
+            for admin_id in primary_admin.split(","):
+                aid = admin_id.strip()
+                if aid and aid not in ordered_users:
+                    ordered_users.append(aid)
+
+        if getattr(self, "active_chat_id", None):
+            act_id = str(self.active_chat_id).strip()
+            if act_id and act_id not in ordered_users:
+                ordered_users.append(act_id)
+
         try:
             with get_db_connection() as conn:
                 conn.execute("CREATE TABLE IF NOT EXISTS authorized_users (user_id TEXT PRIMARY KEY, name TEXT, added_at TEXT)")
                 rows = conn.execute("SELECT user_id FROM authorized_users").fetchall()
                 for r in rows:
-                    users.add(str(r["user_id"]))
+                    uid = str(r["user_id"]).strip()
+                    if uid and uid not in ordered_users:
+                        ordered_users.append(uid)
         except Exception:
             pass
-        return list(users)
+        return ordered_users
 
     def broadcast_message(self, text: str, reply_markup: Optional[Dict[str, Any]] = None) -> Dict[str, int]:
-        """Broadcast message to all authorized users (admin + co-pilots)."""
+        """Broadcast message to all authorized users with primary admin prioritized for zero lag."""
         msg_ids = {}
         for uid in self.get_authorized_users():
             try:
@@ -588,12 +596,20 @@ class TelegramBotClient:
                         msg_id = msg.get("message_id")
 
                         # Immediately answer callback query so Telegram stops spinning!
-                        self.answer_callback(cb_id)
+                        self.answer_callback(cb_id, text="⚡ Selected!")
 
                         for expected in expected_callbacks:
                             if cb_data == expected or (expected.endswith("_") and cb_data.startswith(expected)):
                                 print(f"[Telegram] Phone tap received: {cb_data} on msg {msg_id}")
                                 return cb_data, None, msg_id
+                            # Support pick_X matching story_X or vice-versa
+                            if (cb_data.startswith("pick_") or cb_data.startswith("story_")) and (expected.startswith("pick_") or expected.startswith("story_")):
+                                try:
+                                    if int(cb_data.split("_")[1]) == int(expected.split("_")[1]):
+                                        print(f"[Telegram] Phone tap received: {cb_data} on msg {msg_id}")
+                                        return cb_data, None, msg_id
+                                except Exception:
+                                    pass
 
                     # Handle text edit/reply
                     if allow_text_reply and "message" in upd:
@@ -1027,28 +1043,51 @@ class TelegramBotClient:
                 return None
 
             # 4. Selected story -> INSTANT RESULT RENDERING
-            if not action.startswith("story_"):
+            if not (action.startswith("pick_") or action.startswith("story_")):
                 print(f"[Telegram] Unrecognized topic action: {action}. Returning to standby.")
                 return "CANCEL"
 
-            picked_global_idx = int(action.split("_")[1])
+            try:
+                picked_global_idx = int(action.split("_")[1])
+            except (ValueError, IndexError):
+                print(f"[Telegram] Unparseable topic action: {action}. Returning to standby.")
+                return "CANCEL"
+
+            if picked_global_idx < 0 or picked_global_idx >= len(top_stories):
+                print(f"[Telegram] Invalid topic index: {picked_global_idx} (pool has {len(top_stories)}). Returning to standby.")
+                return "CANCEL"
+
             picked_story = top_stories[picked_global_idx]
             display_num = picked_global_idx + 1
             print(f"[Telegram] User approved Story #{display_num}: {picked_story['headline']}")
 
+            confirmation_text = (
+                f"✅ <b>STORY #{display_num} LOCKED IN:</b>\n\n"
+                f"<b>{picked_story['headline']}</b>\n"
+                f"<i>Source: {picked_story['source']} | Tier: {picked_story['reliability_tier'].upper()}</i>\n\n"
+                f"⚡ <i>Qwen & GPT-OSS 120B are analyzing tactical angles and generating the script...</i>"
+            )
+
+            edited_any = False
             for cid, mid in current_msg_ids.items():
                 try:
-                    self.edit_message_text(
-                        f"✅ <b>STORY #{display_num} LOCKED IN:</b>\n\n"
-                        f"<b>{picked_story['headline']}</b>\n"
-                        f"<i>Source: {picked_story['source']} | Tier: {picked_story['reliability_tier'].upper()}</i>\n\n"
-                        f"⚡ <i>Qwen is dissecting the tactical failure and generating the 80-word script...</i>",
+                    ok = self.edit_message_text(
+                        confirmation_text,
                         message_id=mid,
                         reply_markup=None,
                         chat_id=cid
                     )
+                    if ok:
+                        edited_any = True
+                except Exception as e:
+                    print(f"[Telegram] Edit message warning: {e}")
+
+            if not edited_any:
+                try:
+                    self.broadcast_message(confirmation_text)
                 except Exception:
                     pass
+
             return picked_story
 
     def request_script_approval(

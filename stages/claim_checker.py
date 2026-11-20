@@ -52,11 +52,45 @@ def extract_quotes(text: str) -> List[str]:
     single_quotes = re.findall(r'(?<!\w)[\'‘](.*?)[\'’](?!\w)', text)
     return [q.strip() for q in (double_quotes + single_quotes) if len(q.strip()) > 10]
 
-def verify_script_claims(script_text: str, source_text: str, source_name: str, reliability_tier: str) -> Dict[str, Any]:
+def verify_script_claims(
+    script_text: Any,
+    source_text: Any = "",
+    source_name: str = "Source",
+    reliability_tier: str = "reported"
+) -> Dict[str, Any]:
     """
     Cross-checks the script text against the source article text.
-    Returns audit report dictionary with passed status and list of flagged issues.
+    Supports either (script_text, source_text, source_name, reliability_tier)
+    or polymorphic (scene_plan_dict, dossier_dict).
+    Returns audit report dictionary with passed/is_valid status and list of flagged issues.
     """
+    # Polymorphic unpacking if called as (scene_plan, dossier)
+    if isinstance(script_text, dict):
+        scene_plan = script_text
+        dossier = source_text if isinstance(source_text, dict) else {}
+        actual_script = scene_plan.get("full_script") or scene_plan.get("full_text") or ""
+        if not actual_script:
+            scenes = scene_plan.get("scenes", [])
+            actual_script = " ".join([s.get("narration", "") for s in scenes])
+
+        d_sources = dossier.get("sources", [])
+        actual_source_name = d_sources[0].get("publisher", "Source") if d_sources else "Source"
+        actual_tier = dossier.get("evidence_status", "REPORTED").lower()
+        actual_source_text = dossier.get("combined_text") or dossier.get("raw_text") or ""
+        if not actual_source_text:
+            claims = dossier.get("claims", [])
+            actual_source_text = " ".join([c.get("text", "") for c in claims])
+
+        script_text = actual_script
+        source_text = actual_source_text
+        source_name = actual_source_name
+        reliability_tier = actual_tier
+
+    script_text = str(script_text or "")
+    source_text = str(source_text or "")
+    source_name = str(source_name or "Source")
+    reliability_tier = str(reliability_tier or "reported")
+
     flagged = []
     script_lower = script_text.lower()
     source_lower = source_text.lower()
@@ -108,6 +142,7 @@ def verify_script_claims(script_text: str, source_text: str, source_name: str, r
     is_valid = (len(flagged) == 0)
     report = {
         "is_valid": is_valid,
+        "passed": is_valid,
         "reliability_tier": reliability_tier,
         "source_name": source_name,
         "script_length_chars": len(script_text),
