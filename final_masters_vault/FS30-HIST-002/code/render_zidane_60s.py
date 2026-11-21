@@ -1,18 +1,22 @@
 """
-60-Second Zinedine Zidane 2006 World Cup Headbutt Documentary Renderer (Master Production 6.0 - Artisan Edition).
-Strict Artisan Standards:
-1. Real Verified Archival Assets Only:
-   - Beat 1: Buffon Polaroid & Zidane Panenka & L'Équipe real front page
-   - Beat 2: Real shirt altercation photo & authentic Materazzi insult quote card with neon highlighter
-   - Beat 3: GENUINE 12-FRAME ARCHIVAL TV BROADCAST LOOP of the headbutt (No synthetic puppets!)
-   - Beat 4: Iconic Zidane walking past the golden World Cup trophy (Head intact, trophy in focus) & Red Card stamp
-   - Beat 5: Fabio Cannavaro lifting the World Cup with silver confetti (Reuters verified) & FIFA sanction document
-   - Beat 6: Hero Zidane portrait cutout & 108 Caps Badge & Official FS30 outro card
-2. Reusable Graphic Assets: Variants A-E banners, real washi tape, double archival borders, realistic drop shadows.
-3. Smooth Kinematics: Cubic bezier easing on all entrances (no robotic linear jumps).
-4. Zero Distortion: Proportional aspect ratios strictly preserved across all assets.
-5. Calibrated Sound & Timing: 60.00s total duration at 30fps (1800 frames), aligned with calm British narration.
-6. MrBeast Kinetic Captions: 100% verified spelling and timing.
+60-Second Zinedine Zidane 2006 World Cup Headbutt Documentary Renderer (Master Production 7.0 - True Historical Broadsheet Edition).
+Strict Aesthetic Directives:
+1. Low-Saturation Full-Bleed Atmospheric Backgrounds:
+   - Real high-resolution 2006 Olympiastadion Berlin stadium stands and pitch photography desaturated by 68% and darkened by 35% with subtle vignetting. ZERO sterile grey paper voids.
+2. Authentic Historical Newspaper Broadsheet Scans:
+   - Real L'Équipe July 10, 2006 front page scan ("REGRETS ÉTERNELS")
+   - Real pink La Gazzetta dello Sport July 10, 2006 front page scan ("TUTTO VERO! CAMPIONI DEL MONDO")
+   - Real Le Monde & Guardian incident clippings with paper fold creases
+3. Genuine Archival Broadcast Video Loop:
+   - 12-frame historical broadcast loop of the headbutt incident in an authentic TV monitor frame with REC indicator
+4. Verified High-Res Iconic Photography:
+   - Fabio Cannavaro lifting the World Cup into silver confetti (1861x2300 Reuters)
+   - Zinedine Zidane (#10) walking with bowed head past the golden FIFA trophy on podium
+5. Rich Tactile Collage Crafting:
+   - Real crimson washi tape, black masking tape, and cellophane tape strips
+   - Double archival photo borders and ambient occlusion drop shadows
+6. Zero Distortion & Calibrated Sound:
+   - Strictly proportional scaling, EBU R128 (-14 LUFS) ducked audio, verified MrBeast captions
 """
 
 import sys
@@ -59,45 +63,54 @@ def get_image(path: Path) -> Image.Image:
             _LOADED_IMAGES[k] = im.convert("RGBA")
     return _LOADED_IMAGES[k]
 
-def prepare_textured_bg(bg_path: Path, width: int = 1080, height: int = 1920) -> Image.Image:
-    """Prepares textured paper background with subtle archival vignette."""
-    with Image.open(bg_path) as im:
+def prepare_desaturated_stadium_bg(img_path: Path, width: int = 1080, height: int = 1920) -> Image.Image:
+    """Prepares low-saturation, darkened atmospheric stadium background with vignette."""
+    with Image.open(img_path) as im:
         im = im.convert("RGB")
         w, h = im.size
         scale = max(width / w, height / h)
         nw, nh = int(w * scale), int(h * scale)
-        resized = im.resize((nw, nh), Image.Resampling.LANCZOS)
+        im = im.resize((nw, nh), Image.Resampling.LANCZOS)
         x_off = (nw - width) // 2
         y_off = (nh - height) // 2
-        cropped = resized.crop((x_off, y_off, x_off + width, y_off + height))
+        cropped = im.crop((x_off, y_off, x_off + width, y_off + height))
         
-        enh_b = ImageEnhance.Brightness(cropped)
-        dark = enh_b.enhance(0.92)
+        # Low saturation: -68% color (0.32 factor)
+        desat = ImageEnhance.Color(cropped).enhance(0.32)
+        # Darkened: -35% brightness (0.65 factor)
+        darkened = ImageEnhance.Brightness(desat).enhance(0.65)
+        blurred = darkened.filter(ImageFilter.GaussianBlur(1.6))
         
+        # Signature cinematic documentary vignette
         vignette = Image.new("RGBA", (width, height), (0, 0, 0, 0))
         vd = ImageDraw.Draw(vignette)
-        vd.rectangle([(0, 0), (width, height)], fill=(12, 14, 20, 85))
-        vd.rectangle([(0, 0), (width, 240)], fill=(8, 10, 14, 120))
-        vd.rectangle([(0, height - 260), (width, height)], fill=(8, 10, 14, 130))
+        vd.rectangle([(0, 0), (width, height)], fill=(8, 10, 14, 90))
+        vd.rectangle([(0, 0), (width, 260)], fill=(6, 8, 12, 145))
+        vd.rectangle([(0, height - 280), (width, height)], fill=(6, 8, 12, 155))
         
-        res = dark.convert("RGBA")
-        res.alpha_composite(vignette)
+        res = blurred.convert("RGBA")
+        res.paste(vignette, (0, 0), mask=vignette)
         return res
 
-BG_NEWSPRINT: Optional[Image.Image] = None
-BG_PARCHMENT: Optional[Image.Image] = None
+BG_BERLIN_STADIUM: Optional[Image.Image] = None
+BG_PITCH_ACTION: Optional[Image.Image] = None
 
-def get_bg_newsprint() -> Image.Image:
-    global BG_NEWSPRINT
-    if BG_NEWSPRINT is None:
-        BG_NEWSPRINT = prepare_textured_bg(STOCK_DIR / "paper_backgrounds" / "bg_grey_newsprint_03.png")
-    return BG_NEWSPRINT
+def get_bg_berlin() -> Image.Image:
+    global BG_BERLIN_STADIUM
+    if BG_BERLIN_STADIUM is None:
+        BG_BERLIN_STADIUM = prepare_desaturated_stadium_bg(ASSETS_DIR / "berlin_stadium.jpg")
+    return BG_BERLIN_STADIUM
 
-def get_bg_parchment() -> Image.Image:
-    global BG_PARCHMENT
-    if BG_PARCHMENT is None:
-        BG_PARCHMENT = prepare_textured_bg(STOCK_DIR / "paper_backgrounds" / "bg_aged_yellow_07.png")
-    return BG_PARCHMENT
+def get_bg_pitch() -> Image.Image:
+    global BG_PITCH_ACTION
+    if BG_PITCH_ACTION is None:
+        BG_PITCH_ACTION = prepare_desaturated_stadium_bg(ASSETS_DIR / "italy_france_action.jpg")
+    return BG_PITCH_ACTION
+
+# Real tape assets
+TAPE_RED = Image.open(STOCK_DIR / "tape_strips" / "tape_crimson_washi_02.png").convert("RGBA")
+TAPE_BLACK = Image.open(STOCK_DIR / "tape_strips" / "tape_black_masking_03.png").convert("RGBA")
+TAPE_CLEAR = Image.open(STOCK_DIR / "tape_strips" / "tape_clear_cellophane_01.png").convert("RGBA")
 
 def create_banner_with_text(banner_path: Path, title: str, kicker: str) -> Image.Image:
     """Prints typography onto real reusable stock banner PNG."""
@@ -143,10 +156,11 @@ def render_frame(f_idx: int) -> Image.Image:
         
     # -------------------------------------------------------------
     # BEAT 1: The Farewell & Panenka (0.00s - 11.20s)
+    # Background: Low-saturation Olympiastadion Berlin
     # -------------------------------------------------------------
     if t < 11.20:
         t_b = t
-        bg = get_bg_newsprint().copy()
+        bg = get_bg_berlin().copy()
         
         # Entrance 1 (t_b >= 0.1s): Banner Variant A
         p_b = min(1.0, t_b / 0.45)
@@ -154,13 +168,16 @@ def render_frame(f_idx: int) -> Image.Image:
         head_x = int(-200 * (1.0 - ease_b) + 40)
         bg.paste(BANNER_B1, (head_x, 180), mask=BANNER_B1.split()[-1])
         
-        # Entrance 2 (t_b >= 1.4s): Buffon Polaroid (OpenCV centered)
+        # Entrance 2 (t_b >= 1.4s): Buffon Polaroid (OpenCV centered) + Red Washi Tape
         if t_b >= 1.4:
             p_buf = min(1.0, (t_b - 1.4) / 0.5)
             ease_buf = math.sin(p_buf * math.pi / 2)
             buf_im = get_image(ASSETS_DIR / "mounted_buffon_polaroid.png").rotate(-3, expand=True)
-            buf_y = int(480 - 60 * (1.0 - ease_buf))
+            buf_y = int(450 - 60 * (1.0 - ease_buf))
             bg.paste(buf_im, (50, buf_y), mask=buf_im.split()[-1])
+            # Tape corner
+            t_red = TAPE_RED.resize((150, 44), Image.Resampling.LANCZOS).rotate(18, expand=True)
+            bg.paste(t_red, (50, buf_y - 20), mask=t_red.split()[-1])
             
         # Entrance 3 (t_b >= 5.0s): Zidane Panenka Penalty Mount
         if t_b >= 5.0:
@@ -168,15 +185,20 @@ def render_frame(f_idx: int) -> Image.Image:
             ease_pen = math.sin(p_pen * math.pi / 2)
             pen_im = get_image(ASSETS_DIR / "mounted_zidane_penalty.png").rotate(2.5, expand=True)
             pen_x = int(380 + 100 * (1.0 - ease_pen))
-            bg.paste(pen_im, (pen_x, 820), mask=pen_im.split()[-1])
+            bg.paste(pen_im, (pen_x, 780), mask=pen_im.split()[-1])
             
-        # Entrance 4 (t_b >= 8.2s): L'Equipe Newspaper Clipping
+        # Entrance 4 (t_b >= 8.2s): REAL L'ÉQUIPE NEWSPAPER CLIPPING ("REGRETS ÉTERNELS")
         if t_b >= 8.2:
             p_eq = min(1.0, (t_b - 8.2) / 0.5)
             ease_eq = math.sin(p_eq * math.pi / 2)
-            eq_im = get_image(ASSETS_DIR / "clipping_lequipe_real.png")
-            eq_y = int(1280 + 120 * (1.0 - ease_eq))
-            bg.paste(eq_im, (50, eq_y), mask=eq_im.split()[-1])
+            eq_real = get_image(ASSETS_DIR / "clipping_lequipe_authentic.png")
+            eq_scale = 980 / eq_real.width
+            eq_s = eq_real.resize((980, int(eq_real.height * eq_scale)), Image.Resampling.LANCZOS).rotate(-1, expand=True)
+            eq_y = int(1220 + 100 * (1.0 - ease_eq))
+            bg.paste(eq_s, (45, eq_y), mask=eq_s.split()[-1])
+            # Clear tape on newspaper edge
+            t_clear = TAPE_CLEAR.resize((160, 40), Image.Resampling.LANCZOS).rotate(-8, expand=True)
+            bg.paste(t_clear, (850, eq_y - 15), mask=t_clear.split()[-1])
             
         bg = draw_mrbeast_captions(bg, t, center_y=1710)
         bg.paste(TV_WATERMARK, (50, 48), mask=TV_WATERMARK.split()[-1])
@@ -184,10 +206,11 @@ def render_frame(f_idx: int) -> Image.Image:
 
     # -------------------------------------------------------------
     # BEAT 2: The Altercation (11.20s - 21.16s)
+    # Background: Low-saturation Pitch Action with Zidane & Totti
     # -------------------------------------------------------------
     elif t < 21.16:
         t_b = t - 11.20
-        bg = get_bg_parchment().copy()
+        bg = get_bg_pitch().copy()
         
         # Entrance 1 (t_b >= 0.1s): Banner Variant B
         p_b = min(1.0, t_b / 0.45)
@@ -202,6 +225,9 @@ def render_frame(f_idx: int) -> Image.Image:
             sh_im = get_image(ASSETS_DIR / "mounted_shirt_altercation.png").rotate(1.5, expand=True)
             sh_y = int(480 - 60 * (1.0 - ease_sh))
             bg.paste(sh_im, (70, sh_y), mask=sh_im.split()[-1])
+            # Black tape
+            t_black = TAPE_BLACK.resize((140, 38), Image.Resampling.LANCZOS).rotate(-14, expand=True)
+            bg.paste(t_black, (65, sh_y - 12), mask=t_black.split()[-1])
             
         # Entrance 3 (t_b >= 4.5s): Real Quote Card with Neon Highlighter
         if t_b >= 4.5:
@@ -217,10 +243,11 @@ def render_frame(f_idx: int) -> Image.Image:
 
     # -------------------------------------------------------------
     # BEAT 3: The Headbutt (21.16s - 30.14s) — GENUINE ARCHIVAL BROADCAST LOOP HERO
+    # Background: Low-saturation Olympiastadion Berlin
     # -------------------------------------------------------------
     elif t < 30.14:
         t_b = t - 21.16
-        bg = get_bg_newsprint().copy()
+        bg = get_bg_berlin().copy()
         
         # Banner Variant C
         p_b = min(1.0, t_b / 0.45)
@@ -229,8 +256,6 @@ def render_frame(f_idx: int) -> Image.Image:
         bg.paste(BANNER_B3, (head_x, 180), mask=BANNER_B3.split()[-1])
         
         # ARCHIVAL BROADCAST PANEL PLAYBACK
-        # Narrator says "TURNS" at tb=0.6s, "HEADBUTT" at tb=1.96s, "CHEST" at tb=4.0s
-        # Panel slides in smoothly from y=380 starting at tb=0.8s
         if ARCHIVAL_BROADCAST_PANELS:
             p_pan = min(1.0, max(0.0, (t_b - 0.4) / 0.5))
             ease_pan = math.sin(p_pan * math.pi / 2)
@@ -246,20 +271,22 @@ def render_frame(f_idx: int) -> Image.Image:
                 nw, nh = int(pan_w * zoom), int(pan_h * zoom)
                 panel_im = panel_im.resize((nw, nh), Image.Resampling.LANCZOS)
                 px = (1080 - nw) // 2
-                py = int(490 - (nh - pan_h) // 2)
+                py = int(480 - (nh - pan_h) // 2)
             else:
                 px = (1080 - pan_w) // 2
-                py = int(490 + 80 * (1.0 - ease_pan))
+                py = int(480 + 80 * (1.0 - ease_pan))
                 
             bg.paste(panel_im, (px, py), mask=panel_im.split()[-1])
             
-        # Le Monde Breaking News Clipping (enters underneath at t_b >= 4.2s)
+        # REAL LE MONDE CLIPPING ("LE COUP DE BOULE QUI A CHOQUÉ LE MONDE") (t_b >= 4.2s)
         if t_b >= 4.2:
             p_lm = min(1.0, (t_b - 4.2) / 0.5)
             ease_lm = math.sin(p_lm * math.pi / 2)
             lm_im = get_image(ASSETS_DIR / "clipping_coup_de_boule_real.png")
-            lm_y = int(1280 + 120 * (1.0 - ease_lm))
+            lm_y = int(1220 + 100 * (1.0 - ease_lm))
             bg.paste(lm_im, (50, lm_y), mask=lm_im.split()[-1])
+            t_red2 = TAPE_RED.resize((140, 36), Image.Resampling.LANCZOS).rotate(10, expand=True)
+            bg.paste(t_red2, (55, lm_y - 10), mask=t_red2.split()[-1])
             
         bg = draw_mrbeast_captions(bg, t, center_y=1710)
         bg.paste(TV_WATERMARK, (50, 48), mask=TV_WATERMARK.split()[-1])
@@ -267,10 +294,11 @@ def render_frame(f_idx: int) -> Image.Image:
 
     # -------------------------------------------------------------
     # BEAT 4: The Expulsion (30.14s - 39.25s) — Red Card & Iconic Trophy Walk Photo
+    # Background: Low-saturation Olympiastadion Berlin
     # -------------------------------------------------------------
     elif t < 39.25:
         t_b = t - 30.14
-        bg = get_bg_parchment().copy()
+        bg = get_bg_berlin().copy()
         
         # Banner Variant D
         p_b = min(1.0, t_b / 0.45)
@@ -300,7 +328,6 @@ def render_frame(f_idx: int) -> Image.Image:
             p_zw = min(1.0, (t_b - 3.6) / 0.5)
             ease_zw = math.sin(p_zw * math.pi / 2)
             zw_raw = get_image(ASSETS_DIR / "mounted_zidane_trophy_walk_verified.png")
-            # Scale slightly to fit comfortably between Guardian card and captions
             zw_scaled = zw_raw.resize((int(zw_raw.width * 0.94), int(zw_raw.height * 0.94)), Image.Resampling.LANCZOS).rotate(-1.5, expand=True)
             zw_x = (1080 - zw_scaled.width) // 2
             zw_y = int(580 + 70 * (1.0 - ease_zw))
@@ -311,11 +338,12 @@ def render_frame(f_idx: int) -> Image.Image:
         return bg
 
     # -------------------------------------------------------------
-    # BEAT 5: The Aftermath (39.25s - 47.90s) — Cannavaro Trophy Lift & Disciplinary
+    # BEAT 5: The Aftermath (39.25s - 47.90s) — REAL Pink Gazzetta & Cannavaro Lift
+    # Background: Low-saturation Pitch Action
     # -------------------------------------------------------------
     elif t < 47.90:
         t_b = t - 39.25
-        bg = get_bg_newsprint().copy()
+        bg = get_bg_pitch().copy()
         
         # Banner Variant E
         p_b = min(1.0, t_b / 0.45)
@@ -323,33 +351,43 @@ def render_frame(f_idx: int) -> Image.Image:
         head_x = int(-200 * (1.0 - ease_b) + 40)
         bg.paste(BANNER_B5, (head_x, 180), mask=BANNER_B5.split()[-1])
         
+        # REAL PINK GAZZETTA DELLO SPORT CLIPPING ("TUTTO VERO! CAMPIONI DEL MONDO") (t_b >= 0.2s)
+        gaz_real = get_image(ASSETS_DIR / "clipping_gazzetta_authentic.png")
+        gaz_scale = 960 / gaz_real.width
+        gaz_s = gaz_real.resize((960, int(gaz_real.height * gaz_scale)), Image.Resampling.LANCZOS).rotate(1.2, expand=True)
+        bg.paste(gaz_s, (55, 430), mask=gaz_s.split()[-1])
+        # Black tape on top of Gazzetta
+        t_black = TAPE_BLACK.resize((150, 42), Image.Resampling.LANCZOS).rotate(-12, expand=True)
+        bg.paste(t_black, (60, 415), mask=t_black.split()[-1])
+        
         # 1. Revealed underneath (active at t_b >= 3.8s)
         if t_b >= 3.8:
-            # FIFA Sanction Document
             doc_im = get_image(ASSETS_DIR / "fifa_sanction_document.png")
-            bg.paste(doc_im, (60, 480), mask=doc_im.split()[-1])
+            bg.paste(doc_im, (60, 1050), mask=doc_im.split()[-1])
             
-            # Golden Ball Award Badge
             badge_gb = get_image(ASSETS_DIR / "golden_ball_award_badge.png")
-            bg.paste(badge_gb, (310, 940), mask=badge_gb.split()[-1])
+            bg.paste(badge_gb, (310, 1420), mask=badge_gb.split()[-1])
             
         # 2. VERIFIED CANNAVARO TROPHY LIFT (Reuters Confetti Lift)
-        # Slides UP from y=1950 to y=440 between t_b=0.0 and 0.6s
+        # Slides UP from y=1950 to y=680 between t_b=0.0 and 0.6s
         # Holds until t_b=3.6s
         # Slides DOWN back to y=1950 between t_b=3.6s and 4.4s
         can_im = get_image(ASSETS_DIR / "mounted_cannavaro_trophy_lift_verified.png")
+        can_s = can_im.resize((int(can_im.width * 0.78), int(can_im.height * 0.78)), Image.Resampling.LANCZOS).rotate(-1.5, expand=True)
+        can_x = (1080 - can_s.width) // 2
+        
         if t_b < 0.6:
             p_up = t_b / 0.6
             ease_up = math.sin(p_up * math.pi / 2)
-            sb_y = int(1950 - (1950 - 440) * ease_up)
-            bg.paste(can_im, (95, sb_y), mask=can_im.split()[-1])
+            sb_y = int(1950 - (1950 - 680) * ease_up)
+            bg.paste(can_s, (can_x, sb_y), mask=can_s.split()[-1])
         elif t_b < 3.6:
-            bg.paste(can_im, (95, 440), mask=can_im.split()[-1])
+            bg.paste(can_s, (can_x, 680), mask=can_s.split()[-1])
         elif t_b < 4.4:
             p_down = (t_b - 3.6) / 0.8
             ease_down = p_down ** 2
-            sb_y = int(440 + (1950 - 440) * ease_down)
-            bg.paste(can_im, (95, sb_y), mask=can_im.split()[-1])
+            sb_y = int(680 + (1950 - 680) * ease_down)
+            bg.paste(can_s, (can_x, sb_y), mask=can_s.split()[-1])
             
         bg = draw_mrbeast_captions(bg, t, center_y=1710)
         bg.paste(TV_WATERMARK, (50, 48), mask=TV_WATERMARK.split()[-1])
@@ -357,10 +395,11 @@ def render_frame(f_idx: int) -> Image.Image:
 
     # -------------------------------------------------------------
     # BEAT 6: The Legend (47.90s - 56.00s) — 108 Caps & Final Tribute
+    # Background: Low-saturation Olympiastadion Berlin
     # -------------------------------------------------------------
     else:
         t_b = t - 47.90
-        bg = get_bg_parchment().copy()
+        bg = get_bg_berlin().copy()
         
         # Banner Variant A
         p_b = min(1.0, t_b / 0.45)
@@ -409,7 +448,7 @@ def render_worker(args: Tuple[int, int]):
 
 def main():
     log_progress("=" * 70)
-    log_progress("  RENDERING 60.00s ZIDANE 2006 DOCUMENTARY (ARTISAN EDITION 6.0)")
+    log_progress("  RENDERING 60.00s ZIDANE 2006 (MASTER 7.0 - TRUE BROADSHEET & STADIUM BG)")
     log_progress("=" * 70)
     
     total_frames = 1800  # 60.0s @ 30fps
@@ -437,14 +476,14 @@ def main():
     sample_frames = [
         ("01_farewell_buffon", 60),      # 2.0s
         ("02_panenka_penalty", 180),     # 6.0s
-        ("03_lequipe_frontpage", 270),   # 9.0s
+        ("03_lequipe_frontpage", 270),   # 9.0s (Real L'Equipe)
         ("04_altercation_shirt", 400),   # 13.3s
         ("05_quote_insult", 540),        # 18.0s
         ("06_headbutt_broadcast", 720),  # 24.0s (incident replay)
-        ("07_lemonde_clipping", 840),    # 28.0s
+        ("07_lemonde_clipping", 840),    # 28.0s (Real Le Monde)
         ("08_red_card_stamp", 960),      # 32.0s
         ("09_trophy_walk_iconic", 1110), # 37.0s (Zidane past trophy)
-        ("10_cannavaro_lift", 1260),     # 42.0s (Cannavaro confetti lift)
+        ("10_gazzetta_lift", 1260),      # 42.0s (Real Pink Gazzetta & Cannavaro)
         ("11_fifa_sanctions", 1380),     # 46.0s (FIFA doc & Golden Ball)
         ("12_legend_outro", 1720),       # 57.3s (FS30 outro)
     ]
@@ -458,7 +497,6 @@ def main():
                 sheet.paste(fim, (col * 1080, row * 1920))
                 
     contact_path = RUN_DIR / "zidane_artisan_12beat_contact_sheet.png"
-    # Resize to manageable web preview resolution (1440 x 1920)
     sheet_preview = sheet.resize((1440, 1920), Image.Resampling.LANCZOS)
     sheet_preview.save(contact_path)
     sheet_preview.save(BRAIN_DIR / "zidane_artisan_12beat_contact_sheet.png")
@@ -487,7 +525,6 @@ def main():
     res = subprocess.run(cmd_ffmpeg, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     if res.returncode == 0:
         log_progress(f"Master Video successfully created: {master_video_path.name} ({master_video_path.stat().st_size / (1024*1024):.2f} MB)")
-        # Copy to brain and final masters vault
         import shutil
         shutil.copy(master_video_path, BRAIN_DIR / "zidane_headbutt_artisan_master_60s.mp4")
         vault_dir = PROJECT_ROOT / "final_masters_vault" / "FS30-HIST-002"
