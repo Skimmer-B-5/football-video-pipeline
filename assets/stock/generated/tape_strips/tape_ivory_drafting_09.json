@@ -1,0 +1,17 @@
+{
+  "id": "stock_tape_09",
+  "asset_type": "tape_strip",
+  "variant": "ivory_drafting",
+  "seed": 3009,
+  "has_alpha": true,
+  "blend_mode": "normal",
+  "license": "CC0 1.0 Universal",
+  "generated": true,
+  "tags": [
+    "tape",
+    "adhesive",
+    "ivory_drafting",
+    "washi",
+    "craft"
+  ]
+}

@@ -1,0 +1,1001 @@
+{
+  "beat_1": [
+    {
+      "word": "JULY",
+      "start": 0.0,
+      "end": 0.38
+    },
+    {
+      "word": "2006",
+      "start": 0.38,
+      "end": 0.82
+    },
+    {
+      "word": "BERLIN",
+      "start": 1.34,
+      "end": 1.48
+    },
+    {
+      "word": "ZINDANG'S",
+      "start": 1.78,
+      "end": 2.0
+    },
+    {
+      "word": "DANCE",
+      "start": 2.0,
+      "end": 2.16
+    },
+    {
+      "word": "STEPS",
+      "start": 2.16,
+      "end": 2.42
+    },
+    {
+      "word": "ONTO",
+      "start": 2.42,
+      "end": 2.56
+    },
+    {
+      "word": "THE",
+      "start": 2.56,
+      "end": 2.68
+    },
+    {
+      "word": "PITCH",
+      "start": 2.68,
+      "end": 2.84
+    },
+    {
+      "word": "FOR",
+      "start": 2.84,
+      "end": 3.0
+    },
+    {
+      "word": "HIS",
+      "start": 3.0,
+      "end": 3.1
+    },
+    {
+      "word": "FINAL",
+      "start": 3.1,
+      "end": 3.28
+    },
+    {
+      "word": "PROFESSIONAL",
+      "start": 3.28,
+      "end": 3.56
+    },
+    {
+      "word": "MATCH",
+      "start": 3.56,
+      "end": 3.84
+    },
+    {
+      "word": "SEVEN",
+      "start": 4.2,
+      "end": 4.26
+    },
+    {
+      "word": "MINUTES",
+      "start": 4.26,
+      "end": 4.42
+    },
+    {
+      "word": "IN",
+      "start": 4.42,
+      "end": 4.56
+    },
+    {
+      "word": "EACH",
+      "start": 4.74,
+      "end": 4.76
+    },
+    {
+      "word": "HITS",
+      "start": 4.76,
+      "end": 4.88
+    },
+    {
+      "word": "A",
+      "start": 4.88,
+      "end": 4.98
+    },
+    {
+      "word": "NONCHALANT",
+      "start": 4.98,
+      "end": 5.34
+    },
+    {
+      "word": "PANENGA",
+      "start": 5.34,
+      "end": 5.6
+    },
+    {
+      "word": "PENALTY",
+      "start": 5.6,
+      "end": 5.82
+    },
+    {
+      "word": "OFF",
+      "start": 5.82,
+      "end": 6.12
+    },
+    {
+      "word": "THE",
+      "start": 6.12,
+      "end": 6.2
+    },
+    {
+      "word": "CROSSBAR",
+      "start": 6.2,
+      "end": 6.48
+    },
+    {
+      "word": "PASS",
+      "start": 6.48,
+      "end": 6.72
+    },
+    {
+      "word": "JOHN",
+      "start": 6.72,
+      "end": 6.86
+    },
+    {
+      "word": "LUIGI",
+      "start": 6.86,
+      "end": 7.06
+    },
+    {
+      "word": "BOFON",
+      "start": 7.06,
+      "end": 7.36
+    },
+    {
+      "word": "PURE",
+      "start": 7.48,
+      "end": 7.54
+    },
+    {
+      "word": "POETRY",
+      "start": 7.54,
+      "end": 7.7
+    }
+  ],
+  "beat_2": [
+    {
+      "word": "110",
+      "start": 0.0,
+      "end": 0.62
+    },
+    {
+      "word": "MINUTES",
+      "start": 0.62,
+      "end": 1.14
+    },
+    {
+      "word": "OF",
+      "start": 1.14,
+      "end": 1.3
+    },
+    {
+      "word": "GRUELING",
+      "start": 1.3,
+      "end": 1.66
+    },
+    {
+      "word": "EXTRA",
+      "start": 1.66,
+      "end": 1.86
+    },
+    {
+      "word": "TIME",
+      "start": 1.86,
+      "end": 2.14
+    },
+    {
+      "word": "LATER",
+      "start": 2.14,
+      "end": 2.3
+    },
+    {
+      "word": "MARCO",
+      "start": 2.5,
+      "end": 2.68
+    },
+    {
+      "word": "MATADASI",
+      "start": 2.68,
+      "end": 3.38
+    },
+    {
+      "word": "GRABS",
+      "start": 3.38,
+      "end": 3.72
+    },
+    {
+      "word": "ZIDANISHAD",
+      "start": 3.72,
+      "end": 4.34
+    },
+    {
+      "word": "IS",
+      "start": 4.46,
+      "end": 4.52
+    },
+    {
+      "word": "HE",
+      "start": 4.52,
+      "end": 4.58
+    },
+    {
+      "word": "SO",
+      "start": 4.58,
+      "end": 4.66
+    },
+    {
+      "word": "POLITELY",
+      "start": 4.66,
+      "end": 4.8
+    },
+    {
+      "word": "OFFERS",
+      "start": 4.8,
+      "end": 5.1
+    },
+    {
+      "word": "TO",
+      "start": 5.1,
+      "end": 5.24
+    },
+    {
+      "word": "GIVE",
+      "start": 5.24,
+      "end": 5.32
+    },
+    {
+      "word": "IT",
+      "start": 5.32,
+      "end": 5.4
+    },
+    {
+      "word": "TO",
+      "start": 5.4,
+      "end": 5.46
+    },
+    {
+      "word": "HIM",
+      "start": 5.46,
+      "end": 5.54
+    },
+    {
+      "word": "AFTER",
+      "start": 5.54,
+      "end": 5.72
+    },
+    {
+      "word": "THE",
+      "start": 5.72,
+      "end": 5.88
+    },
+    {
+      "word": "MATCH?",
+      "start": 5.88,
+      "end": 6.02
+    },
+    {
+      "word": "MATADASI",
+      "start": 6.24,
+      "end": 6.56
+    },
+    {
+      "word": "HOWEVER",
+      "start": 6.56,
+      "end": 6.72
+    },
+    {
+      "word": "HAD",
+      "start": 6.86,
+      "end": 6.96
+    },
+    {
+      "word": "AN",
+      "start": 6.96,
+      "end": 7.04
+    },
+    {
+      "word": "ENTIRELY",
+      "start": 7.04,
+      "end": 7.26
+    },
+    {
+      "word": "DIFFERENT",
+      "start": 7.26,
+      "end": 7.58
+    },
+    {
+      "word": "FAMILY",
+      "start": 7.58,
+      "end": 7.76
+    },
+    {
+      "word": "HEIRLOOM",
+      "start": 7.76,
+      "end": 8.14
+    },
+    {
+      "word": "IN",
+      "start": 8.14,
+      "end": 8.22
+    },
+    {
+      "word": "MIND",
+      "start": 8.22,
+      "end": 8.36
+    }
+  ],
+  "beat_3": [
+    {
+      "word": "ZIDANE",
+      "start": 0.0,
+      "end": 0.68
+    },
+    {
+      "word": "STOPS",
+      "start": 0.68,
+      "end": 1.0
+    },
+    {
+      "word": "TURNS",
+      "start": 1.1,
+      "end": 1.52
+    },
+    {
+      "word": "AROUND",
+      "start": 1.52,
+      "end": 1.82
+    },
+    {
+      "word": "AND",
+      "start": 2.1,
+      "end": 2.2
+    },
+    {
+      "word": "DELIVERS",
+      "start": 2.2,
+      "end": 2.5
+    },
+    {
+      "word": "A",
+      "start": 2.5,
+      "end": 2.68
+    },
+    {
+      "word": "FEROCIOUS",
+      "start": 2.68,
+      "end": 3.04
+    },
+    {
+      "word": "FULL",
+      "start": 3.04,
+      "end": 3.56
+    },
+    {
+      "word": "FORCE",
+      "start": 3.56,
+      "end": 3.8
+    },
+    {
+      "word": "HEADBUTT",
+      "start": 3.8,
+      "end": 4.32
+    },
+    {
+      "word": "DIRECTLY",
+      "start": 4.32,
+      "end": 4.78
+    },
+    {
+      "word": "INTO",
+      "start": 4.78,
+      "end": 5.34
+    },
+    {
+      "word": "THE",
+      "start": 5.34,
+      "end": 5.46
+    },
+    {
+      "word": "ITALIAN",
+      "start": 5.46,
+      "end": 5.8
+    },
+    {
+      "word": "DEFENDER'S",
+      "start": 5.8,
+      "end": 6.36
+    },
+    {
+      "word": "CHEST",
+      "start": 6.36,
+      "end": 6.54
+    },
+    {
+      "word": "THE",
+      "start": 6.9,
+      "end": 6.9
+    },
+    {
+      "word": "TURF",
+      "start": 6.9,
+      "end": 7.08
+    },
+    {
+      "word": "LIKE",
+      "start": 7.08,
+      "end": 7.38
+    },
+    {
+      "word": "A",
+      "start": 7.38,
+      "end": 7.5
+    },
+    {
+      "word": "SACK",
+      "start": 7.5,
+      "end": 7.76
+    },
+    {
+      "word": "OF",
+      "start": 7.76,
+      "end": 7.92
+    },
+    {
+      "word": "DAMP",
+      "start": 7.92,
+      "end": 8.16
+    },
+    {
+      "word": "CEMENT",
+      "start": 8.16,
+      "end": 8.4
+    },
+    {
+      "word": "ONE",
+      "start": 8.84,
+      "end": 9.0
+    },
+    {
+      "word": "BILLION",
+      "start": 9.0,
+      "end": 9.44
+    },
+    {
+      "word": "VIEWERS",
+      "start": 9.44,
+      "end": 9.92
+    },
+    {
+      "word": "STARED",
+      "start": 9.92,
+      "end": 10.22
+    },
+    {
+      "word": "IN",
+      "start": 10.22,
+      "end": 10.4
+    },
+    {
+      "word": "UTTER",
+      "start": 10.4,
+      "end": 10.64
+    },
+    {
+      "word": "DISBELIEF",
+      "start": 10.64,
+      "end": 11.2
+    }
+  ],
+  "beat_4": [
+    {
+      "word": "REFEREE",
+      "start": 0.0,
+      "end": 0.74
+    },
+    {
+      "word": "HORACIO",
+      "start": 0.92,
+      "end": 1.3
+    },
+    {
+      "word": "ELIZONDO",
+      "start": 1.54,
+      "end": 1.9
+    },
+    {
+      "word": "MISSED",
+      "start": 1.9,
+      "end": 2.22
+    },
+    {
+      "word": "IT",
+      "start": 2.22,
+      "end": 2.44
+    },
+    {
+      "word": "BUT",
+      "start": 2.66,
+      "end": 2.66
+    },
+    {
+      "word": "FOURTH",
+      "start": 2.66,
+      "end": 2.82
+    },
+    {
+      "word": "OFFICIAL",
+      "start": 2.82,
+      "end": 3.24
+    },
+    {
+      "word": "MEDINA",
+      "start": 3.24,
+      "end": 3.52
+    },
+    {
+      "word": "HINTOLEJO",
+      "start": 3.94,
+      "end": 4.36
+    },
+    {
+      "word": "SAW",
+      "start": 4.46,
+      "end": 4.62
+    },
+    {
+      "word": "EVERYTHING",
+      "start": 4.62,
+      "end": 5.0
+    },
+    {
+      "word": "THROUGH",
+      "start": 5.0,
+      "end": 5.36
+    },
+    {
+      "word": "HIS",
+      "start": 5.36,
+      "end": 5.48
+    },
+    {
+      "word": "HEADSET",
+      "start": 5.48,
+      "end": 5.76
+    },
+    {
+      "word": "THE",
+      "start": 6.04,
+      "end": 6.04
+    },
+    {
+      "word": "RED",
+      "start": 6.04,
+      "end": 6.2
+    },
+    {
+      "word": "CARD",
+      "start": 6.2,
+      "end": 6.4
+    },
+    {
+      "word": "IS",
+      "start": 6.4,
+      "end": 6.58
+    },
+    {
+      "word": "BRANDISHED",
+      "start": 6.58,
+      "end": 7.04
+    },
+    {
+      "word": "ZIDANE",
+      "start": 7.38,
+      "end": 7.66
+    },
+    {
+      "word": "WALKS",
+      "start": 7.66,
+      "end": 7.96
+    },
+    {
+      "word": "INTO",
+      "start": 7.96,
+      "end": 8.18
+    },
+    {
+      "word": "THE",
+      "start": 8.18,
+      "end": 8.3
+    },
+    {
+      "word": "TUNNEL",
+      "start": 8.3,
+      "end": 8.54
+    },
+    {
+      "word": "PASSING",
+      "start": 8.74,
+      "end": 8.94
+    },
+    {
+      "word": "INCHES",
+      "start": 8.94,
+      "end": 9.22
+    },
+    {
+      "word": "FROM",
+      "start": 9.22,
+      "end": 9.5
+    },
+    {
+      "word": "THE",
+      "start": 9.5,
+      "end": 9.58
+    },
+    {
+      "word": "GOLDEN",
+      "start": 9.58,
+      "end": 9.76
+    },
+    {
+      "word": "WORLD",
+      "start": 9.76,
+      "end": 10.02
+    },
+    {
+      "word": "CUP",
+      "start": 10.02,
+      "end": 10.22
+    },
+    {
+      "word": "TROPHY",
+      "start": 10.22,
+      "end": 10.46
+    },
+    {
+      "word": "WITHOUT",
+      "start": 10.46,
+      "end": 10.76
+    },
+    {
+      "word": "LOOKING",
+      "start": 10.76,
+      "end": 11.12
+    },
+    {
+      "word": "BACK",
+      "start": 11.12,
+      "end": 11.34
+    }
+  ],
+  "beat_5": [
+    {
+      "word": "ITALY",
+      "start": 0.0,
+      "end": 0.46
+    },
+    {
+      "word": "WON",
+      "start": 0.46,
+      "end": 0.84
+    },
+    {
+      "word": "THE",
+      "start": 0.84,
+      "end": 1.02
+    },
+    {
+      "word": "SHOOTOUT",
+      "start": 1.02,
+      "end": 1.24
+    },
+    {
+      "word": "FIFA",
+      "start": 1.7,
+      "end": 1.7
+    },
+    {
+      "word": "HANDED",
+      "start": 1.7,
+      "end": 1.98
+    },
+    {
+      "word": "ZADANE",
+      "start": 1.98,
+      "end": 2.36
+    },
+    {
+      "word": "A",
+      "start": 2.36,
+      "end": 2.52
+    },
+    {
+      "word": "THREE",
+      "start": 2.52,
+      "end": 2.82
+    },
+    {
+      "word": "-MATCH",
+      "start": 2.82,
+      "end": 3.06
+    },
+    {
+      "word": "BAN",
+      "start": 3.06,
+      "end": 3.36
+    },
+    {
+      "word": "AND",
+      "start": 3.36,
+      "end": 3.7
+    },
+    {
+      "word": "THREE",
+      "start": 3.7,
+      "end": 3.98
+    },
+    {
+      "word": "DAYS",
+      "start": 3.98,
+      "end": 4.36
+    },
+    {
+      "word": "OF",
+      "start": 4.36,
+      "end": 4.7
+    },
+    {
+      "word": "COMMUNITY",
+      "start": 4.7,
+      "end": 4.96
+    },
+    {
+      "word": "SERVICE",
+      "start": 4.96,
+      "end": 5.48
+    },
+    {
+      "word": "WITH",
+      "start": 5.48,
+      "end": 5.78
+    },
+    {
+      "word": "UNICEF",
+      "start": 5.78,
+      "end": 6.22
+    },
+    {
+      "word": "REMARKABLY",
+      "start": 6.42,
+      "end": 6.82
+    },
+    {
+      "word": "HE",
+      "start": 7.06,
+      "end": 7.12
+    },
+    {
+      "word": "WAS",
+      "start": 7.12,
+      "end": 7.2
+    },
+    {
+      "word": "STILL",
+      "start": 7.2,
+      "end": 7.38
+    },
+    {
+      "word": "VOTED",
+      "start": 7.38,
+      "end": 7.62
+    },
+    {
+      "word": "THE",
+      "start": 7.62,
+      "end": 7.76
+    },
+    {
+      "word": "TOURNAMENT'S",
+      "start": 7.76,
+      "end": 8.22
+    },
+    {
+      "word": "BEST",
+      "start": 8.22,
+      "end": 8.44
+    },
+    {
+      "word": "PLAYER",
+      "start": 8.44,
+      "end": 8.7
+    },
+    {
+      "word": "APPARENTLY",
+      "start": 9.36,
+      "end": 9.36
+    },
+    {
+      "word": "LEGENDARY",
+      "start": 9.56,
+      "end": 9.82
+    },
+    {
+      "word": "STATUS",
+      "start": 9.82,
+      "end": 10.2
+    },
+    {
+      "word": "COMES",
+      "start": 10.2,
+      "end": 10.58
+    },
+    {
+      "word": "WITH",
+      "start": 10.58,
+      "end": 10.8
+    },
+    {
+      "word": "SOME",
+      "start": 10.8,
+      "end": 10.92
+    },
+    {
+      "word": "DIPLOMATIC",
+      "start": 10.92,
+      "end": 11.24
+    },
+    {
+      "word": "IMMUNITY",
+      "start": 11.24,
+      "end": 11.62
+    }
+  ],
+  "beat_6": [
+    {
+      "word": "WINODY",
+      "start": 0.0,
+      "end": 0.54
+    },
+    {
+      "word": "CAPPS",
+      "start": 0.54,
+      "end": 1.1
+    },
+    {
+      "word": "A",
+      "start": 1.36,
+      "end": 1.42
+    },
+    {
+      "word": "FINAL",
+      "start": 1.42,
+      "end": 1.58
+    },
+    {
+      "word": "ACT",
+      "start": 1.58,
+      "end": 1.78
+    },
+    {
+      "word": "OF",
+      "start": 1.78,
+      "end": 1.94
+    },
+    {
+      "word": "EXPLOSIVE",
+      "start": 1.94,
+      "end": 2.22
+    },
+    {
+      "word": "FURY",
+      "start": 2.22,
+      "end": 2.6
+    },
+    {
+      "word": "AT",
+      "start": 2.6,
+      "end": 2.84
+    },
+    {
+      "word": "FOREVER",
+      "start": 2.84,
+      "end": 2.96
+    },
+    {
+      "word": "DOOR",
+      "start": 2.96,
+      "end": 3.26
+    },
+    {
+      "word": "LONG",
+      "start": 3.44,
+      "end": 3.62
+    },
+    {
+      "word": "LIVES",
+      "start": 3.62,
+      "end": 3.88
+    },
+    {
+      "word": "IS",
+      "start": 3.88,
+      "end": 4.12
+    },
+    {
+      "word": "WHO",
+      "start": 4.12,
+      "end": 4.32
+    }
+  ],
+  "outro_speech": [
+    {
+      "word": "SEE",
+      "start": 0.0,
+      "end": 0.4
+    },
+    {
+      "word": "YOU",
+      "start": 0.4,
+      "end": 0.44
+    },
+    {
+      "word": "LATER",
+      "start": 0.44,
+      "end": 0.6
+    },
+    {
+      "word": "THIS",
+      "start": 1.0,
+      "end": 1.24
+    },
+    {
+      "word": "IS",
+      "start": 1.24,
+      "end": 1.32
+    },
+    {
+      "word": "FOOTBALL",
+      "start": 1.32,
+      "end": 1.52
+    },
+    {
+      "word": "IN",
+      "start": 1.52,
+      "end": 1.84
+    },
+    {
+      "word": "30",
+      "start": 1.84,
+      "end": 2.08
+    },
+    {
+      "word": "SECONDS",
+      "start": 2.08,
+      "end": 2.48
+    },
+    {
+      "word": "FOLLOW",
+      "start": 2.98,
+      "end": 3.2
+    },
+    {
+      "word": "FOR",
+      "start": 3.2,
+      "end": 3.48
+    },
+    {
+      "word": "MORE",
+      "start": 3.48,
+      "end": 3.7
+    }
+  ]
+}

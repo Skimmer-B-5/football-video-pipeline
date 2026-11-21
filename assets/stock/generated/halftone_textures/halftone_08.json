@@ -1,0 +1,14 @@
+{
+  "id": "stock_halftone_08",
+  "asset_type": "halftone_texture",
+  "seed": 7008,
+  "blend_mode": "multiply",
+  "has_alpha": false,
+  "license": "CC0 1.0 Universal",
+  "generated": true,
+  "tags": [
+    "halftone",
+    "newspaper",
+    "dot_matrix"
+  ]
+}

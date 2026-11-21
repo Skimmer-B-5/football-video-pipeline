@@ -1,0 +1,21 @@
+{
+  "id": "stock_bg_08",
+  "asset_type": "paper_background",
+  "variant": "clean_white",
+  "seed": 1008,
+  "width": 1080,
+  "height": 1920,
+  "blend_mode": "normal",
+  "has_alpha": false,
+  "license": "CC0 1.0 Universal",
+  "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+  "generated": true,
+  "date": "2026-11-21",
+  "tags": [
+    "paper",
+    "background",
+    "clean_white",
+    "tactile",
+    "craft"
+  ]
+}

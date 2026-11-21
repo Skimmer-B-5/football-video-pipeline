@@ -1,0 +1,15 @@
+{
+  "id": "stock_wrinkle_08",
+  "asset_type": "wrinkled_overlay",
+  "seed": 2008,
+  "blend_mode": "multiply",
+  "has_alpha": false,
+  "license": "CC0 1.0 Universal",
+  "generated": true,
+  "tags": [
+    "wrinkle",
+    "crease",
+    "overlay",
+    "paper"
+  ]
+}

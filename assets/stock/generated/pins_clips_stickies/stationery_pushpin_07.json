@@ -1,0 +1,15 @@
+{
+  "id": "stock_stationery_07",
+  "asset_type": "pin_clip_sticky",
+  "kind": "pushpin",
+  "seed": 6007,
+  "has_alpha": true,
+  "license": "CC0 1.0 Universal",
+  "generated": true,
+  "tags": [
+    "stationery",
+    "pushpin",
+    "clip",
+    "pin"
+  ]
+}

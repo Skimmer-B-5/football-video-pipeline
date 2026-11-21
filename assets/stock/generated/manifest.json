@@ -1,0 +1,2222 @@
+{
+  "total_assets": 135,
+  "generated_time_sec": 98.89,
+  "sec_per_image": 0.7325,
+  "categories": {
+    "paper_background": 30,
+    "wrinkled_overlay": 15,
+    "tape_strip": 25,
+    "torn_edge": 15,
+    "stains_dust": 15,
+    "pin_clip_sticky": 15,
+    "halftone_texture": 10,
+    "cardboard_back": 10
+  },
+  "assets": [
+    {
+      "id": "stock_bg_00",
+      "asset_type": "paper_background",
+      "variant": "clean_white",
+      "seed": 1000,
+      "width": 1080,
+      "height": 1920,
+      "blend_mode": "normal",
+      "has_alpha": false,
+      "license": "CC0 1.0 Universal",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "generated": true,
+      "date": "2026-11-21",
+      "tags": [
+        "paper",
+        "background",
+        "clean_white",
+        "tactile",
+        "craft"
+      ]
+    },
+    {
+      "id": "stock_bg_01",
+      "asset_type": "paper_background",
+      "variant": "off_white_rag",
+      "seed": 1001,
+      "width": 1080,
+      "height": 1920,
+      "blend_mode": "normal",
+      "has_alpha": false,
+      "license": "CC0 1.0 Universal",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "generated": true,
+      "date": "2026-11-21",
+      "tags": [
+        "paper",
+        "background",
+        "off_white_rag",
+        "tactile",
+        "craft"
+      ]
+    },
+    {
+      "id": "stock_bg_02",
+      "asset_type": "paper_background",
+      "variant": "brown_kraft",
+      "seed": 1002,
+      "width": 1080,
+      "height": 1920,
+      "blend_mode": "normal",
+      "has_alpha": false,
+      "license": "CC0 1.0 Universal",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "generated": true,
+      "date": "2026-11-21",
+      "tags": [
+        "paper",
+        "background",
+        "brown_kraft",
+        "tactile",
+        "craft"
+      ]
+    },
+    {
+      "id": "stock_bg_03",
+      "asset_type": "paper_background",
+      "variant": "grey_newsprint",
+      "seed": 1003,
+      "width": 1080,
+      "height": 1920,
+      "blend_mode": "normal",
+      "has_alpha": false,
+      "license": "CC0 1.0 Universal",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "generated": true,
+      "date": "2026-11-21",
+      "tags": [
+        "paper",
+        "background",
+        "grey_newsprint",
+        "tactile",
+        "craft"
+      ]
+    },
+    {
+      "id": "stock_bg_04",
+      "asset_type": "paper_background",
+      "variant": "graph_paper",
+      "seed": 1004,
+      "width": 1080,
+      "height": 1920,
+      "blend_mode": "normal",
+      "has_alpha": false,
+      "license": "CC0 1.0 Universal",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "generated": true,
+      "date": "2026-11-21",
+      "tags": [
+        "paper",
+        "background",
+        "graph_paper",
+        "tactile",
+        "craft"
+      ]
+    },
+    {
+      "id": "stock_bg_05",
+      "asset_type": "paper_background",
+      "variant": "ruled_notebook",
+      "seed": 1005,
+      "width": 1080,
+      "height": 1920,
+      "blend_mode": "normal",
+      "has_alpha": false,
+      "license": "CC0 1.0 Universal",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "generated": true,
+      "date": "2026-11-21",
+      "tags": [
+        "paper",
+        "background",
+        "ruled_notebook",
+        "tactile",
+        "craft"
+      ]
+    },
+    {
+      "id": "stock_bg_06",
+      "asset_type": "paper_background",
+      "variant": "heavy_cardboard",
+      "seed": 1006,
+      "width": 1080,
+      "height": 1920,
+      "blend_mode": "normal",
+      "has_alpha": false,
+      "license": "CC0 1.0 Universal",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "generated": true,
+      "date": "2026-11-21",
+      "tags": [
+        "paper",
+        "background",
+        "heavy_cardboard",
+        "tactile",
+        "craft"
+      ]
+    },
+    {
+      "id": "stock_bg_07",
+      "asset_type": "paper_background",
+      "variant": "aged_yellow",
+      "seed": 1007,
+      "width": 1080,
+      "height": 1920,
+      "blend_mode": "normal",
+      "has_alpha": false,
+      "license": "CC0 1.0 Universal",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "generated": true,
+      "date": "2026-11-21",
+      "tags": [
+        "paper",
+        "background",
+        "aged_yellow",
+        "tactile",
+        "craft"
+      ]
+    },
+    {
+      "id": "stock_bg_08",
+      "asset_type": "paper_background",
+      "variant": "clean_white",
+      "seed": 1008,
+      "width": 1080,
+      "height": 1920,
+      "blend_mode": "normal",
+      "has_alpha": false,
+      "license": "CC0 1.0 Universal",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "generated": true,
+      "date": "2026-11-21",
+      "tags": [
+        "paper",
+        "background",
+        "clean_white",
+        "tactile",
+        "craft"
+      ]
+    },
+    {
+      "id": "stock_bg_09",
+      "asset_type": "paper_background",
+      "variant": "off_white_rag",
+      "seed": 1009,
+      "width": 1080,
+      "height": 1920,
+      "blend_mode": "normal",
+      "has_alpha": false,
+      "license": "CC0 1.0 Universal",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "generated": true,
+      "date": "2026-11-21",
+      "tags": [
+        "paper",
+        "background",
+        "off_white_rag",
+        "tactile",
+        "craft"
+      ]
+    },
+    {
+      "id": "stock_bg_10",
+      "asset_type": "paper_background",
+      "variant": "brown_kraft",
+      "seed": 1010,
+      "width": 1080,
+      "height": 1920,
+      "blend_mode": "normal",
+      "has_alpha": false,
+      "license": "CC0 1.0 Universal",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "generated": true,
+      "date": "2026-11-21",
+      "tags": [
+        "paper",
+        "background",
+        "brown_kraft",
+        "tactile",
+        "craft"
+      ]
+    },
+    {
+      "id": "stock_bg_11",
+      "asset_type": "paper_background",
+      "variant": "grey_newsprint",
+      "seed": 1011,
+      "width": 1080,
+      "height": 1920,
+      "blend_mode": "normal",
+      "has_alpha": false,
+      "license": "CC0 1.0 Universal",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "generated": true,
+      "date": "2026-11-21",
+      "tags": [
+        "paper",
+        "background",
+        "grey_newsprint",
+        "tactile",
+        "craft"
+      ]
+    },
+    {
+      "id": "stock_bg_12",
+      "asset_type": "paper_background",
+      "variant": "graph_paper",
+      "seed": 1012,
+      "width": 1080,
+      "height": 1920,
+      "blend_mode": "normal",
+      "has_alpha": false,
+      "license": "CC0 1.0 Universal",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "generated": true,
+      "date": "2026-11-21",
+      "tags": [
+        "paper",
+        "background",
+        "graph_paper",
+        "tactile",
+        "craft"
+      ]
+    },
+    {
+      "id": "stock_bg_13",
+      "asset_type": "paper_background",
+      "variant": "ruled_notebook",
+      "seed": 1013,
+      "width": 1080,
+      "height": 1920,
+      "blend_mode": "normal",
+      "has_alpha": false,
+      "license": "CC0 1.0 Universal",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "generated": true,
+      "date": "2026-11-21",
+      "tags": [
+        "paper",
+        "background",
+        "ruled_notebook",
+        "tactile",
+        "craft"
+      ]
+    },
+    {
+      "id": "stock_bg_14",
+      "asset_type": "paper_background",
+      "variant": "heavy_cardboard",
+      "seed": 1014,
+      "width": 1080,
+      "height": 1920,
+      "blend_mode": "normal",
+      "has_alpha": false,
+      "license": "CC0 1.0 Universal",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "generated": true,
+      "date": "2026-11-21",
+      "tags": [
+        "paper",
+        "background",
+        "heavy_cardboard",
+        "tactile",
+        "craft"
+      ]
+    },
+    {
+      "id": "stock_bg_15",
+      "asset_type": "paper_background",
+      "variant": "aged_yellow",
+      "seed": 1015,
+      "width": 1080,
+      "height": 1920,
+      "blend_mode": "normal",
+      "has_alpha": false,
+      "license": "CC0 1.0 Universal",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "generated": true,
+      "date": "2026-11-21",
+      "tags": [
+        "paper",
+        "background",
+        "aged_yellow",
+        "tactile",
+        "craft"
+      ]
+    },
+    {
+      "id": "stock_bg_16",
+      "asset_type": "paper_background",
+      "variant": "clean_white",
+      "seed": 1016,
+      "width": 1080,
+      "height": 1920,
+      "blend_mode": "normal",
+      "has_alpha": false,
+      "license": "CC0 1.0 Universal",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "generated": true,
+      "date": "2026-11-21",
+      "tags": [
+        "paper",
+        "background",
+        "clean_white",
+        "tactile",
+        "craft"
+      ]
+    },
+    {
+      "id": "stock_bg_17",
+      "asset_type": "paper_background",
+      "variant": "off_white_rag",
+      "seed": 1017,
+      "width": 1080,
+      "height": 1920,
+      "blend_mode": "normal",
+      "has_alpha": false,
+      "license": "CC0 1.0 Universal",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "generated": true,
+      "date": "2026-11-21",
+      "tags": [
+        "paper",
+        "background",
+        "off_white_rag",
+        "tactile",
+        "craft"
+      ]
+    },
+    {
+      "id": "stock_bg_18",
+      "asset_type": "paper_background",
+      "variant": "brown_kraft",
+      "seed": 1018,
+      "width": 1080,
+      "height": 1920,
+      "blend_mode": "normal",
+      "has_alpha": false,
+      "license": "CC0 1.0 Universal",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "generated": true,
+      "date": "2026-11-21",
+      "tags": [
+        "paper",
+        "background",
+        "brown_kraft",
+        "tactile",
+        "craft"
+      ]
+    },
+    {
+      "id": "stock_bg_19",
+      "asset_type": "paper_background",
+      "variant": "grey_newsprint",
+      "seed": 1019,
+      "width": 1080,
+      "height": 1920,
+      "blend_mode": "normal",
+      "has_alpha": false,
+      "license": "CC0 1.0 Universal",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "generated": true,
+      "date": "2026-11-21",
+      "tags": [
+        "paper",
+        "background",
+        "grey_newsprint",
+        "tactile",
+        "craft"
+      ]
+    },
+    {
+      "id": "stock_bg_20",
+      "asset_type": "paper_background",
+      "variant": "graph_paper",
+      "seed": 1020,
+      "width": 1080,
+      "height": 1920,
+      "blend_mode": "normal",
+      "has_alpha": false,
+      "license": "CC0 1.0 Universal",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "generated": true,
+      "date": "2026-11-21",
+      "tags": [
+        "paper",
+        "background",
+        "graph_paper",
+        "tactile",
+        "craft"
+      ]
+    },
+    {
+      "id": "stock_bg_21",
+      "asset_type": "paper_background",
+      "variant": "ruled_notebook",
+      "seed": 1021,
+      "width": 1080,
+      "height": 1920,
+      "blend_mode": "normal",
+      "has_alpha": false,
+      "license": "CC0 1.0 Universal",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "generated": true,
+      "date": "2026-11-21",
+      "tags": [
+        "paper",
+        "background",
+        "ruled_notebook",
+        "tactile",
+        "craft"
+      ]
+    },
+    {
+      "id": "stock_bg_22",
+      "asset_type": "paper_background",
+      "variant": "heavy_cardboard",
+      "seed": 1022,
+      "width": 1080,
+      "height": 1920,
+      "blend_mode": "normal",
+      "has_alpha": false,
+      "license": "CC0 1.0 Universal",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "generated": true,
+      "date": "2026-11-21",
+      "tags": [
+        "paper",
+        "background",
+        "heavy_cardboard",
+        "tactile",
+        "craft"
+      ]
+    },
+    {
+      "id": "stock_bg_23",
+      "asset_type": "paper_background",
+      "variant": "aged_yellow",
+      "seed": 1023,
+      "width": 1080,
+      "height": 1920,
+      "blend_mode": "normal",
+      "has_alpha": false,
+      "license": "CC0 1.0 Universal",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "generated": true,
+      "date": "2026-11-21",
+      "tags": [
+        "paper",
+        "background",
+        "aged_yellow",
+        "tactile",
+        "craft"
+      ]
+    },
+    {
+      "id": "stock_bg_24",
+      "asset_type": "paper_background",
+      "variant": "clean_white",
+      "seed": 1024,
+      "width": 1080,
+      "height": 1920,
+      "blend_mode": "normal",
+      "has_alpha": false,
+      "license": "CC0 1.0 Universal",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "generated": true,
+      "date": "2026-11-21",
+      "tags": [
+        "paper",
+        "background",
+        "clean_white",
+        "tactile",
+        "craft"
+      ]
+    },
+    {
+      "id": "stock_bg_25",
+      "asset_type": "paper_background",
+      "variant": "off_white_rag",
+      "seed": 1025,
+      "width": 1080,
+      "height": 1920,
+      "blend_mode": "normal",
+      "has_alpha": false,
+      "license": "CC0 1.0 Universal",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "generated": true,
+      "date": "2026-11-21",
+      "tags": [
+        "paper",
+        "background",
+        "off_white_rag",
+        "tactile",
+        "craft"
+      ]
+    },
+    {
+      "id": "stock_bg_26",
+      "asset_type": "paper_background",
+      "variant": "brown_kraft",
+      "seed": 1026,
+      "width": 1080,
+      "height": 1920,
+      "blend_mode": "normal",
+      "has_alpha": false,
+      "license": "CC0 1.0 Universal",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "generated": true,
+      "date": "2026-11-21",
+      "tags": [
+        "paper",
+        "background",
+        "brown_kraft",
+        "tactile",
+        "craft"
+      ]
+    },
+    {
+      "id": "stock_bg_27",
+      "asset_type": "paper_background",
+      "variant": "grey_newsprint",
+      "seed": 1027,
+      "width": 1080,
+      "height": 1920,
+      "blend_mode": "normal",
+      "has_alpha": false,
+      "license": "CC0 1.0 Universal",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "generated": true,
+      "date": "2026-11-21",
+      "tags": [
+        "paper",
+        "background",
+        "grey_newsprint",
+        "tactile",
+        "craft"
+      ]
+    },
+    {
+      "id": "stock_bg_28",
+      "asset_type": "paper_background",
+      "variant": "graph_paper",
+      "seed": 1028,
+      "width": 1080,
+      "height": 1920,
+      "blend_mode": "normal",
+      "has_alpha": false,
+      "license": "CC0 1.0 Universal",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "generated": true,
+      "date": "2026-11-21",
+      "tags": [
+        "paper",
+        "background",
+        "graph_paper",
+        "tactile",
+        "craft"
+      ]
+    },
+    {
+      "id": "stock_bg_29",
+      "asset_type": "paper_background",
+      "variant": "ruled_notebook",
+      "seed": 1029,
+      "width": 1080,
+      "height": 1920,
+      "blend_mode": "normal",
+      "has_alpha": false,
+      "license": "CC0 1.0 Universal",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "generated": true,
+      "date": "2026-11-21",
+      "tags": [
+        "paper",
+        "background",
+        "ruled_notebook",
+        "tactile",
+        "craft"
+      ]
+    },
+    {
+      "id": "stock_wrinkle_00",
+      "asset_type": "wrinkled_overlay",
+      "seed": 2000,
+      "blend_mode": "multiply",
+      "has_alpha": false,
+      "license": "CC0 1.0 Universal",
+      "generated": true,
+      "tags": [
+        "wrinkle",
+        "crease",
+        "overlay",
+        "paper"
+      ]
+    },
+    {
+      "id": "stock_wrinkle_01",
+      "asset_type": "wrinkled_overlay",
+      "seed": 2001,
+      "blend_mode": "multiply",
+      "has_alpha": false,
+      "license": "CC0 1.0 Universal",
+      "generated": true,
+      "tags": [
+        "wrinkle",
+        "crease",
+        "overlay",
+        "paper"
+      ]
+    },
+    {
+      "id": "stock_wrinkle_02",
+      "asset_type": "wrinkled_overlay",
+      "seed": 2002,
+      "blend_mode": "multiply",
+      "has_alpha": false,
+      "license": "CC0 1.0 Universal",
+      "generated": true,
+      "tags": [
+        "wrinkle",
+        "crease",
+        "overlay",
+        "paper"
+      ]
+    },
+    {
+      "id": "stock_wrinkle_03",
+      "asset_type": "wrinkled_overlay",
+      "seed": 2003,
+      "blend_mode": "multiply",
+      "has_alpha": false,
+      "license": "CC0 1.0 Universal",
+      "generated": true,
+      "tags": [
+        "wrinkle",
+        "crease",
+        "overlay",
+        "paper"
+      ]
+    },
+    {
+      "id": "stock_wrinkle_04",
+      "asset_type": "wrinkled_overlay",
+      "seed": 2004,
+      "blend_mode": "multiply",
+      "has_alpha": false,
+      "license": "CC0 1.0 Universal",
+      "generated": true,
+      "tags": [
+        "wrinkle",
+        "crease",
+        "overlay",
+        "paper"
+      ]
+    },
+    {
+      "id": "stock_wrinkle_05",
+      "asset_type": "wrinkled_overlay",
+      "seed": 2005,
+      "blend_mode": "multiply",
+      "has_alpha": false,
+      "license": "CC0 1.0 Universal",
+      "generated": true,
+      "tags": [
+        "wrinkle",
+        "crease",
+        "overlay",
+        "paper"
+      ]
+    },
+    {
+      "id": "stock_wrinkle_06",
+      "asset_type": "wrinkled_overlay",
+      "seed": 2006,
+      "blend_mode": "multiply",
+      "has_alpha": false,
+      "license": "CC0 1.0 Universal",
+      "generated": true,
+      "tags": [
+        "wrinkle",
+        "crease",
+        "overlay",
+        "paper"
+      ]
+    },
+    {
+      "id": "stock_wrinkle_07",
+      "asset_type": "wrinkled_overlay",
+      "seed": 2007,
+      "blend_mode": "multiply",
+      "has_alpha": false,
+      "license": "CC0 1.0 Universal",
+      "generated": true,
+      "tags": [
+        "wrinkle",
+        "crease",
+        "overlay",
+        "paper"
+      ]
+    },
+    {
+      "id": "stock_wrinkle_08",
+      "asset_type": "wrinkled_overlay",
+      "seed": 2008,
+      "blend_mode": "multiply",
+      "has_alpha": false,
+      "license": "CC0 1.0 Universal",
+      "generated": true,
+      "tags": [
+        "wrinkle",
+        "crease",
+        "overlay",
+        "paper"
+      ]
+    },
+    {
+      "id": "stock_wrinkle_09",
+      "asset_type": "wrinkled_overlay",
+      "seed": 2009,
+      "blend_mode": "multiply",
+      "has_alpha": false,
+      "license": "CC0 1.0 Universal",
+      "generated": true,
+      "tags": [
+        "wrinkle",
+        "crease",
+        "overlay",
+        "paper"
+      ]
+    },
+    {
+      "id": "stock_wrinkle_10",
+      "asset_type": "wrinkled_overlay",
+      "seed": 2010,
+      "blend_mode": "multiply",
+      "has_alpha": false,
+      "license": "CC0 1.0 Universal",
+      "generated": true,
+      "tags": [
+        "wrinkle",
+        "crease",
+        "overlay",
+        "paper"
+      ]
+    },
+    {
+      "id": "stock_wrinkle_11",
+      "asset_type": "wrinkled_overlay",
+      "seed": 2011,
+      "blend_mode": "multiply",
+      "has_alpha": false,
+      "license": "CC0 1.0 Universal",
+      "generated": true,
+      "tags": [
+        "wrinkle",
+        "crease",
+        "overlay",
+        "paper"
+      ]
+    },
+    {
+      "id": "stock_wrinkle_12",
+      "asset_type": "wrinkled_overlay",
+      "seed": 2012,
+      "blend_mode": "multiply",
+      "has_alpha": false,
+      "license": "CC0 1.0 Universal",
+      "generated": true,
+      "tags": [
+        "wrinkle",
+        "crease",
+        "overlay",
+        "paper"
+      ]
+    },
+    {
+      "id": "stock_wrinkle_13",
+      "asset_type": "wrinkled_overlay",
+      "seed": 2013,
+      "blend_mode": "multiply",
+      "has_alpha": false,
+      "license": "CC0 1.0 Universal",
+      "generated": true,
+      "tags": [
+        "wrinkle",
+        "crease",
+        "overlay",
+        "paper"
+      ]
+    },
+    {
+      "id": "stock_wrinkle_14",
+      "asset_type": "wrinkled_overlay",
+      "seed": 2014,
+      "blend_mode": "multiply",
+      "has_alpha": false,
+      "license": "CC0 1.0 Universal",
+      "generated": true,
+      "tags": [
+        "wrinkle",
+        "crease",
+        "overlay",
+        "paper"
+      ]
+    },
+    {
+      "id": "stock_tape_00",
+      "asset_type": "tape_strip",
+      "variant": "tan_packing",
+      "seed": 3000,
+      "has_alpha": true,
+      "blend_mode": "normal",
+      "license": "CC0 1.0 Universal",
+      "generated": true,
+      "tags": [
+        "tape",
+        "adhesive",
+        "tan_packing",
+        "washi",
+        "craft"
+      ]
+    },
+    {
+      "id": "stock_tape_01",
+      "asset_type": "tape_strip",
+      "variant": "clear_cellophane",
+      "seed": 3001,
+      "has_alpha": true,
+      "blend_mode": "normal",
+      "license": "CC0 1.0 Universal",
+      "generated": true,
+      "tags": [
+        "tape",
+        "adhesive",
+        "clear_cellophane",
+        "washi",
+        "craft"
+      ]
+    },
+    {
+      "id": "stock_tape_02",
+      "asset_type": "tape_strip",
+      "variant": "crimson_washi",
+      "seed": 3002,
+      "has_alpha": true,
+      "blend_mode": "normal",
+      "license": "CC0 1.0 Universal",
+      "generated": true,
+      "tags": [
+        "tape",
+        "adhesive",
+        "crimson_washi",
+        "washi",
+        "craft"
+      ]
+    },
+    {
+      "id": "stock_tape_03",
+      "asset_type": "tape_strip",
+      "variant": "black_masking",
+      "seed": 3003,
+      "has_alpha": true,
+      "blend_mode": "normal",
+      "license": "CC0 1.0 Universal",
+      "generated": true,
+      "tags": [
+        "tape",
+        "adhesive",
+        "black_masking",
+        "washi",
+        "craft"
+      ]
+    },
+    {
+      "id": "stock_tape_04",
+      "asset_type": "tape_strip",
+      "variant": "ivory_drafting",
+      "seed": 3004,
+      "has_alpha": true,
+      "blend_mode": "normal",
+      "license": "CC0 1.0 Universal",
+      "generated": true,
+      "tags": [
+        "tape",
+        "adhesive",
+        "ivory_drafting",
+        "washi",
+        "craft"
+      ]
+    },
+    {
+      "id": "stock_tape_05",
+      "asset_type": "tape_strip",
+      "variant": "tan_packing",
+      "seed": 3005,
+      "has_alpha": true,
+      "blend_mode": "normal",
+      "license": "CC0 1.0 Universal",
+      "generated": true,
+      "tags": [
+        "tape",
+        "adhesive",
+        "tan_packing",
+        "washi",
+        "craft"
+      ]
+    },
+    {
+      "id": "stock_tape_06",
+      "asset_type": "tape_strip",
+      "variant": "clear_cellophane",
+      "seed": 3006,
+      "has_alpha": true,
+      "blend_mode": "normal",
+      "license": "CC0 1.0 Universal",
+      "generated": true,
+      "tags": [
+        "tape",
+        "adhesive",
+        "clear_cellophane",
+        "washi",
+        "craft"
+      ]
+    },
+    {
+      "id": "stock_tape_07",
+      "asset_type": "tape_strip",
+      "variant": "crimson_washi",
+      "seed": 3007,
+      "has_alpha": true,
+      "blend_mode": "normal",
+      "license": "CC0 1.0 Universal",
+      "generated": true,
+      "tags": [
+        "tape",
+        "adhesive",
+        "crimson_washi",
+        "washi",
+        "craft"
+      ]
+    },
+    {
+      "id": "stock_tape_08",
+      "asset_type": "tape_strip",
+      "variant": "black_masking",
+      "seed": 3008,
+      "has_alpha": true,
+      "blend_mode": "normal",
+      "license": "CC0 1.0 Universal",
+      "generated": true,
+      "tags": [
+        "tape",
+        "adhesive",
+        "black_masking",
+        "washi",
+        "craft"
+      ]
+    },
+    {
+      "id": "stock_tape_09",
+      "asset_type": "tape_strip",
+      "variant": "ivory_drafting",
+      "seed": 3009,
+      "has_alpha": true,
+      "blend_mode": "normal",
+      "license": "CC0 1.0 Universal",
+      "generated": true,
+      "tags": [
+        "tape",
+        "adhesive",
+        "ivory_drafting",
+        "washi",
+        "craft"
+      ]
+    },
+    {
+      "id": "stock_tape_10",
+      "asset_type": "tape_strip",
+      "variant": "tan_packing",
+      "seed": 3010,
+      "has_alpha": true,
+      "blend_mode": "normal",
+      "license": "CC0 1.0 Universal",
+      "generated": true,
+      "tags": [
+        "tape",
+        "adhesive",
+        "tan_packing",
+        "washi",
+        "craft"
+      ]
+    },
+    {
+      "id": "stock_tape_11",
+      "asset_type": "tape_strip",
+      "variant": "clear_cellophane",
+      "seed": 3011,
+      "has_alpha": true,
+      "blend_mode": "normal",
+      "license": "CC0 1.0 Universal",
+      "generated": true,
+      "tags": [
+        "tape",
+        "adhesive",
+        "clear_cellophane",
+        "washi",
+        "craft"
+      ]
+    },
+    {
+      "id": "stock_tape_12",
+      "asset_type": "tape_strip",
+      "variant": "crimson_washi",
+      "seed": 3012,
+      "has_alpha": true,
+      "blend_mode": "normal",
+      "license": "CC0 1.0 Universal",
+      "generated": true,
+      "tags": [
+        "tape",
+        "adhesive",
+        "crimson_washi",
+        "washi",
+        "craft"
+      ]
+    },
+    {
+      "id": "stock_tape_13",
+      "asset_type": "tape_strip",
+      "variant": "black_masking",
+      "seed": 3013,
+      "has_alpha": true,
+      "blend_mode": "normal",
+      "license": "CC0 1.0 Universal",
+      "generated": true,
+      "tags": [
+        "tape",
+        "adhesive",
+        "black_masking",
+        "washi",
+        "craft"
+      ]
+    },
+    {
+      "id": "stock_tape_14",
+      "asset_type": "tape_strip",
+      "variant": "ivory_drafting",
+      "seed": 3014,
+      "has_alpha": true,
+      "blend_mode": "normal",
+      "license": "CC0 1.0 Universal",
+      "generated": true,
+      "tags": [
+        "tape",
+        "adhesive",
+        "ivory_drafting",
+        "washi",
+        "craft"
+      ]
+    },
+    {
+      "id": "stock_tape_15",
+      "asset_type": "tape_strip",
+      "variant": "tan_packing",
+      "seed": 3015,
+      "has_alpha": true,
+      "blend_mode": "normal",
+      "license": "CC0 1.0 Universal",
+      "generated": true,
+      "tags": [
+        "tape",
+        "adhesive",
+        "tan_packing",
+        "washi",
+        "craft"
+      ]
+    },
+    {
+      "id": "stock_tape_16",
+      "asset_type": "tape_strip",
+      "variant": "clear_cellophane",
+      "seed": 3016,
+      "has_alpha": true,
+      "blend_mode": "normal",
+      "license": "CC0 1.0 Universal",
+      "generated": true,
+      "tags": [
+        "tape",
+        "adhesive",
+        "clear_cellophane",
+        "washi",
+        "craft"
+      ]
+    },
+    {
+      "id": "stock_tape_17",
+      "asset_type": "tape_strip",
+      "variant": "crimson_washi",
+      "seed": 3017,
+      "has_alpha": true,
+      "blend_mode": "normal",
+      "license": "CC0 1.0 Universal",
+      "generated": true,
+      "tags": [
+        "tape",
+        "adhesive",
+        "crimson_washi",
+        "washi",
+        "craft"
+      ]
+    },
+    {
+      "id": "stock_tape_18",
+      "asset_type": "tape_strip",
+      "variant": "black_masking",
+      "seed": 3018,
+      "has_alpha": true,
+      "blend_mode": "normal",
+      "license": "CC0 1.0 Universal",
+      "generated": true,
+      "tags": [
+        "tape",
+        "adhesive",
+        "black_masking",
+        "washi",
+        "craft"
+      ]
+    },
+    {
+      "id": "stock_tape_19",
+      "asset_type": "tape_strip",
+      "variant": "ivory_drafting",
+      "seed": 3019,
+      "has_alpha": true,
+      "blend_mode": "normal",
+      "license": "CC0 1.0 Universal",
+      "generated": true,
+      "tags": [
+        "tape",
+        "adhesive",
+        "ivory_drafting",
+        "washi",
+        "craft"
+      ]
+    },
+    {
+      "id": "stock_tape_20",
+      "asset_type": "tape_strip",
+      "variant": "tan_packing",
+      "seed": 3020,
+      "has_alpha": true,
+      "blend_mode": "normal",
+      "license": "CC0 1.0 Universal",
+      "generated": true,
+      "tags": [
+        "tape",
+        "adhesive",
+        "tan_packing",
+        "washi",
+        "craft"
+      ]
+    },
+    {
+      "id": "stock_tape_21",
+      "asset_type": "tape_strip",
+      "variant": "clear_cellophane",
+      "seed": 3021,
+      "has_alpha": true,
+      "blend_mode": "normal",
+      "license": "CC0 1.0 Universal",
+      "generated": true,
+      "tags": [
+        "tape",
+        "adhesive",
+        "clear_cellophane",
+        "washi",
+        "craft"
+      ]
+    },
+    {
+      "id": "stock_tape_22",
+      "asset_type": "tape_strip",
+      "variant": "crimson_washi",
+      "seed": 3022,
+      "has_alpha": true,
+      "blend_mode": "normal",
+      "license": "CC0 1.0 Universal",
+      "generated": true,
+      "tags": [
+        "tape",
+        "adhesive",
+        "crimson_washi",
+        "washi",
+        "craft"
+      ]
+    },
+    {
+      "id": "stock_tape_23",
+      "asset_type": "tape_strip",
+      "variant": "black_masking",
+      "seed": 3023,
+      "has_alpha": true,
+      "blend_mode": "normal",
+      "license": "CC0 1.0 Universal",
+      "generated": true,
+      "tags": [
+        "tape",
+        "adhesive",
+        "black_masking",
+        "washi",
+        "craft"
+      ]
+    },
+    {
+      "id": "stock_tape_24",
+      "asset_type": "tape_strip",
+      "variant": "ivory_drafting",
+      "seed": 3024,
+      "has_alpha": true,
+      "blend_mode": "normal",
+      "license": "CC0 1.0 Universal",
+      "generated": true,
+      "tags": [
+        "tape",
+        "adhesive",
+        "ivory_drafting",
+        "washi",
+        "craft"
+      ]
+    },
+    {
+      "id": "stock_edge_00",
+      "asset_type": "torn_edge",
+      "seed": 4000,
+      "has_alpha": true,
+      "license": "CC0 1.0 Universal",
+      "generated": true,
+      "tags": [
+        "torn_edge",
+        "deckle",
+        "paper_rip"
+      ]
+    },
+    {
+      "id": "stock_edge_01",
+      "asset_type": "torn_edge",
+      "seed": 4001,
+      "has_alpha": true,
+      "license": "CC0 1.0 Universal",
+      "generated": true,
+      "tags": [
+        "torn_edge",
+        "deckle",
+        "paper_rip"
+      ]
+    },
+    {
+      "id": "stock_edge_02",
+      "asset_type": "torn_edge",
+      "seed": 4002,
+      "has_alpha": true,
+      "license": "CC0 1.0 Universal",
+      "generated": true,
+      "tags": [
+        "torn_edge",
+        "deckle",
+        "paper_rip"
+      ]
+    },
+    {
+      "id": "stock_edge_03",
+      "asset_type": "torn_edge",
+      "seed": 4003,
+      "has_alpha": true,
+      "license": "CC0 1.0 Universal",
+      "generated": true,
+      "tags": [
+        "torn_edge",
+        "deckle",
+        "paper_rip"
+      ]
+    },
+    {
+      "id": "stock_edge_04",
+      "asset_type": "torn_edge",
+      "seed": 4004,
+      "has_alpha": true,
+      "license": "CC0 1.0 Universal",
+      "generated": true,
+      "tags": [
+        "torn_edge",
+        "deckle",
+        "paper_rip"
+      ]
+    },
+    {
+      "id": "stock_edge_05",
+      "asset_type": "torn_edge",
+      "seed": 4005,
+      "has_alpha": true,
+      "license": "CC0 1.0 Universal",
+      "generated": true,
+      "tags": [
+        "torn_edge",
+        "deckle",
+        "paper_rip"
+      ]
+    },
+    {
+      "id": "stock_edge_06",
+      "asset_type": "torn_edge",
+      "seed": 4006,
+      "has_alpha": true,
+      "license": "CC0 1.0 Universal",
+      "generated": true,
+      "tags": [
+        "torn_edge",
+        "deckle",
+        "paper_rip"
+      ]
+    },
+    {
+      "id": "stock_edge_07",
+      "asset_type": "torn_edge",
+      "seed": 4007,
+      "has_alpha": true,
+      "license": "CC0 1.0 Universal",
+      "generated": true,
+      "tags": [
+        "torn_edge",
+        "deckle",
+        "paper_rip"
+      ]
+    },
+    {
+      "id": "stock_edge_08",
+      "asset_type": "torn_edge",
+      "seed": 4008,
+      "has_alpha": true,
+      "license": "CC0 1.0 Universal",
+      "generated": true,
+      "tags": [
+        "torn_edge",
+        "deckle",
+        "paper_rip"
+      ]
+    },
+    {
+      "id": "stock_edge_09",
+      "asset_type": "torn_edge",
+      "seed": 4009,
+      "has_alpha": true,
+      "license": "CC0 1.0 Universal",
+      "generated": true,
+      "tags": [
+        "torn_edge",
+        "deckle",
+        "paper_rip"
+      ]
+    },
+    {
+      "id": "stock_edge_10",
+      "asset_type": "torn_edge",
+      "seed": 4010,
+      "has_alpha": true,
+      "license": "CC0 1.0 Universal",
+      "generated": true,
+      "tags": [
+        "torn_edge",
+        "deckle",
+        "paper_rip"
+      ]
+    },
+    {
+      "id": "stock_edge_11",
+      "asset_type": "torn_edge",
+      "seed": 4011,
+      "has_alpha": true,
+      "license": "CC0 1.0 Universal",
+      "generated": true,
+      "tags": [
+        "torn_edge",
+        "deckle",
+        "paper_rip"
+      ]
+    },
+    {
+      "id": "stock_edge_12",
+      "asset_type": "torn_edge",
+      "seed": 4012,
+      "has_alpha": true,
+      "license": "CC0 1.0 Universal",
+      "generated": true,
+      "tags": [
+        "torn_edge",
+        "deckle",
+        "paper_rip"
+      ]
+    },
+    {
+      "id": "stock_edge_13",
+      "asset_type": "torn_edge",
+      "seed": 4013,
+      "has_alpha": true,
+      "license": "CC0 1.0 Universal",
+      "generated": true,
+      "tags": [
+        "torn_edge",
+        "deckle",
+        "paper_rip"
+      ]
+    },
+    {
+      "id": "stock_edge_14",
+      "asset_type": "torn_edge",
+      "seed": 4014,
+      "has_alpha": true,
+      "license": "CC0 1.0 Universal",
+      "generated": true,
+      "tags": [
+        "torn_edge",
+        "deckle",
+        "paper_rip"
+      ]
+    },
+    {
+      "id": "stock_stain_00",
+      "asset_type": "stains_dust",
+      "seed": 5000,
+      "blend_mode": "multiply",
+      "has_alpha": false,
+      "license": "CC0 1.0 Universal",
+      "generated": true,
+      "tags": [
+        "stain",
+        "dust",
+        "foxing",
+        "distress"
+      ]
+    },
+    {
+      "id": "stock_stain_01",
+      "asset_type": "stains_dust",
+      "seed": 5001,
+      "blend_mode": "multiply",
+      "has_alpha": false,
+      "license": "CC0 1.0 Universal",
+      "generated": true,
+      "tags": [
+        "stain",
+        "dust",
+        "foxing",
+        "distress"
+      ]
+    },
+    {
+      "id": "stock_stain_02",
+      "asset_type": "stains_dust",
+      "seed": 5002,
+      "blend_mode": "multiply",
+      "has_alpha": false,
+      "license": "CC0 1.0 Universal",
+      "generated": true,
+      "tags": [
+        "stain",
+        "dust",
+        "foxing",
+        "distress"
+      ]
+    },
+    {
+      "id": "stock_stain_03",
+      "asset_type": "stains_dust",
+      "seed": 5003,
+      "blend_mode": "multiply",
+      "has_alpha": false,
+      "license": "CC0 1.0 Universal",
+      "generated": true,
+      "tags": [
+        "stain",
+        "dust",
+        "foxing",
+        "distress"
+      ]
+    },
+    {
+      "id": "stock_stain_04",
+      "asset_type": "stains_dust",
+      "seed": 5004,
+      "blend_mode": "multiply",
+      "has_alpha": false,
+      "license": "CC0 1.0 Universal",
+      "generated": true,
+      "tags": [
+        "stain",
+        "dust",
+        "foxing",
+        "distress"
+      ]
+    },
+    {
+      "id": "stock_stain_05",
+      "asset_type": "stains_dust",
+      "seed": 5005,
+      "blend_mode": "multiply",
+      "has_alpha": false,
+      "license": "CC0 1.0 Universal",
+      "generated": true,
+      "tags": [
+        "stain",
+        "dust",
+        "foxing",
+        "distress"
+      ]
+    },
+    {
+      "id": "stock_stain_06",
+      "asset_type": "stains_dust",
+      "seed": 5006,
+      "blend_mode": "multiply",
+      "has_alpha": false,
+      "license": "CC0 1.0 Universal",
+      "generated": true,
+      "tags": [
+        "stain",
+        "dust",
+        "foxing",
+        "distress"
+      ]
+    },
+    {
+      "id": "stock_stain_07",
+      "asset_type": "stains_dust",
+      "seed": 5007,
+      "blend_mode": "multiply",
+      "has_alpha": false,
+      "license": "CC0 1.0 Universal",
+      "generated": true,
+      "tags": [
+        "stain",
+        "dust",
+        "foxing",
+        "distress"
+      ]
+    },
+    {
+      "id": "stock_stain_08",
+      "asset_type": "stains_dust",
+      "seed": 5008,
+      "blend_mode": "multiply",
+      "has_alpha": false,
+      "license": "CC0 1.0 Universal",
+      "generated": true,
+      "tags": [
+        "stain",
+        "dust",
+        "foxing",
+        "distress"
+      ]
+    },
+    {
+      "id": "stock_stain_09",
+      "asset_type": "stains_dust",
+      "seed": 5009,
+      "blend_mode": "multiply",
+      "has_alpha": false,
+      "license": "CC0 1.0 Universal",
+      "generated": true,
+      "tags": [
+        "stain",
+        "dust",
+        "foxing",
+        "distress"
+      ]
+    },
+    {
+      "id": "stock_stain_10",
+      "asset_type": "stains_dust",
+      "seed": 5010,
+      "blend_mode": "multiply",
+      "has_alpha": false,
+      "license": "CC0 1.0 Universal",
+      "generated": true,
+      "tags": [
+        "stain",
+        "dust",
+        "foxing",
+        "distress"
+      ]
+    },
+    {
+      "id": "stock_stain_11",
+      "asset_type": "stains_dust",
+      "seed": 5011,
+      "blend_mode": "multiply",
+      "has_alpha": false,
+      "license": "CC0 1.0 Universal",
+      "generated": true,
+      "tags": [
+        "stain",
+        "dust",
+        "foxing",
+        "distress"
+      ]
+    },
+    {
+      "id": "stock_stain_12",
+      "asset_type": "stains_dust",
+      "seed": 5012,
+      "blend_mode": "multiply",
+      "has_alpha": false,
+      "license": "CC0 1.0 Universal",
+      "generated": true,
+      "tags": [
+        "stain",
+        "dust",
+        "foxing",
+        "distress"
+      ]
+    },
+    {
+      "id": "stock_stain_13",
+      "asset_type": "stains_dust",
+      "seed": 5013,
+      "blend_mode": "multiply",
+      "has_alpha": false,
+      "license": "CC0 1.0 Universal",
+      "generated": true,
+      "tags": [
+        "stain",
+        "dust",
+        "foxing",
+        "distress"
+      ]
+    },
+    {
+      "id": "stock_stain_14",
+      "asset_type": "stains_dust",
+      "seed": 5014,
+      "blend_mode": "multiply",
+      "has_alpha": false,
+      "license": "CC0 1.0 Universal",
+      "generated": true,
+      "tags": [
+        "stain",
+        "dust",
+        "foxing",
+        "distress"
+      ]
+    },
+    {
+      "id": "stock_stationery_00",
+      "asset_type": "pin_clip_sticky",
+      "kind": "paperclip",
+      "seed": 6000,
+      "has_alpha": true,
+      "license": "CC0 1.0 Universal",
+      "generated": true,
+      "tags": [
+        "stationery",
+        "paperclip",
+        "clip",
+        "pin"
+      ]
+    },
+    {
+      "id": "stock_stationery_01",
+      "asset_type": "pin_clip_sticky",
+      "kind": "pushpin",
+      "seed": 6001,
+      "has_alpha": true,
+      "license": "CC0 1.0 Universal",
+      "generated": true,
+      "tags": [
+        "stationery",
+        "pushpin",
+        "clip",
+        "pin"
+      ]
+    },
+    {
+      "id": "stock_stationery_02",
+      "asset_type": "pin_clip_sticky",
+      "kind": "sticky_note",
+      "seed": 6002,
+      "has_alpha": true,
+      "license": "CC0 1.0 Universal",
+      "generated": true,
+      "tags": [
+        "stationery",
+        "sticky_note",
+        "clip",
+        "pin"
+      ]
+    },
+    {
+      "id": "stock_stationery_03",
+      "asset_type": "pin_clip_sticky",
+      "kind": "paperclip",
+      "seed": 6003,
+      "has_alpha": true,
+      "license": "CC0 1.0 Universal",
+      "generated": true,
+      "tags": [
+        "stationery",
+        "paperclip",
+        "clip",
+        "pin"
+      ]
+    },
+    {
+      "id": "stock_stationery_04",
+      "asset_type": "pin_clip_sticky",
+      "kind": "pushpin",
+      "seed": 6004,
+      "has_alpha": true,
+      "license": "CC0 1.0 Universal",
+      "generated": true,
+      "tags": [
+        "stationery",
+        "pushpin",
+        "clip",
+        "pin"
+      ]
+    },
+    {
+      "id": "stock_stationery_05",
+      "asset_type": "pin_clip_sticky",
+      "kind": "sticky_note",
+      "seed": 6005,
+      "has_alpha": true,
+      "license": "CC0 1.0 Universal",
+      "generated": true,
+      "tags": [
+        "stationery",
+        "sticky_note",
+        "clip",
+        "pin"
+      ]
+    },
+    {
+      "id": "stock_stationery_06",
+      "asset_type": "pin_clip_sticky",
+      "kind": "paperclip",
+      "seed": 6006,
+      "has_alpha": true,
+      "license": "CC0 1.0 Universal",
+      "generated": true,
+      "tags": [
+        "stationery",
+        "paperclip",
+        "clip",
+        "pin"
+      ]
+    },
+    {
+      "id": "stock_stationery_07",
+      "asset_type": "pin_clip_sticky",
+      "kind": "pushpin",
+      "seed": 6007,
+      "has_alpha": true,
+      "license": "CC0 1.0 Universal",
+      "generated": true,
+      "tags": [
+        "stationery",
+        "pushpin",
+        "clip",
+        "pin"
+      ]
+    },
+    {
+      "id": "stock_stationery_08",
+      "asset_type": "pin_clip_sticky",
+      "kind": "sticky_note",
+      "seed": 6008,
+      "has_alpha": true,
+      "license": "CC0 1.0 Universal",
+      "generated": true,
+      "tags": [
+        "stationery",
+        "sticky_note",
+        "clip",
+        "pin"
+      ]
+    },
+    {
+      "id": "stock_stationery_09",
+      "asset_type": "pin_clip_sticky",
+      "kind": "paperclip",
+      "seed": 6009,
+      "has_alpha": true,
+      "license": "CC0 1.0 Universal",
+      "generated": true,
+      "tags": [
+        "stationery",
+        "paperclip",
+        "clip",
+        "pin"
+      ]
+    },
+    {
+      "id": "stock_stationery_10",
+      "asset_type": "pin_clip_sticky",
+      "kind": "pushpin",
+      "seed": 6010,
+      "has_alpha": true,
+      "license": "CC0 1.0 Universal",
+      "generated": true,
+      "tags": [
+        "stationery",
+        "pushpin",
+        "clip",
+        "pin"
+      ]
+    },
+    {
+      "id": "stock_stationery_11",
+      "asset_type": "pin_clip_sticky",
+      "kind": "sticky_note",
+      "seed": 6011,
+      "has_alpha": true,
+      "license": "CC0 1.0 Universal",
+      "generated": true,
+      "tags": [
+        "stationery",
+        "sticky_note",
+        "clip",
+        "pin"
+      ]
+    },
+    {
+      "id": "stock_stationery_12",
+      "asset_type": "pin_clip_sticky",
+      "kind": "paperclip",
+      "seed": 6012,
+      "has_alpha": true,
+      "license": "CC0 1.0 Universal",
+      "generated": true,
+      "tags": [
+        "stationery",
+        "paperclip",
+        "clip",
+        "pin"
+      ]
+    },
+    {
+      "id": "stock_stationery_13",
+      "asset_type": "pin_clip_sticky",
+      "kind": "pushpin",
+      "seed": 6013,
+      "has_alpha": true,
+      "license": "CC0 1.0 Universal",
+      "generated": true,
+      "tags": [
+        "stationery",
+        "pushpin",
+        "clip",
+        "pin"
+      ]
+    },
+    {
+      "id": "stock_stationery_14",
+      "asset_type": "pin_clip_sticky",
+      "kind": "sticky_note",
+      "seed": 6014,
+      "has_alpha": true,
+      "license": "CC0 1.0 Universal",
+      "generated": true,
+      "tags": [
+        "stationery",
+        "sticky_note",
+        "clip",
+        "pin"
+      ]
+    },
+    {
+      "id": "stock_halftone_00",
+      "asset_type": "halftone_texture",
+      "seed": 7000,
+      "blend_mode": "multiply",
+      "has_alpha": false,
+      "license": "CC0 1.0 Universal",
+      "generated": true,
+      "tags": [
+        "halftone",
+        "newspaper",
+        "dot_matrix"
+      ]
+    },
+    {
+      "id": "stock_halftone_01",
+      "asset_type": "halftone_texture",
+      "seed": 7001,
+      "blend_mode": "multiply",
+      "has_alpha": false,
+      "license": "CC0 1.0 Universal",
+      "generated": true,
+      "tags": [
+        "halftone",
+        "newspaper",
+        "dot_matrix"
+      ]
+    },
+    {
+      "id": "stock_halftone_02",
+      "asset_type": "halftone_texture",
+      "seed": 7002,
+      "blend_mode": "multiply",
+      "has_alpha": false,
+      "license": "CC0 1.0 Universal",
+      "generated": true,
+      "tags": [
+        "halftone",
+        "newspaper",
+        "dot_matrix"
+      ]
+    },
+    {
+      "id": "stock_halftone_03",
+      "asset_type": "halftone_texture",
+      "seed": 7003,
+      "blend_mode": "multiply",
+      "has_alpha": false,
+      "license": "CC0 1.0 Universal",
+      "generated": true,
+      "tags": [
+        "halftone",
+        "newspaper",
+        "dot_matrix"
+      ]
+    },
+    {
+      "id": "stock_halftone_04",
+      "asset_type": "halftone_texture",
+      "seed": 7004,
+      "blend_mode": "multiply",
+      "has_alpha": false,
+      "license": "CC0 1.0 Universal",
+      "generated": true,
+      "tags": [
+        "halftone",
+        "newspaper",
+        "dot_matrix"
+      ]
+    },
+    {
+      "id": "stock_halftone_05",
+      "asset_type": "halftone_texture",
+      "seed": 7005,
+      "blend_mode": "multiply",
+      "has_alpha": false,
+      "license": "CC0 1.0 Universal",
+      "generated": true,
+      "tags": [
+        "halftone",
+        "newspaper",
+        "dot_matrix"
+      ]
+    },
+    {
+      "id": "stock_halftone_06",
+      "asset_type": "halftone_texture",
+      "seed": 7006,
+      "blend_mode": "multiply",
+      "has_alpha": false,
+      "license": "CC0 1.0 Universal",
+      "generated": true,
+      "tags": [
+        "halftone",
+        "newspaper",
+        "dot_matrix"
+      ]
+    },
+    {
+      "id": "stock_halftone_07",
+      "asset_type": "halftone_texture",
+      "seed": 7007,
+      "blend_mode": "multiply",
+      "has_alpha": false,
+      "license": "CC0 1.0 Universal",
+      "generated": true,
+      "tags": [
+        "halftone",
+        "newspaper",
+        "dot_matrix"
+      ]
+    },
+    {
+      "id": "stock_halftone_08",
+      "asset_type": "halftone_texture",
+      "seed": 7008,
+      "blend_mode": "multiply",
+      "has_alpha": false,
+      "license": "CC0 1.0 Universal",
+      "generated": true,
+      "tags": [
+        "halftone",
+        "newspaper",
+        "dot_matrix"
+      ]
+    },
+    {
+      "id": "stock_halftone_09",
+      "asset_type": "halftone_texture",
+      "seed": 7009,
+      "blend_mode": "multiply",
+      "has_alpha": false,
+      "license": "CC0 1.0 Universal",
+      "generated": true,
+      "tags": [
+        "halftone",
+        "newspaper",
+        "dot_matrix"
+      ]
+    },
+    {
+      "id": "stock_cardboard_00",
+      "asset_type": "cardboard_back",
+      "seed": 8000,
+      "has_alpha": false,
+      "license": "CC0 1.0 Universal",
+      "generated": true,
+      "tags": [
+        "cardboard",
+        "backing",
+        "kraft",
+        "fiber"
+      ]
+    },
+    {
+      "id": "stock_cardboard_01",
+      "asset_type": "cardboard_back",
+      "seed": 8001,
+      "has_alpha": false,
+      "license": "CC0 1.0 Universal",
+      "generated": true,
+      "tags": [
+        "cardboard",
+        "backing",
+        "kraft",
+        "fiber"
+      ]
+    },
+    {
+      "id": "stock_cardboard_02",
+      "asset_type": "cardboard_back",
+      "seed": 8002,
+      "has_alpha": false,
+      "license": "CC0 1.0 Universal",
+      "generated": true,
+      "tags": [
+        "cardboard",
+        "backing",
+        "kraft",
+        "fiber"
+      ]
+    },
+    {
+      "id": "stock_cardboard_03",
+      "asset_type": "cardboard_back",
+      "seed": 8003,
+      "has_alpha": false,
+      "license": "CC0 1.0 Universal",
+      "generated": true,
+      "tags": [
+        "cardboard",
+        "backing",
+        "kraft",
+        "fiber"
+      ]
+    },
+    {
+      "id": "stock_cardboard_04",
+      "asset_type": "cardboard_back",
+      "seed": 8004,
+      "has_alpha": false,
+      "license": "CC0 1.0 Universal",
+      "generated": true,
+      "tags": [
+        "cardboard",
+        "backing",
+        "kraft",
+        "fiber"
+      ]
+    },
+    {
+      "id": "stock_cardboard_05",
+      "asset_type": "cardboard_back",
+      "seed": 8005,
+      "has_alpha": false,
+      "license": "CC0 1.0 Universal",
+      "generated": true,
+      "tags": [
+        "cardboard",
+        "backing",
+        "kraft",
+        "fiber"
+      ]
+    },
+    {
+      "id": "stock_cardboard_06",
+      "asset_type": "cardboard_back",
+      "seed": 8006,
+      "has_alpha": false,
+      "license": "CC0 1.0 Universal",
+      "generated": true,
+      "tags": [
+        "cardboard",
+        "backing",
+        "kraft",
+        "fiber"
+      ]
+    },
+    {
+      "id": "stock_cardboard_07",
+      "asset_type": "cardboard_back",
+      "seed": 8007,
+      "has_alpha": false,
+      "license": "CC0 1.0 Universal",
+      "generated": true,
+      "tags": [
+        "cardboard",
+        "backing",
+        "kraft",
+        "fiber"
+      ]
+    },
+    {
+      "id": "stock_cardboard_08",
+      "asset_type": "cardboard_back",
+      "seed": 8008,
+      "has_alpha": false,
+      "license": "CC0 1.0 Universal",
+      "generated": true,
+      "tags": [
+        "cardboard",
+        "backing",
+        "kraft",
+        "fiber"
+      ]
+    },
+    {
+      "id": "stock_cardboard_09",
+      "asset_type": "cardboard_back",
+      "seed": 8009,
+      "has_alpha": false,
+      "license": "CC0 1.0 Universal",
+      "generated": true,
+      "tags": [
+        "cardboard",
+        "backing",
+        "kraft",
+        "fiber"
+      ]
+    }
+  ]
+}

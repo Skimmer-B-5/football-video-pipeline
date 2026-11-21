@@ -1,0 +1,17 @@
+{
+  "id": "stock_tape_15",
+  "asset_type": "tape_strip",
+  "variant": "tan_packing",
+  "seed": 3015,
+  "has_alpha": true,
+  "blend_mode": "normal",
+  "license": "CC0 1.0 Universal",
+  "generated": true,
+  "tags": [
+    "tape",
+    "adhesive",
+    "tan_packing",
+    "washi",
+    "craft"
+  ]
+}

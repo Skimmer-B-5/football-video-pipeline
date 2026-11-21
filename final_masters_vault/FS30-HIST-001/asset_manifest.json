@@ -1,0 +1,667 @@
+{
+  "project": "FS30 Documentary Pipeline",
+  "library_version": "2.0-vox-tactile",
+  "total_assets": 43,
+  "categories": [
+    "banners",
+    "quotes",
+    "frames",
+    "underlines",
+    "date_labels",
+    "stamps",
+    "textures",
+    "markers",
+    "tickets"
+  ],
+  "assets": [
+    {
+      "id": "banner_variant_a",
+      "category": "banners",
+      "family": "torn_stripe",
+      "name": "Torn Newspaper Edge with Red Side Stripe",
+      "file": "fs30/story_pipeline/assets/reusable_stock/banners/banner_variant_a_torn_stripe.png",
+      "dimensions": [
+        1000,
+        220
+      ],
+      "transparency": true,
+      "text_safe_box": [
+        60,
+        25,
+        950,
+        195
+      ],
+      "intended_usage": "Primary documentary headline banner across gritty historical incidents"
+    },
+    {
+      "id": "banner_variant_b",
+      "category": "banners",
+      "family": "folded_marker",
+      "name": "Folded Ivory Paper with Thin Red Marker",
+      "file": "fs30/story_pipeline/assets/reusable_stock/banners/banner_variant_b_folded_marker.png",
+      "dimensions": [
+        1000,
+        220
+      ],
+      "transparency": true,
+      "text_safe_box": [
+        50,
+        20,
+        920,
+        200
+      ],
+      "intended_usage": "Refined editorial beats, tactical shifts, and chronological match labels"
+    },
+    {
+      "id": "banner_variant_c",
+      "category": "banners",
+      "family": "corner_tab",
+      "name": "Rough-Cut Archival Paper with Red Corner Tab",
+      "file": "fs30/story_pipeline/assets/reusable_stock/banners/banner_variant_c_corner_tab.png",
+      "dimensions": [
+        1000,
+        220
+      ],
+      "transparency": true,
+      "text_safe_box": [
+        85,
+        25,
+        950,
+        195
+      ],
+      "intended_usage": "Police reports, court verdicts, institutional decisions, and bans"
+    },
+    {
+      "id": "banner_variant_d",
+      "category": "banners",
+      "family": "distressed_underline",
+      "name": "Narrow Editorial Strip with Distressed Red Underline",
+      "file": "fs30/story_pipeline/assets/reusable_stock/banners/banner_variant_d_distressed_underline.png",
+      "dimensions": [
+        1000,
+        220
+      ],
+      "transparency": true,
+      "text_safe_box": [
+        60,
+        20,
+        940,
+        182
+      ],
+      "intended_usage": "Fast-paced quotes, media reaction quotes, and breaking news headlines"
+    },
+    {
+      "id": "banner_variant_e",
+      "category": "banners",
+      "family": "layered_offset",
+      "name": "Layered Paper with Offset Red Backing",
+      "file": "fs30/story_pipeline/assets/reusable_stock/banners/banner_variant_e_layered_offset.png",
+      "dimensions": [
+        1000,
+        220
+      ],
+      "transparency": true,
+      "text_safe_box": [
+        60,
+        25,
+        940,
+        190
+      ],
+      "intended_usage": "Climactic moments, iconic king returns, and definitive historical declarations"
+    },
+    {
+      "id": "quote_variant_a_classic_torn",
+      "category": "quotes",
+      "family": "a",
+      "name": "Classic Torn Edge Parchment",
+      "file": "fs30/story_pipeline/assets/reusable_stock/quotes/quote_variant_a_classic_torn.png",
+      "dimensions": [
+        960,
+        380
+      ],
+      "transparency": true,
+      "text_safe_box": [
+        130,
+        45,
+        900,
+        335
+      ],
+      "intended_usage": "Archival quote presentations, declarations, and court transcripts (Classic Torn Edge Parchment)"
+    },
+    {
+      "id": "quote_variant_b_notepaper_ruled",
+      "category": "quotes",
+      "family": "b",
+      "name": "Ruled Legal Pad with Red Margin",
+      "file": "fs30/story_pipeline/assets/reusable_stock/quotes/quote_variant_b_notepaper_ruled.png",
+      "dimensions": [
+        960,
+        380
+      ],
+      "transparency": true,
+      "text_safe_box": [
+        130,
+        45,
+        900,
+        335
+      ],
+      "intended_usage": "Archival quote presentations, declarations, and court transcripts (Ruled Legal Pad with Red Margin)"
+    },
+    {
+      "id": "quote_variant_c_heavy_cardstock",
+      "category": "quotes",
+      "family": "c",
+      "name": "Heavy Beveled Archival Cardstock",
+      "file": "fs30/story_pipeline/assets/reusable_stock/quotes/quote_variant_c_heavy_cardstock.png",
+      "dimensions": [
+        960,
+        380
+      ],
+      "transparency": true,
+      "text_safe_box": [
+        130,
+        45,
+        900,
+        335
+      ],
+      "intended_usage": "Archival quote presentations, declarations, and court transcripts (Heavy Beveled Archival Cardstock)"
+    },
+    {
+      "id": "quote_variant_d_double_bordered",
+      "category": "quotes",
+      "family": "d",
+      "name": "Double Inked Editorial Border",
+      "file": "fs30/story_pipeline/assets/reusable_stock/quotes/quote_variant_d_double_bordered.png",
+      "dimensions": [
+        960,
+        380
+      ],
+      "transparency": true,
+      "text_safe_box": [
+        130,
+        45,
+        900,
+        335
+      ],
+      "intended_usage": "Archival quote presentations, declarations, and court transcripts (Double Inked Editorial Border)"
+    },
+    {
+      "id": "quote_variant_e_aged_parchment",
+      "category": "quotes",
+      "family": "e",
+      "name": "Aged Rag Deckle with Red Header Tab",
+      "file": "fs30/story_pipeline/assets/reusable_stock/quotes/quote_variant_e_aged_parchment.png",
+      "dimensions": [
+        960,
+        380
+      ],
+      "transparency": true,
+      "text_safe_box": [
+        130,
+        45,
+        900,
+        335
+      ],
+      "intended_usage": "Archival quote presentations, declarations, and court transcripts (Aged Rag Deckle with Red Header Tab)"
+    },
+    {
+      "id": "frame_variant_a_polaroid",
+      "category": "frames",
+      "family": "a",
+      "name": "Vintage Polaroid Border with Bottom Tab",
+      "file": "fs30/story_pipeline/assets/reusable_stock/frames/frame_variant_a_polaroid.png",
+      "dimensions": [
+        600,
+        420
+      ],
+      "transparency": true,
+      "window_box": [
+        40,
+        40,
+        510,
+        380
+      ],
+      "intended_usage": "Photographic asset framing and contact sheet presentations (Vintage Polaroid Border with Bottom Tab)"
+    },
+    {
+      "id": "frame_variant_b_gallery_mat",
+      "category": "frames",
+      "family": "b",
+      "name": "Archival Ivory Mat with Inner Bevel",
+      "file": "fs30/story_pipeline/assets/reusable_stock/frames/frame_variant_b_gallery_mat.png",
+      "dimensions": [
+        600,
+        420
+      ],
+      "transparency": true,
+      "window_box": [
+        35,
+        35,
+        565,
+        385
+      ],
+      "intended_usage": "Photographic asset framing and contact sheet presentations (Archival Ivory Mat with Inner Bevel)"
+    },
+    {
+      "id": "frame_variant_c_contact_sheet",
+      "category": "frames",
+      "family": "c",
+      "name": "Black 35mm Film Contact Sheet Frame",
+      "file": "fs30/story_pipeline/assets/reusable_stock/frames/frame_variant_c_contact_sheet.png",
+      "dimensions": [
+        600,
+        420
+      ],
+      "transparency": true,
+      "window_box": [
+        28,
+        28,
+        572,
+        392
+      ],
+      "intended_usage": "Photographic asset framing and contact sheet presentations (Black 35mm Film Contact Sheet Frame)"
+    },
+    {
+      "id": "frame_variant_d_torn_border",
+      "category": "frames",
+      "family": "d",
+      "name": "Deckle Edge Torn Photo Mount",
+      "file": "fs30/story_pipeline/assets/reusable_stock/frames/frame_variant_d_torn_border.png",
+      "dimensions": [
+        600,
+        420
+      ],
+      "transparency": true,
+      "window_box": [
+        32,
+        32,
+        568,
+        388
+      ],
+      "intended_usage": "Photographic asset framing and contact sheet presentations (Deckle Edge Torn Photo Mount)"
+    },
+    {
+      "id": "frame_variant_e_brass_corners",
+      "category": "frames",
+      "family": "e",
+      "name": "Vintage Card with Photo Corners",
+      "file": "fs30/story_pipeline/assets/reusable_stock/frames/frame_variant_e_brass_corners.png",
+      "dimensions": [
+        600,
+        420
+      ],
+      "transparency": true,
+      "window_box": [
+        25,
+        25,
+        575,
+        395
+      ],
+      "intended_usage": "Photographic asset framing and contact sheet presentations (Vintage Card with Photo Corners)"
+    },
+    {
+      "id": "underline_variant_a_drybrush",
+      "category": "underlines",
+      "family": "a",
+      "name": "Distressed Dry-Brush Crimson Stroke",
+      "file": "fs30/story_pipeline/assets/reusable_stock/underlines/underline_variant_a_drybrush.png",
+      "dimensions": [
+        800,
+        60
+      ],
+      "transparency": true,
+      "intended_usage": "Animated or static text emphasis underlines (Distressed Dry-Brush Crimson Stroke)"
+    },
+    {
+      "id": "underline_variant_b_double_rule",
+      "category": "underlines",
+      "family": "b",
+      "name": "Double Inked Editorial Ledger Rule",
+      "file": "fs30/story_pipeline/assets/reusable_stock/underlines/underline_variant_b_double_rule.png",
+      "dimensions": [
+        800,
+        60
+      ],
+      "transparency": true,
+      "intended_usage": "Animated or static text emphasis underlines (Double Inked Editorial Ledger Rule)"
+    },
+    {
+      "id": "underline_variant_c_marker_chisel",
+      "category": "underlines",
+      "family": "c",
+      "name": "Thick Chisel Tip Fluorescent Marker",
+      "file": "fs30/story_pipeline/assets/reusable_stock/underlines/underline_variant_c_marker_chisel.png",
+      "dimensions": [
+        800,
+        60
+      ],
+      "transparency": true,
+      "intended_usage": "Animated or static text emphasis underlines (Thick Chisel Tip Fluorescent Marker)"
+    },
+    {
+      "id": "underline_variant_d_torn_strip",
+      "category": "underlines",
+      "family": "d",
+      "name": "Narrow Deckle Edge Paper Underline",
+      "file": "fs30/story_pipeline/assets/reusable_stock/underlines/underline_variant_d_torn_strip.png",
+      "dimensions": [
+        800,
+        60
+      ],
+      "transparency": true,
+      "intended_usage": "Animated or static text emphasis underlines (Narrow Deckle Edge Paper Underline)"
+    },
+    {
+      "id": "underline_variant_e_dotted_leader",
+      "category": "underlines",
+      "family": "e",
+      "name": "Perforated Archival Punch Underline",
+      "file": "fs30/story_pipeline/assets/reusable_stock/underlines/underline_variant_e_dotted_leader.png",
+      "dimensions": [
+        800,
+        60
+      ],
+      "transparency": true,
+      "intended_usage": "Animated or static text emphasis underlines (Perforated Archival Punch Underline)"
+    },
+    {
+      "id": "date_label_variant_a_torn_tag",
+      "category": "date_labels",
+      "family": "variant",
+      "name": "Torn Tag with Eyelet Hole",
+      "file": "fs30/story_pipeline/assets/reusable_stock/date_labels/date_label_variant_a_torn_tag.png",
+      "dimensions": [
+        440,
+        130
+      ],
+      "transparency": true,
+      "intended_usage": "Date stamps, chronological milestone indicators, and time tags (Torn Tag with Eyelet Hole)"
+    },
+    {
+      "id": "date_label_variant_b_red_badge",
+      "category": "date_labels",
+      "family": "variant",
+      "name": "Archival Red Embossed Box",
+      "file": "fs30/story_pipeline/assets/reusable_stock/date_labels/date_label_variant_b_red_badge.png",
+      "dimensions": [
+        440,
+        130
+      ],
+      "transparency": true,
+      "intended_usage": "Date stamps, chronological milestone indicators, and time tags (Archival Red Embossed Box)"
+    },
+    {
+      "id": "date_label_variant_c_stamp_circle",
+      "category": "date_labels",
+      "family": "variant",
+      "name": "Circular Postmark Match Cancellation",
+      "file": "fs30/story_pipeline/assets/reusable_stock/date_labels/date_label_variant_c_stamp_circle.png",
+      "dimensions": [
+        440,
+        130
+      ],
+      "transparency": true,
+      "intended_usage": "Date stamps, chronological milestone indicators, and time tags (Circular Postmark Match Cancellation)"
+    },
+    {
+      "id": "date_label_variant_d_folded_tab",
+      "category": "date_labels",
+      "family": "variant",
+      "name": "Ivory Creased Folder Tab",
+      "file": "fs30/story_pipeline/assets/reusable_stock/date_labels/date_label_variant_d_folded_tab.png",
+      "dimensions": [
+        440,
+        130
+      ],
+      "transparency": true,
+      "intended_usage": "Date stamps, chronological milestone indicators, and time tags (Ivory Creased Folder Tab)"
+    },
+    {
+      "id": "date_label_variant_e_blackletter",
+      "category": "date_labels",
+      "family": "variant",
+      "name": "Gritty Newspaper Timestamp Bar",
+      "file": "fs30/story_pipeline/assets/reusable_stock/date_labels/date_label_variant_e_blackletter.png",
+      "dimensions": [
+        440,
+        130
+      ],
+      "transparency": true,
+      "intended_usage": "Date stamps, chronological milestone indicators, and time tags (Gritty Newspaper Timestamp Bar)"
+    },
+    {
+      "id": "stamp_ban_8months",
+      "category": "stamps",
+      "family": "rubber_stamp",
+      "name": "Rubber Stamp: 8-MONTH BAN",
+      "file": "fs30/story_pipeline/assets/reusable_stock/stamps/stamp_ban_8months.png",
+      "dimensions": [
+        520,
+        180
+      ],
+      "transparency": true,
+      "intended_usage": "Sliding/slamming rubber ink stamp for legal & disciplinary verdicts (8-MONTH BAN)"
+    },
+    {
+      "id": "stamp_community_service",
+      "category": "stamps",
+      "family": "rubber_stamp",
+      "name": "Rubber Stamp: 120 HOURS",
+      "file": "fs30/story_pipeline/assets/reusable_stock/stamps/stamp_community_service.png",
+      "dimensions": [
+        520,
+        180
+      ],
+      "transparency": true,
+      "intended_usage": "Sliding/slamming rubber ink stamp for legal & disciplinary verdicts (120 HOURS)"
+    },
+    {
+      "id": "stamp_verdict_guilty",
+      "category": "stamps",
+      "family": "rubber_stamp",
+      "name": "Rubber Stamp: VERDICT: GUILTY",
+      "file": "fs30/story_pipeline/assets/reusable_stock/stamps/stamp_verdict_guilty.png",
+      "dimensions": [
+        520,
+        180
+      ],
+      "transparency": true,
+      "intended_usage": "Sliding/slamming rubber ink stamp for legal & disciplinary verdicts (VERDICT: GUILTY)"
+    },
+    {
+      "id": "stamp_red_card",
+      "category": "stamps",
+      "family": "rubber_stamp",
+      "name": "Rubber Stamp: STRAIGHT RED",
+      "file": "fs30/story_pipeline/assets/reusable_stock/stamps/stamp_red_card.png",
+      "dimensions": [
+        520,
+        180
+      ],
+      "transparency": true,
+      "intended_usage": "Sliding/slamming rubber ink stamp for legal & disciplinary verdicts (STRAIGHT RED)"
+    },
+    {
+      "id": "stamp_appeal_quashed",
+      "category": "stamps",
+      "family": "rubber_stamp",
+      "name": "Rubber Stamp: SENTENCE QUASHED",
+      "file": "fs30/story_pipeline/assets/reusable_stock/stamps/stamp_appeal_quashed.png",
+      "dimensions": [
+        520,
+        180
+      ],
+      "transparency": true,
+      "intended_usage": "Sliding/slamming rubber ink stamp for legal & disciplinary verdicts (SENTENCE QUASHED)"
+    },
+    {
+      "id": "texture_variant_a_rag_parchment",
+      "category": "textures",
+      "family": "a",
+      "name": "Warm Aged Rag Parchment",
+      "file": "fs30/story_pipeline/assets/reusable_stock/textures/texture_variant_a_rag_parchment.jpg",
+      "dimensions": [
+        1080,
+        1920
+      ],
+      "transparency": false,
+      "intended_usage": "Documentary scene canvas texture overlay (Warm Aged Rag Parchment)"
+    },
+    {
+      "id": "texture_variant_b_newspaper_newsprint",
+      "category": "textures",
+      "family": "b",
+      "name": "Vintage 1990s Newsprint Fiber",
+      "file": "fs30/story_pipeline/assets/reusable_stock/textures/texture_variant_b_newspaper_newsprint.jpg",
+      "dimensions": [
+        1080,
+        1920
+      ],
+      "transparency": false,
+      "intended_usage": "Documentary scene canvas texture overlay (Vintage 1990s Newsprint Fiber)"
+    },
+    {
+      "id": "texture_variant_c_heavy_cardboard",
+      "category": "textures",
+      "family": "c",
+      "name": "Industrial Archival Gray Cardboard",
+      "file": "fs30/story_pipeline/assets/reusable_stock/textures/texture_variant_c_heavy_cardboard.jpg",
+      "dimensions": [
+        1080,
+        1920
+      ],
+      "transparency": false,
+      "intended_usage": "Documentary scene canvas texture overlay (Industrial Archival Gray Cardboard)"
+    },
+    {
+      "id": "texture_variant_d_folded_crease",
+      "category": "textures",
+      "family": "d",
+      "name": "Folded Archival Dossier with Cross Creases",
+      "file": "fs30/story_pipeline/assets/reusable_stock/textures/texture_variant_d_folded_crease.jpg",
+      "dimensions": [
+        1080,
+        1920
+      ],
+      "transparency": false,
+      "intended_usage": "Documentary scene canvas texture overlay (Folded Archival Dossier with Cross Creases)"
+    },
+    {
+      "id": "texture_variant_e_film_grain",
+      "category": "textures",
+      "family": "e",
+      "name": "Gritty Kodak 400 Grain Texture",
+      "file": "fs30/story_pipeline/assets/reusable_stock/textures/texture_variant_e_film_grain.jpg",
+      "dimensions": [
+        1080,
+        1920
+      ],
+      "transparency": false,
+      "intended_usage": "Documentary scene canvas texture overlay (Gritty Kodak 400 Grain Texture)"
+    },
+    {
+      "id": "marker_circle_reticle",
+      "category": "markers",
+      "family": "annotation",
+      "name": "Tactical Target Circle",
+      "file": "fs30/story_pipeline/assets/reusable_stock/markers/marker_circle_reticle.png",
+      "dimensions": [
+        260,
+        260
+      ],
+      "transparency": true,
+      "intended_usage": "On-screen tactical highlights, player tracking, and crowd callouts (Tactical Target Circle)"
+    },
+    {
+      "id": "marker_arrow_right",
+      "category": "markers",
+      "family": "annotation",
+      "name": "Hand-Drawn Directional Arrow",
+      "file": "fs30/story_pipeline/assets/reusable_stock/markers/marker_arrow_right.png",
+      "dimensions": [
+        340,
+        140
+      ],
+      "transparency": true,
+      "intended_usage": "On-screen tactical highlights, player tracking, and crowd callouts (Hand-Drawn Directional Arrow)"
+    },
+    {
+      "id": "marker_box_bracket",
+      "category": "markers",
+      "family": "annotation",
+      "name": "Annotation Focus Bracket Box",
+      "file": "fs30/story_pipeline/assets/reusable_stock/markers/marker_box_bracket.png",
+      "dimensions": [
+        480,
+        200
+      ],
+      "transparency": true,
+      "intended_usage": "On-screen tactical highlights, player tracking, and crowd callouts (Annotation Focus Bracket Box)"
+    },
+    {
+      "id": "marker_exclamation",
+      "category": "markers",
+      "family": "annotation",
+      "name": "Archival Alert Exclamation",
+      "file": "fs30/story_pipeline/assets/reusable_stock/markers/marker_exclamation.png",
+      "dimensions": [
+        140,
+        260
+      ],
+      "transparency": true,
+      "intended_usage": "On-screen tactical highlights, player tracking, and crowd callouts (Archival Alert Exclamation)"
+    },
+    {
+      "id": "marker_zigzag_lightning",
+      "category": "markers",
+      "family": "annotation",
+      "name": "Impact Shockwave Flash",
+      "file": "fs30/story_pipeline/assets/reusable_stock/markers/marker_zigzag_lightning.png",
+      "dimensions": [
+        300,
+        180
+      ],
+      "transparency": true,
+      "intended_usage": "On-screen tactical highlights, player tracking, and crowd callouts (Impact Shockwave Flash)"
+    },
+    {
+      "id": "ticket_variant_a_selhurst_1995",
+      "category": "tickets",
+      "family": "vintage_ticket",
+      "name": "Selhurst Park 1995 Premier League Stub",
+      "file": "fs30/story_pipeline/assets/reusable_stock/tickets/ticket_variant_a_selhurst_1995.png",
+      "dimensions": [
+        620,
+        200
+      ],
+      "transparency": true,
+      "intended_usage": "Historical match context tickets and attendance passes (Selhurst Park 1995 Premier League Stub)"
+    },
+    {
+      "id": "ticket_variant_b_old_trafford_return",
+      "category": "tickets",
+      "family": "vintage_ticket",
+      "name": "Old Trafford October 1995 Comeback Pass",
+      "file": "fs30/story_pipeline/assets/reusable_stock/tickets/ticket_variant_b_old_trafford_return.png",
+      "dimensions": [
+        640,
+        200
+      ],
+      "transparency": true,
+      "intended_usage": "Historical match context tickets and attendance passes (Old Trafford October 1995 Comeback Pass)"
+    },
+    {
+      "id": "ticket_variant_c_wembley_fa_cup",
+      "category": "tickets",
+      "family": "vintage_ticket",
+      "name": "Wembley Stadium Archival Match Ticket",
+      "file": "fs30/story_pipeline/assets/reusable_stock/tickets/ticket_variant_c_wembley_fa_cup.png",
+      "dimensions": [
+        620,
+        200
+      ],
+      "transparency": true,
+      "intended_usage": "Historical match context tickets and attendance passes (Wembley Stadium Archival Match Ticket)"
+    }
+  ]
+}

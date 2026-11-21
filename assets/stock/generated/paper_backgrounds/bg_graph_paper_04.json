@@ -1,0 +1,21 @@
+{
+  "id": "stock_bg_04",
+  "asset_type": "paper_background",
+  "variant": "graph_paper",
+  "seed": 1004,
+  "width": 1080,
+  "height": 1920,
+  "blend_mode": "normal",
+  "has_alpha": false,
+  "license": "CC0 1.0 Universal",
+  "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+  "generated": true,
+  "date": "2026-11-21",
+  "tags": [
+    "paper",
+    "background",
+    "graph_paper",
+    "tactile",
+    "craft"
+  ]
+}

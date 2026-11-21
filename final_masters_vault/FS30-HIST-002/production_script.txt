@@ -1,0 +1,27 @@
+FS30 HISTORICAL PRODUCTION SCRIPT: FS30-HIST-002
+TITLE: The Majestic Tragedy: Zinedine Zidane 2006 World Cup Headbutt
+INCIDENT DATE: 09 July 2006
+VENUE: Olympiastadion, Berlin (FIFA World Cup Final)
+NARRATOR: British Documentary Presenter (Qwen3-TTS 'Ryan')
+MUSIC: Opportunity Walks (Kevin MacLeod, CC-BY 4.0) — Mastered to -14.2 LUFS
+
+BEAT 1 (0.0s - 8.0s) [Variant A Banner: THE FAREWELL]:
+"July 2006. Berlin. Zinedine Zidane steps onto the pitch for his final professional match. Seven minutes in, he chips a nonchalant Panenka penalty off the crossbar past Gianluigi Buffon. Pure poetry."
+
+BEAT 2 (8.0s - 16.5s) [Variant B Banner: THE PROVOCATION]:
+"One hundred and ten minutes of grueling extra time later, Marco Materazzi grabs Zidane's shirt. Zizou politely offers to give it to him after the match. Materazzi, however, had an entirely different family heirloom in mind."
+
+BEAT 3 (16.5s - 28.0s) [Variant C Banner: THE HEADBUTT // Archival Video Loop]:
+"Zidane stops, turns around, and delivers a ferocious, full-force headbutt directly into the Italian defender's chest. Materazzi hits the turf like a sack of damp cement. One billion viewers stared in utter disbelief."
+
+BEAT 4 (28.0s - 39.5s) [Variant D Banner: THE EXPULSION]:
+"Referee Horacio Elizondo missed it, but fourth official Medina Cantalejo saw everything through his headset. The red card is brandished. Zidane walks into the tunnel, passing inches from the golden World Cup trophy without looking back."
+
+BEAT 5 (39.5s - 51.5s) [Variant E Banner: THE FALLOUT]:
+"Italy won the shootout. FIFA handed Zidane a three-match ban and three days of community service with UNICEF. Remarkably, he was still voted the tournament's best player. Apparently, legendary status comes with some diplomatic immunity."
+
+BEAT 6 (51.5s - 56.0s) [Variant A Banner: LONG LIVE ZIZOU]:
+"One hundred and eight caps. A final act of explosive fury, yet forever adored. Long live Zizou."
+
+OUTRO (56.0s - 60.0s) [FS30 Official Outro]:
+"See you later. This is Football in 30 Seconds. Follow for more."

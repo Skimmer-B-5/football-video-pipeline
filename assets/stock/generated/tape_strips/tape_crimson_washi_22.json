@@ -1,0 +1,17 @@
+{
+  "id": "stock_tape_22",
+  "asset_type": "tape_strip",
+  "variant": "crimson_washi",
+  "seed": 3022,
+  "has_alpha": true,
+  "blend_mode": "normal",
+  "license": "CC0 1.0 Universal",
+  "generated": true,
+  "tags": [
+    "tape",
+    "adhesive",
+    "crimson_washi",
+    "washi",
+    "craft"
+  ]
+}

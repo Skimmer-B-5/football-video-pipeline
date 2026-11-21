@@ -1,0 +1,15 @@
+{
+  "id": "stock_stain_05",
+  "asset_type": "stains_dust",
+  "seed": 5005,
+  "blend_mode": "multiply",
+  "has_alpha": false,
+  "license": "CC0 1.0 Universal",
+  "generated": true,
+  "tags": [
+    "stain",
+    "dust",
+    "foxing",
+    "distress"
+  ]
+}

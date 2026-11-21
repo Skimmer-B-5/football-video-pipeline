@@ -1,0 +1,15 @@
+{
+  "id": "stock_stationery_02",
+  "asset_type": "pin_clip_sticky",
+  "kind": "sticky_note",
+  "seed": 6002,
+  "has_alpha": true,
+  "license": "CC0 1.0 Universal",
+  "generated": true,
+  "tags": [
+    "stationery",
+    "sticky_note",
+    "clip",
+    "pin"
+  ]
+}

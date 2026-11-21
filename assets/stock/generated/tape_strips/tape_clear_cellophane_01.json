@@ -1,0 +1,17 @@
+{
+  "id": "stock_tape_01",
+  "asset_type": "tape_strip",
+  "variant": "clear_cellophane",
+  "seed": 3001,
+  "has_alpha": true,
+  "blend_mode": "normal",
+  "license": "CC0 1.0 Universal",
+  "generated": true,
+  "tags": [
+    "tape",
+    "adhesive",
+    "clear_cellophane",
+    "washi",
+    "craft"
+  ]
+}

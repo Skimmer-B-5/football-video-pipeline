@@ -7,10 +7,12 @@ opencv-python>=4.8.0
 scipy>=1.11.0
 rembg>=2.0.50
 
-# Speech Synthesis (Qwen3-TTS & Neural Edge)
+# Speech Synthesis & Transcription (Qwen3-TTS, Whisper & Neural Edge)
 transformers==4.57.3
 accelerate==1.12.0
 tokenizers<=0.23.0,>=0.22.0
+openai-whisper>=20231117
+tiktoken>=0.7.0
 qwen-tts==0.1.1
 edge-tts>=6.1.0
 soundfile>=0.12.1
