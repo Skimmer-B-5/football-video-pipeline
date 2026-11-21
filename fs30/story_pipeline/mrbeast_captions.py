@@ -32,7 +32,7 @@ COLOR_BLACK = (0, 0, 0, 255)
 COLOR_SHADOW = (0, 0, 0, 220)
 
 # Emphasis words that pop in bright red
-CLIMAX_WORDS = {"KICK", "SHATTERED", "THERMONUCLEAR", "BANNED", "KING", "RED", "PRISON"}
+CLIMAX_WORDS = {"KICK", "SHATTERED", "THERMONUCLEAR", "BANNED", "KING", "RED", "PRISON", "HEADBUTT", "PANENKA", "ZIZOU", "AUDACITY", "108"}
 
 _TIMELINE: List[dict] = []
 _WORD_BBOX_CACHE: Dict[str, Tuple[int, int, int, int]] = {}
