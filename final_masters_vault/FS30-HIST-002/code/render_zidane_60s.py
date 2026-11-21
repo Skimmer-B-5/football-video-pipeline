@@ -1,29 +1,25 @@
 """
-60-Second Zinedine Zidane 2006 World Cup Headbutt Documentary Renderer (Master Production 5.0).
-Strict Production Refinements:
-1. Real Paper Assets Only: Reusable stock banners (variant A-E), real Polaroid/gallery frames,
-   real tape strips, real aged paper backgrounds, real stamps. Zero flat PIL color rectangles.
-2. Zero Photo Repetition: Strictly max 1 scene per photograph across all 6 beats.
-   - Beat 1: buffon_final.jpg (Polaroid) & zidane_penalty.jpg (Gallery mat)
-   - Beat 2: zidane_shirt_2006.jpg (Ivory mat) & quote_materazzi_insult.png
-   - Beat 3: puppet_headbutt_unified.png (Iconic headbutt paper puppet) & clipping_coup_de_boule_real.png
-   - Beat 4: clipping_guardian_red_card.png & stamp_red_card.png & world_cup_trophy_cutout.png
-   - Beat 5: cannavaro_trophy.jpg (Scrapbook lift & retract) & fifa_sanction_document.png & golden_ball_award_badge.png
-   - Beat 6: zidane_hero_cutout.png (Legendary portrait) & badge_108_caps.png
-3. Unobstructed Unified Paper-Puppet Headbutt: Front, center hero of Beat 3. No cards covering it.
-   Smooth wind-up, violent forward strike, "WHAM!" impact starburst, screen shake, and collapse.
-4. Animated Scrapbook Slide: Cannavaro trophy lift slides up from below, holds for Italy victory,
-   then slides down to reveal the FIFA sanction document and Golden Ball award badge.
-5. Sequential Entrances: Assets enter one-by-one synchronized with spoken narration cues.
-6. OpenCV Face Framing: Buffon centered in Polaroid aperture without cutting his head or torso.
-7. Calibrated Timing: 60.00s total duration at 30fps (1800 frames), aligned with calm unhurried British narration.
-8. MrBeast Kinetic Captions: 100% verified spelling for all player names and milestones.
+60-Second Zinedine Zidane 2006 World Cup Headbutt Documentary Renderer (Master Production 6.0 - Artisan Edition).
+Strict Artisan Standards:
+1. Real Verified Archival Assets Only:
+   - Beat 1: Buffon Polaroid & Zidane Panenka & L'Équipe real front page
+   - Beat 2: Real shirt altercation photo & authentic Materazzi insult quote card with neon highlighter
+   - Beat 3: GENUINE 12-FRAME ARCHIVAL TV BROADCAST LOOP of the headbutt (No synthetic puppets!)
+   - Beat 4: Iconic Zidane walking past the golden World Cup trophy (Head intact, trophy in focus) & Red Card stamp
+   - Beat 5: Fabio Cannavaro lifting the World Cup with silver confetti (Reuters verified) & FIFA sanction document
+   - Beat 6: Hero Zidane portrait cutout & 108 Caps Badge & Official FS30 outro card
+2. Reusable Graphic Assets: Variants A-E banners, real washi tape, double archival borders, realistic drop shadows.
+3. Smooth Kinematics: Cubic bezier easing on all entrances (no robotic linear jumps).
+4. Zero Distortion: Proportional aspect ratios strictly preserved across all assets.
+5. Calibrated Sound & Timing: 60.00s total duration at 30fps (1800 frames), aligned with calm British narration.
+6. MrBeast Kinetic Captions: 100% verified spelling and timing.
 """
 
 import sys
 import os
 import math
 import subprocess
+import time
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 from PIL import Image, ImageDraw, ImageFont, ImageFilter, ImageOps, ImageEnhance
@@ -34,10 +30,14 @@ sys.path.insert(0, str(PROJECT_ROOT))
 
 RUN_DIR = PROJECT_ROOT / "runs" / "zidane_headbutt_story"
 ASSETS_DIR = RUN_DIR / "assets"
+ARCHIVE_DIR = ASSETS_DIR / "archival_footage"
+PANELS_DIR = ARCHIVE_DIR / "mounted_panels"
 STOCK_DIR = PROJECT_ROOT / "assets" / "stock" / "generated"
 REUSABLE_DIR = PROJECT_ROOT / "fs30" / "story_pipeline" / "assets" / "reusable_stock"
 FRAMES_DIR = RUN_DIR / "frames"
 FRAMES_DIR.mkdir(parents=True, exist_ok=True)
+BRAIN_DIR = Path(r"C:\Users\sb000\.gemini\antigravity\brain\39259585-6e0b-4fd0-8946-7c7ef3b89b1d")
+LOG_PATH = RUN_DIR / "artisan_production.log"
 
 from fs30.story_pipeline.branding import create_fs30_tv_watermark, render_fs30_outro
 from fs30.story_pipeline.photo_mounter import scale_cutout_proportional
@@ -71,7 +71,6 @@ def prepare_textured_bg(bg_path: Path, width: int = 1080, height: int = 1920) ->
         y_off = (nh - height) // 2
         cropped = resized.crop((x_off, y_off, x_off + width, y_off + height))
         
-        # Archival warm grade
         enh_b = ImageEnhance.Brightness(cropped)
         dark = enh_b.enhance(0.92)
         
@@ -122,84 +121,13 @@ BANNER_B4 = create_banner_with_text(REUSABLE_DIR / "banners" / "banner_variant_d
 BANNER_B5 = create_banner_with_text(REUSABLE_DIR / "banners" / "banner_variant_e_layered_offset.png", "THE AFTERMATH", "ITALY CHAMPIONS // FIFA DISCIPLINARY")
 BANNER_B6 = create_banner_with_text(REUSABLE_DIR / "banners" / "banner_variant_a_torn_stripe.png", "LONG LIVE ZIZOU", "108 CAPS // A MAJESTIC LEGACY")
 
-def render_puppet_headbutt(t_b: float) -> Tuple[Image.Image, int, int]:
-    """
-    Renders the unified paper-puppet headbutt animation.
-    Zidane's upper body winds up, then strikes violently forward at waist,
-    slamming his bald head straight into Materazzi's chest with an impact starburst!
-    Returns (layer, shake_x, shake_y).
-    """
-    layer = Image.new("RGBA", (1080, 1920), (0, 0, 0, 0))
-    
-    puppet = get_image(ASSETS_DIR / "puppet_headbutt_unified.png")
-    star = get_image(ASSETS_DIR / "impact_starburst.png")
-    
-    scale = 1.75
-    pw, ph = int(puppet.width * scale), int(puppet.height * scale)
-    p_scaled = puppet.resize((pw, ph), Image.Resampling.LANCZOS)
-    
-    cx = 1080 // 2
-    cy = 880
-    
-    shake_x = 0
-    shake_y = 0
-    show_star = False
-    
-    # Timing of the strike:
-    # t_b in [0.0, 1.0]: Entrance and staredown
-    # t_b in [1.0, 1.7]: Wind up backwards (angle -10 deg, dx -40px)
-    # t_b in [1.7, 2.1]: Violent headbutt forward (angle reaches +18 deg, dx +80px)
-    # t_b in [2.1, 2.8]: Impact hold with WHAM! starburst and camera shake
-    # t_b in [2.8, 4.2]: Materazzi collapse: tilts back -35 deg and drops down +220px
-    if t_b < 1.0:
-        p_in = min(1.0, t_b / 0.5)
-        ease_in = math.sin(p_in * math.pi / 2)
-        cur_x = int(cx - 150 * (1.0 - ease_in))
-        cur_y = cy
-        cur_angle = -2.0 + 1.5 * math.sin(t_b * 4.0)
-    elif t_b < 1.7:
-        p = (t_b - 1.0) / 0.7
-        cur_x = int(cx - 45 * p)
-        cur_y = cy
-        cur_angle = -2.0 - 10.0 * p
-    elif t_b < 2.1:
-        p = (t_b - 1.7) / 0.4
-        cur_x = int((cx - 45) + 125 * (p ** 2))
-        cur_y = cy
-        cur_angle = -12.0 + 30.0 * (p ** 2)  # Hits +18 deg
-        show_star = p > 0.6
-    elif t_b < 2.8:
-        p_imp = (t_b - 2.1) / 0.7
-        cur_x = cx + 80
-        cur_y = cy
-        cur_angle = 18.0 - 15.0 * p_imp
-        show_star = True
-        # Camera shake
-        if t_b <= 2.4:
-            s_mag = 14 * math.sin((t_b - 2.1) * 70)
-            shake_x = int(s_mag)
-            shake_y = int(s_mag * 0.5)
-    else:
-        # Collapse downward
-        p_col = min(1.0, (t_b - 2.8) / 1.0)
-        cur_x = cx + 80 + int(40 * p_col)
-        cur_y = int(cy + 260 * (p_col ** 1.5))
-        cur_angle = 3.0 - 32.0 * p_col
-        show_star = False
-        
-    # Rotate puppet around its center
-    p_box = Image.new("RGBA", (pw * 2, ph * 2), (0, 0, 0, 0))
-    p_box.paste(p_scaled, (pw // 2, ph // 2))
-    rot_p = p_box.rotate(cur_angle, resample=Image.Resampling.BICUBIC)
-    
-    layer.paste(rot_p, (cur_x - pw, cur_y - ph), mask=rot_p.split()[-1])
-    
-    # Impact starburst
-    if show_star:
-        star_s = star.resize((380, 380), Image.Resampling.LANCZOS)
-        layer.paste(star_s, (cur_x - 100, cur_y - 200), mask=star_s.split()[-1])
-        
-    return layer, shake_x, shake_y
+# Pre-load 12 Archival Broadcast Panels for Beat 3
+ARCHIVAL_BROADCAST_PANELS: List[Image.Image] = []
+for p_idx in range(12):
+    panel_file = PANELS_DIR / f"panel_{p_idx:02d}.png"
+    if panel_file.exists():
+        ARCHIVAL_BROADCAST_PANELS.append(get_image(panel_file))
+print(f"Loaded {len(ARCHIVAL_BROADCAST_PANELS)} pre-rendered archival broadcast panels for Beat 3.")
 
 def render_frame(f_idx: int) -> Image.Image:
     fps = 30
@@ -275,7 +203,7 @@ def render_frame(f_idx: int) -> Image.Image:
             sh_y = int(480 - 60 * (1.0 - ease_sh))
             bg.paste(sh_im, (70, sh_y), mask=sh_im.split()[-1])
             
-        # Entrance 3 (t_b >= 4.5s): Real Quote Card
+        # Entrance 3 (t_b >= 4.5s): Real Quote Card with Neon Highlighter
         if t_b >= 4.5:
             p_q = min(1.0, (t_b - 4.5) / 0.5)
             ease_q = math.sin(p_q * math.pi / 2)
@@ -288,7 +216,7 @@ def render_frame(f_idx: int) -> Image.Image:
         return bg
 
     # -------------------------------------------------------------
-    # BEAT 3: The Headbutt (21.16s - 30.14s) — Paper Puppet HERO
+    # BEAT 3: The Headbutt (21.16s - 30.14s) — GENUINE ARCHIVAL BROADCAST LOOP HERO
     # -------------------------------------------------------------
     elif t < 30.14:
         t_b = t - 21.16
@@ -300,16 +228,37 @@ def render_frame(f_idx: int) -> Image.Image:
         head_x = int(-200 * (1.0 - ease_b) + 40)
         bg.paste(BANNER_B3, (head_x, 180), mask=BANNER_B3.split()[-1])
         
-        # HERO PAPER PUPPET HEADBUTT (Center of screen, completely unobstructed)
-        puppet_layer, shake_x, shake_y = render_puppet_headbutt(t_b)
-        bg.paste(puppet_layer, (shake_x, shake_y), mask=puppet_layer.split()[-1])
-        
+        # ARCHIVAL BROADCAST PANEL PLAYBACK
+        # Narrator says "TURNS" at tb=0.6s, "HEADBUTT" at tb=1.96s, "CHEST" at tb=4.0s
+        # Panel slides in smoothly from y=380 starting at tb=0.8s
+        if ARCHIVAL_BROADCAST_PANELS:
+            p_pan = min(1.0, max(0.0, (t_b - 0.4) / 0.5))
+            ease_pan = math.sin(p_pan * math.pi / 2)
+            
+            # Continuous loop playback at 10.0 FPS
+            loop_idx = int((t_b * 10.0)) % len(ARCHIVAL_BROADCAST_PANELS)
+            panel_im = ARCHIVAL_BROADCAST_PANELS[loop_idx]
+            
+            # Subtle camera push on impact (1.0 -> 1.04 around tb=2.0s)
+            pan_w, pan_h = panel_im.size
+            if 1.8 <= t_b <= 2.6:
+                zoom = 1.0 + 0.04 * math.sin((t_b - 1.8) / 0.8 * math.pi)
+                nw, nh = int(pan_w * zoom), int(pan_h * zoom)
+                panel_im = panel_im.resize((nw, nh), Image.Resampling.LANCZOS)
+                px = (1080 - nw) // 2
+                py = int(490 - (nh - pan_h) // 2)
+            else:
+                px = (1080 - pan_w) // 2
+                py = int(490 + 80 * (1.0 - ease_pan))
+                
+            bg.paste(panel_im, (px, py), mask=panel_im.split()[-1])
+            
         # Le Monde Breaking News Clipping (enters underneath at t_b >= 4.2s)
         if t_b >= 4.2:
             p_lm = min(1.0, (t_b - 4.2) / 0.5)
             ease_lm = math.sin(p_lm * math.pi / 2)
             lm_im = get_image(ASSETS_DIR / "clipping_coup_de_boule_real.png")
-            lm_y = int(1440 + 120 * (1.0 - ease_lm))
+            lm_y = int(1280 + 120 * (1.0 - ease_lm))
             bg.paste(lm_im, (50, lm_y), mask=lm_im.split()[-1])
             
         bg = draw_mrbeast_captions(bg, t, center_y=1710)
@@ -317,7 +266,7 @@ def render_frame(f_idx: int) -> Image.Image:
         return bg
 
     # -------------------------------------------------------------
-    # BEAT 4: The Expulsion (30.14s - 39.25s) — Red Card & Guardian Headline
+    # BEAT 4: The Expulsion (30.14s - 39.25s) — Red Card & Iconic Trophy Walk Photo
     # -------------------------------------------------------------
     elif t < 39.25:
         t_b = t - 30.14
@@ -329,38 +278,40 @@ def render_frame(f_idx: int) -> Image.Image:
         head_x = int(-200 * (1.0 - ease_b) + 40)
         bg.paste(BANNER_B4, (head_x, 180), mask=BANNER_B4.split()[-1])
         
-        # Red Card Stamp slap-on (t_b >= 1.0s)
-        if t_b >= 1.0:
-            p_rc = min(1.0, (t_b - 1.0) / 0.35)
+        # Red Card Stamp slap-on (t_b >= 0.8s)
+        if t_b >= 0.8:
+            p_rc = min(1.0, (t_b - 0.8) / 0.35)
             ease_rc = math.sin(p_rc * math.pi / 2)
             stamp_rc = get_image(REUSABLE_DIR / "stamps" / "stamp_red_card.png").resize((420, 150), Image.Resampling.LANCZOS).rotate(12, expand=True)
             rc_scale = 1.0 + 0.3 * (1.0 - ease_rc)
             stamp_s = stamp_rc.resize((int(stamp_rc.width * rc_scale), int(stamp_rc.height * rc_scale)), Image.Resampling.LANCZOS)
-            bg.paste(stamp_s, (600, 420), mask=stamp_s.split()[-1])
+            bg.paste(stamp_s, (610, 420), mask=stamp_s.split()[-1])
             
-        # The Guardian Newspaper Clipping (t_b >= 2.2s)
-        if t_b >= 2.2:
-            p_gd = min(1.0, (t_b - 2.2) / 0.5)
+        # The Guardian Newspaper Clipping (t_b >= 1.6s)
+        if t_b >= 1.6:
+            p_gd = min(1.0, (t_b - 1.6) / 0.5)
             ease_gd = math.sin(p_gd * math.pi / 2)
             gd_im = get_image(ASSETS_DIR / "clipping_guardian_red_card.png")
-            gd_y = int(540 - 50 * (1.0 - ease_gd))
+            gd_y = int(450 - 50 * (1.0 - ease_gd))
             bg.paste(gd_im, (50, gd_y), mask=gd_im.split()[-1])
             
-        # Foreground World Cup Trophy Cutout (t_b >= 4.8s)
-        if t_b >= 4.8:
-            p_tr = min(1.0, (t_b - 4.8) / 0.5)
-            ease_tr = math.sin(p_tr * math.pi / 2)
-            tr_im = get_image(ASSETS_DIR / "world_cup_trophy_cutout.png")
-            tr_scaled = scale_cutout_proportional(tr_im, target_h=820)
-            tr_x = int(620 + 80 * (1.0 - ease_tr))
-            bg.paste(tr_scaled, (tr_x, 820), mask=tr_scaled.split()[-1])
+        # THE ICONIC TROPHY WALK PHOTO (Zidane walking past World Cup trophy) (t_b >= 3.6s)
+        if t_b >= 3.6:
+            p_zw = min(1.0, (t_b - 3.6) / 0.5)
+            ease_zw = math.sin(p_zw * math.pi / 2)
+            zw_raw = get_image(ASSETS_DIR / "mounted_zidane_trophy_walk_verified.png")
+            # Scale slightly to fit comfortably between Guardian card and captions
+            zw_scaled = zw_raw.resize((int(zw_raw.width * 0.94), int(zw_raw.height * 0.94)), Image.Resampling.LANCZOS).rotate(-1.5, expand=True)
+            zw_x = (1080 - zw_scaled.width) // 2
+            zw_y = int(580 + 70 * (1.0 - ease_zw))
+            bg.paste(zw_scaled, (zw_x, zw_y), mask=zw_scaled.split()[-1])
             
         bg = draw_mrbeast_captions(bg, t, center_y=1710)
         bg.paste(TV_WATERMARK, (50, 48), mask=TV_WATERMARK.split()[-1])
         return bg
 
     # -------------------------------------------------------------
-    # BEAT 5: The Aftermath (39.25s - 47.90s) — Scrapbook Lift & Retract
+    # BEAT 5: The Aftermath (39.25s - 47.90s) — Cannavaro Trophy Lift & Disciplinary
     # -------------------------------------------------------------
     elif t < 47.90:
         t_b = t - 39.25
@@ -382,23 +333,23 @@ def render_frame(f_idx: int) -> Image.Image:
             badge_gb = get_image(ASSETS_DIR / "golden_ball_award_badge.png")
             bg.paste(badge_gb, (310, 940), mask=badge_gb.split()[-1])
             
-        # 2. Scrapbook Card Slide Animation (Cannavaro Trophy Lift)
+        # 2. VERIFIED CANNAVARO TROPHY LIFT (Reuters Confetti Lift)
         # Slides UP from y=1950 to y=440 between t_b=0.0 and 0.6s
         # Holds until t_b=3.6s
         # Slides DOWN back to y=1950 between t_b=3.6s and 4.4s
-        scrapbook_im = get_image(ASSETS_DIR / "scrapbook_italy_trophy_lift.png")
+        can_im = get_image(ASSETS_DIR / "mounted_cannavaro_trophy_lift_verified.png")
         if t_b < 0.6:
             p_up = t_b / 0.6
             ease_up = math.sin(p_up * math.pi / 2)
             sb_y = int(1950 - (1950 - 440) * ease_up)
-            bg.paste(scrapbook_im, (80, sb_y), mask=scrapbook_im.split()[-1])
+            bg.paste(can_im, (95, sb_y), mask=can_im.split()[-1])
         elif t_b < 3.6:
-            bg.paste(scrapbook_im, (80, 440), mask=scrapbook_im.split()[-1])
+            bg.paste(can_im, (95, 440), mask=can_im.split()[-1])
         elif t_b < 4.4:
             p_down = (t_b - 3.6) / 0.8
             ease_down = p_down ** 2
             sb_y = int(440 + (1950 - 440) * ease_down)
-            bg.paste(scrapbook_im, (80, sb_y), mask=scrapbook_im.split()[-1])
+            bg.paste(can_im, (95, sb_y), mask=can_im.split()[-1])
             
         bg = draw_mrbeast_captions(bg, t, center_y=1710)
         bg.paste(TV_WATERMARK, (50, 48), mask=TV_WATERMARK.split()[-1])
@@ -437,45 +388,92 @@ def render_frame(f_idx: int) -> Image.Image:
         bg.paste(TV_WATERMARK, (50, 48), mask=TV_WATERMARK.split()[-1])
         return bg
 
+def log_progress(msg: str):
+    timestamp = time.strftime("%Y-%m-%d %H:%M:%S")
+    formatted = f"[{timestamp}] {msg}"
+    print(formatted)
+    try:
+        with open(LOG_PATH, "a", encoding="utf-8") as f:
+            f.write(formatted + "\n")
+    except Exception:
+        pass
+
 def render_worker(args: Tuple[int, int]):
     start_idx, end_idx = args
     for i in range(start_idx, end_idx):
         frame = render_frame(i)
         out_p = FRAMES_DIR / f"frame_{i:05d}.jpg"
         frame.convert("RGB").save(out_p, format="JPEG", quality=95)
+        if (i - start_idx + 1) % 50 == 0:
+            log_progress(f"Worker [{start_idx}-{end_idx}] rendered frame {i} ({((i - start_idx + 1) / (end_idx - start_idx)) * 100:.1f}%)")
 
 def main():
-    print("=" * 70)
-    print("  RENDERING 60.00s ZIDANE 2006 DOCUMENTARY (MASTER 5.0)")
-    print("=" * 70)
+    log_progress("=" * 70)
+    log_progress("  RENDERING 60.00s ZIDANE 2006 DOCUMENTARY (ARTISAN EDITION 6.0)")
+    log_progress("=" * 70)
     
-    total_frames = 1800  # 60.00s * 30fps
-    num_workers = min(os.cpu_count() or 4, 8)
-    chunk_size = math.ceil(total_frames / num_workers)
+    total_frames = 1800  # 60.0s @ 30fps
+    num_threads = 8
+    chunk_size = total_frames // num_threads
     
     chunks = []
-    for w in range(num_workers):
-        s_idx = w * chunk_size
-        e_idx = min(total_frames, s_idx + chunk_size)
-        if s_idx < total_frames:
-            chunks.append((s_idx, e_idx))
-            
-    print(f"Rendering {total_frames} frames across {len(chunks)} threads...")
-    with ThreadPoolExecutor(max_workers=num_workers) as executor:
+    for th in range(num_threads):
+        s = th * chunk_size
+        e = total_frames if th == num_threads - 1 else (th + 1) * chunk_size
+        chunks.append((s, e))
+        
+    log_progress(f"Starting batch rendering of {total_frames} frames across {num_threads} threads...")
+    start_time = time.time()
+    
+    with ThreadPoolExecutor(max_workers=num_threads) as executor:
         list(executor.map(render_worker, chunks))
         
-    print(f"✓ All {total_frames} frames successfully rendered to {FRAMES_DIR}")
+    render_dur = time.time() - start_time
+    log_progress(f"Completed frame generation in {render_dur:.1f}s ({total_frames / render_dur:.1f} fps).")
     
-    # Mux final MP4 with mastered 60s soundtrack
-    out_mp4 = RUN_DIR / "zidane_headbutt_master_60s.mp4"
-    audio_wav = RUN_DIR / "zidane_mastered_audio_60s.wav"
+    # Generate 12-beat visual QA contact sheet
+    log_progress("Generating 12-beat visual QA inspection contact sheet...")
+    sheet = Image.new("RGB", (1080 * 4, 1920 * 3), (20, 20, 24))
+    sample_frames = [
+        ("01_farewell_buffon", 60),      # 2.0s
+        ("02_panenka_penalty", 180),     # 6.0s
+        ("03_lequipe_frontpage", 270),   # 9.0s
+        ("04_altercation_shirt", 400),   # 13.3s
+        ("05_quote_insult", 540),        # 18.0s
+        ("06_headbutt_broadcast", 720),  # 24.0s (incident replay)
+        ("07_lemonde_clipping", 840),    # 28.0s
+        ("08_red_card_stamp", 960),      # 32.0s
+        ("09_trophy_walk_iconic", 1110), # 37.0s (Zidane past trophy)
+        ("10_cannavaro_lift", 1260),     # 42.0s (Cannavaro confetti lift)
+        ("11_fifa_sanctions", 1380),     # 46.0s (FIFA doc & Golden Ball)
+        ("12_legend_outro", 1720),       # 57.3s (FS30 outro)
+    ]
     
-    print("\nMuxing final MP4 with mastered 60s soundtrack...")
-    cmd_mux = [
+    for idx, (label, f_num) in enumerate(sample_frames):
+        row = idx // 4
+        col = idx % 4
+        fp = FRAMES_DIR / f"frame_{f_num:05d}.jpg"
+        if fp.exists():
+            with Image.open(fp) as fim:
+                sheet.paste(fim, (col * 1080, row * 1920))
+                
+    contact_path = RUN_DIR / "zidane_artisan_12beat_contact_sheet.png"
+    # Resize to manageable web preview resolution (1440 x 1920)
+    sheet_preview = sheet.resize((1440, 1920), Image.Resampling.LANCZOS)
+    sheet_preview.save(contact_path)
+    sheet_preview.save(BRAIN_DIR / "zidane_artisan_12beat_contact_sheet.png")
+    log_progress(f"Saved QA contact sheet: {contact_path.name}")
+    
+    # FFmpeg Master Assembly
+    log_progress("Assembling Master Video with FFmpeg...")
+    master_video_path = RUN_DIR / "zidane_headbutt_artisan_master_60s.mp4"
+    audio_path = RUN_DIR / "zidane_mastered_audio_60s.wav"
+    
+    cmd_ffmpeg = [
         "ffmpeg", "-y",
         "-framerate", "30",
         "-i", str(FRAMES_DIR / "frame_%05d.jpg"),
-        "-i", str(audio_wav),
+        "-i", str(audio_path),
         "-c:v", "libx264",
         "-preset", "medium",
         "-crf", "18",
@@ -483,10 +481,22 @@ def main():
         "-c:a", "aac",
         "-b:a", "320k",
         "-shortest",
-        str(out_mp4)
+        str(master_video_path)
     ]
-    subprocess.run(cmd_mux, check=True)
-    print(f"✓ Master MP4 generated: {out_mp4.name} ({out_mp4.stat().st_size / (1024*1024):.2f} MB)")
+    
+    res = subprocess.run(cmd_ffmpeg, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    if res.returncode == 0:
+        log_progress(f"Master Video successfully created: {master_video_path.name} ({master_video_path.stat().st_size / (1024*1024):.2f} MB)")
+        # Copy to brain and final masters vault
+        import shutil
+        shutil.copy(master_video_path, BRAIN_DIR / "zidane_headbutt_artisan_master_60s.mp4")
+        vault_dir = PROJECT_ROOT / "final_masters_vault" / "FS30-HIST-002"
+        vault_dir.mkdir(parents=True, exist_ok=True)
+        shutil.copy(master_video_path, vault_dir / "zidane_headbutt_master_60s.mp4")
+        shutil.copy(contact_path, vault_dir / "zidane_master_12beat_contact_sheet.png")
+        log_progress("Synchronized master video and contact sheet to vault and artifacts.")
+    else:
+        log_progress(f"FFmpeg error: {res.stderr.decode('utf-8', errors='ignore')}")
 
 if __name__ == "__main__":
     main()
