@@ -1,0 +1,82 @@
+{
+  "scenes": [
+    {
+      "scene_id": "S01",
+      "spoken_narration": "Fulham sob pressão, futuro do zagueiro incerto.",
+      "on_screen": {
+        "kicker": "● RELATÓRIO DE TRANSFERÊNCIAS",
+        "headline": "Futuro do zagueiro do Fulham incerto",
+        "subheadline": "Clube sob pressão com rumores",
+        "status_badge": "EM DESENVOLVIMENTO"
+      }
+    },
+    {
+      "scene_id": "S02",
+      "spoken_narration": "Calvin Bassey tem proposta do United.",
+      "on_screen": {
+        "kicker": "● PROPOSTA DE PACOTE",
+        "headline": "Calvin Bassey ligado ao United",
+        "subheadline": "Red Devils visam transferência de £30 mi",
+        "status_badge": "REVELADO"
+      }
+    },
+    {
+      "scene_id": "S03",
+      "spoken_narration": "United cerca Bassey, pronta oferta decisiva.",
+      "on_screen": {
+        "kicker": "● INTERESSE DO SUITOR",
+        "headline": "United intensifica perseguição",
+        "subheadline": "Pronta oferta decisiva ao zagueiro",
+        "status_badge": "REPORTADO"
+      }
+    },
+    {
+      "scene_id": "S04",
+      "spoken_narration": "Taxa de £30 mi, mais bônus de desempenho.",
+      "on_screen": {
+        "kicker": "● CLÁUSULA DO ACORDO",
+        "headline": "Taxa de £30 mi reportada",
+        "subheadline": "Bônus podem elevar total",
+        "status_badge": "NÃO ACORDADO"
+      }
+    },
+    {
+      "scene_id": "S05",
+      "spoken_narration": "Marco Silva exige diretoria bloquear venda.",
+      "on_screen": {
+        "kicker": "● POSIÇÃO DO TÉCNICO",
+        "headline": "Silva exige diretoria bloquear venda",
+        "subheadline": "Treinador pede renovação antes de saída",
+        "status_badge": "EM DESENVOLVIMENTO"
+      }
+    },
+    {
+      "scene_id": "S06",
+      "spoken_narration": "Bassey quer renovação, segurança antes de mudança.",
+      "on_screen": {
+        "kicker": "● ATUALIZAÇÃO DA SITUAÇÃO",
+        "headline": "Bassey quer novo contrato",
+        "subheadline": "Busca segurança em meio a rumores",
+        "status_badge": "OFICIAL"
+      }
+    },
+    {
+      "scene_id": "S07",
+      "spoken_narration": "Fulham manterá Bassey ou United forçará transferência?",
+      "on_screen": {
+        "kicker": "● O VEREDITO",
+        "headline": "Fulham ou United: decisão iminente",
+        "subheadline": "Clube e interessado em encruzilhada",
+        "status_badge": "EDITORIAL"
+      }
+    },
+    {
+      "scene_id": "outro",
+      "spoken_narration": "Isto é o futebol em trinta segundos. Siga para atualizações diárias.",
+      "on_screen": {
+        "headline": "ISTO É FUTEBOL EM 30 SEGUNDOS",
+        "kicker": "SIGA PARA MAIS"
+      }
+    }
+  ]
+}

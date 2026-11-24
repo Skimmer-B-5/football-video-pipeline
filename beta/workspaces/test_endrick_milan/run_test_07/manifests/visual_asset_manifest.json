@@ -1,0 +1,26 @@
+{
+  "story_id": "test_endrick_milan",
+  "run_id": "run_test_07",
+  "script_version": "v7.1",
+  "updated_at": "2026-11-24T09:28:55Z",
+  "scenes": {
+    "S01": {
+      "story_id": "test_endrick_milan",
+      "run_id": "run_test_07",
+      "script_version": "v7.1",
+      "scene_id": "S01",
+      "asset_id": "test_endrick_milan_S01_approved",
+      "candidate_id": "cand_s01",
+      "source_url": "https://example.com/s01.jpg",
+      "source_page_url": "https://example.com",
+      "original_filename": "S01_approved.png",
+      "sha256": "1f3a3ba206cbff8d78d87425572689678da494b39d76c60be913fc793575025d",
+      "publication_date": "2026-11-20",
+      "event_date": "2026-11-20",
+      "approval_status": "APPROVED",
+      "subject_category": "atmosphere",
+      "intended_subject": "Bernabeu",
+      "relative_path": "assets/approved/S01_approved.png"
+    }
+  }
+}

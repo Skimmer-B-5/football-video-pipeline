@@ -1,0 +1,24 @@
+{
+  "story_id": "endrick_milan",
+  "run_id": "run_v7_1",
+  "script_version": "v7.1.6.4",
+  "scene_id": "S02",
+  "asset_id": "endrick_milan_S02_approved_repaired",
+  "candidate_id": "cand_S02_e3c35c4a37",
+  "source_url": "https://cassette.sphdigital.com.sg/image/straitstimes/59bf56c7f666b06a680251a345a9e88f0aa118bb112240ff8b0160dd85a643cf",
+  "source_page_url": "https://www.straitstimes.com/sport/football/brazil-teenager-endrick-joins-real-madrid",
+  "original_filename": "S02_approved_repaired.png",
+  "sha256": "78a0d75620f7da2872d60e71c68335821e94614ba26a6be54f03cdbc2f0a23d1",
+  "publication_date": "2026-11-24",
+  "event_date": "2024-07-27",
+  "approval_status": "APPROVED",
+  "subject_category": "portrait",
+  "intended_subject": "Endrick in Real Madrid White Kit Presentation (Repaired Centered Framing, Age 20)",
+  "relative_path": "assets/approved/S02_approved_repaired.png",
+  "verification_labels": {
+    "opencv_crop_status": "OpenCV crop validated (Face centered at x=540, left margin 264px, right margin 268px, headroom 200px, ears & hairline intact)",
+    "source_provenance_status": "Source provenance verified (The Straits Times / Reuters Press Pool)",
+    "semantic_vlm_status": "Qwen-VL ranking service unconfigured (DASHSCOPE_API_KEY unconfigured); OpenCV geometric face center heuristic verified",
+    "rights_status_documented": "Editorial Press Pool Reference (Documented news wire coverage)"
+  }
+}

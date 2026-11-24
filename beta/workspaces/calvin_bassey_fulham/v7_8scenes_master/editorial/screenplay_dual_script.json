@@ -1,0 +1,87 @@
+{
+  "story_id": "calvin_bassey_fulham",
+  "master_headline": "MAN UTD TRANSFER NEWS: FULHAM DEFENDER CALVIN BASSEY IS IN TALKS OVER NEW CONTRACT AMID MAN UTD LINKS",
+  "kicker": "\u25cf BREAKING TRANSFER REPORT",
+  "ticker_text": "SKY SPORTS: FULHAM OPEN TALKS WITH CALVIN BASSEY AMID MAN UTD INTEREST \u2726 MARCO SILVA DETERMINED TO KEEP DEFENDER \u2726",
+  "llm_model_used": "openai/gpt-oss-120b",
+  "scenes": [
+    {
+      "scene_id": "S01",
+      "spoken_narration": "Fulham under pressure as a defender's future looms.",
+      "on_screen": {
+        "kicker": "\u25cf TRANSFER REPORT",
+        "headline": "Fulham defender's future uncertain",
+        "subheadline": "Club under pressure as rumors swirl",
+        "status_badge": "DEVELOPING"
+      }
+    },
+    {
+      "scene_id": "S02",
+      "spoken_narration": "And Calvin Bassey faces a United takeover bid.",
+      "on_screen": {
+        "kicker": "\u25cf PROPOSED PACKAGE",
+        "headline": "Calvin Bassey linked with United",
+        "subheadline": "Red Devils eye \u00a330m move",
+        "status_badge": "REVEALED"
+      }
+    },
+    {
+      "scene_id": "S03",
+      "spoken_narration": "Manchester United circle, ready to make a decisive offer.",
+      "on_screen": {
+        "kicker": "\u25cf SUITOR INTEREST",
+        "headline": "Manchester United intensify pursuit",
+        "subheadline": "United ready to make decisive offer",
+        "status_badge": "REPORTED"
+      }
+    },
+    {
+      "scene_id": "S04",
+      "spoken_narration": "Fee reported at thirty million pounds, plus performance bonuses.",
+      "on_screen": {
+        "kicker": "\u25cf DEAL CLAUSE",
+        "headline": "\u00a330m fee reported",
+        "subheadline": "Potential add ons could raise total",
+        "status_badge": "UNAGREED"
+      }
+    },
+    {
+      "scene_id": "S05",
+      "spoken_narration": "Marco Silva insists board must reject any sale.",
+      "on_screen": {
+        "kicker": "\u25cf MANAGERIAL STAND",
+        "headline": "Silva demands board block sale",
+        "subheadline": "Manager urges extension before any departure",
+        "status_badge": "DEVELOPING"
+      }
+    },
+    {
+      "scene_id": "S06",
+      "spoken_narration": "Bassey seeks extension, wants security before any move.",
+      "on_screen": {
+        "kicker": "\u25cf SITUATION UPDATE",
+        "headline": "Bassey wants new contract",
+        "subheadline": "Player seeks security amid transfer chatter",
+        "status_badge": "OFFICIAL"
+      }
+    },
+    {
+      "scene_id": "S07",
+      "spoken_narration": "So will Fulham retain Bassey, or United force the transfer?",
+      "on_screen": {
+        "kicker": "\u25cf THE VERDICT",
+        "headline": "Fulham or United: the decision looms",
+        "subheadline": "Club and suitor at crossroads",
+        "status_badge": "EDITORIAL"
+      }
+    },
+    {
+      "scene_id": "outro",
+      "spoken_narration": "This is football in thirty seconds. Follow for daily transfer updates.",
+      "on_screen": {
+        "headline": "THIS IS FOOTBALL IN 30 SECONDS",
+        "kicker": "FOLLOW FOR MORE"
+      }
+    }
+  ]
+}

@@ -1,0 +1,50 @@
+[
+  {
+    "scene_id": "S01",
+    "wav_path": "C:\\Users\\sb000\\.gemini\\antigravity\\scratch\\football-video-pipeline\\beta\\workspaces\\endrick_milan\\run_v7_1\\voice\\v7_1_6_7_clean_vocal_transitions\\scene_S01.wav",
+    "duration_sec": 3.533,
+    "duration_frames": 106,
+    "lead_frames": 3,
+    "tail_frames": 8
+  },
+  {
+    "scene_id": "S02",
+    "wav_path": "C:\\Users\\sb000\\.gemini\\antigravity\\scratch\\football-video-pipeline\\beta\\workspaces\\endrick_milan\\run_v7_1\\voice\\v7_1_6_7_clean_vocal_transitions\\scene_S02.wav",
+    "duration_sec": 6.333,
+    "duration_frames": 190,
+    "lead_frames": 4,
+    "tail_frames": 8
+  },
+  {
+    "scene_id": "S03",
+    "wav_path": "C:\\Users\\sb000\\.gemini\\antigravity\\scratch\\football-video-pipeline\\beta\\workspaces\\endrick_milan\\run_v7_1\\voice\\v7_1_6_7_clean_vocal_transitions\\scene_S03.wav",
+    "duration_sec": 6.167,
+    "duration_frames": 185,
+    "lead_frames": 4,
+    "tail_frames": 8
+  },
+  {
+    "scene_id": "S04",
+    "wav_path": "C:\\Users\\sb000\\.gemini\\antigravity\\scratch\\football-video-pipeline\\beta\\workspaces\\endrick_milan\\run_v7_1\\voice\\v7_1_6_7_clean_vocal_transitions\\scene_S04.wav",
+    "duration_sec": 5.833,
+    "duration_frames": 175,
+    "lead_frames": 4,
+    "tail_frames": 8
+  },
+  {
+    "scene_id": "S05",
+    "wav_path": "C:\\Users\\sb000\\.gemini\\antigravity\\scratch\\football-video-pipeline\\beta\\workspaces\\endrick_milan\\run_v7_1\\voice\\v7_1_6_7_clean_vocal_transitions\\scene_S05.wav",
+    "duration_sec": 5.5,
+    "duration_frames": 165,
+    "lead_frames": 4,
+    "tail_frames": 8
+  },
+  {
+    "scene_id": "outro",
+    "wav_path": "C:\\Users\\sb000\\.gemini\\antigravity\\scratch\\football-video-pipeline\\beta\\workspaces\\endrick_milan\\run_v7_1\\voice\\v7_1_6_7_clean_vocal_transitions\\scene_outro.wav",
+    "duration_sec": 5.6,
+    "duration_frames": 168,
+    "lead_frames": 4,
+    "tail_frames": 10
+  }
+]

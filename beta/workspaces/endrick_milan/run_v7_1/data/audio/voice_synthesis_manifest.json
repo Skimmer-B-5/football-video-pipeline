@@ -1,0 +1,50 @@
+{
+  "voice": "VOICE_A_CORRESPONDENT_NEWSDESK",
+  "engine": "Qwen3-TTS (0.6B CustomVoice)",
+  "speaker": "Ryan",
+  "loudness_target": "-14 LUFS",
+  "total_physical_duration_sec": 29.86,
+  "target_duration_sec": 30.15,
+  "scenes": [
+    {
+      "scene_id": "S01",
+      "text": "Milan have made their move, but Mourinho wants him to stay.",
+      "audio_path": "C:\\Users\\sb000\\.gemini\\antigravity\\scratch\\football-video-pipeline\\beta\\workspaces\\endrick_milan\\run_v7_1\\data\\audio\\scene_S01.wav",
+      "physical_duration_sec": 5.36,
+      "target_duration_sec": 5.28,
+      "variance_sec": 0.08
+    },
+    {
+      "scene_id": "S02",
+      "text": "Italian reports put Milan's package for Endrick at sixty million fixed, plus ten in potential bonuses.",
+      "audio_path": "C:\\Users\\sb000\\.gemini\\antigravity\\scratch\\football-video-pipeline\\beta\\workspaces\\endrick_milan\\run_v7_1\\data\\audio\\scene_S02.wav",
+      "physical_duration_sec": 6.7,
+      "target_duration_sec": 7.46,
+      "variance_sec": -0.76
+    },
+    {
+      "scene_id": "S03",
+      "text": "Reports cite eighty to eighty-five million repurchase figures, but nothing is agreed.",
+      "audio_path": "C:\\Users\\sb000\\.gemini\\antigravity\\scratch\\football-video-pipeline\\beta\\workspaces\\endrick_milan\\run_v7_1\\data\\audio\\scene_S03.wav",
+      "physical_duration_sec": 6.08,
+      "target_duration_sec": 6.15,
+      "variance_sec": -0.07
+    },
+    {
+      "scene_id": "S04",
+      "text": "Now a left-leg muscle injury complicates matters, with no official return date.",
+      "audio_path": "C:\\Users\\sb000\\.gemini\\antigravity\\scratch\\football-video-pipeline\\beta\\workspaces\\endrick_milan\\run_v7_1\\data\\audio\\scene_S04.wav",
+      "physical_duration_sec": 5.65,
+      "target_duration_sec": 6.15,
+      "variance_sec": -0.5
+    },
+    {
+      "scene_id": "S05",
+      "text": "Will Mourinho keep the Brazilian or will Milan force a compromise?",
+      "audio_path": "C:\\Users\\sb000\\.gemini\\antigravity\\scratch\\football-video-pipeline\\beta\\workspaces\\endrick_milan\\run_v7_1\\data\\audio\\scene_S05.wav",
+      "physical_duration_sec": 6.07,
+      "target_duration_sec": 5.1,
+      "variance_sec": 0.97
+    }
+  ]
+}

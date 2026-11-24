@@ -1,0 +1,180 @@
+{
+  "release": "Beta V7.1.6",
+  "story_id": "endrick_milan",
+  "timestamp": "2026-11-23T18:40:41Z",
+  "fonts_verified": {
+    "display": "Barlow Condensed (600, 700, 800, 900)",
+    "reading": "Inter (400, 500, 600, 700, 800)",
+    "mono": "IBM Plex Mono (500, 600)"
+  },
+  "specimens": [
+    {
+      "composition_id": "HeadlineSpecimen",
+      "filename": "headline_specimen.png",
+      "description": "Opening 2-line headline over real Bernab\u00e9u night stadium photography with category kicker and brand bug",
+      "resolution": "1080x1920",
+      "file_size_bytes": 2521914,
+      "rendered_via": "Remotion Still CLI v4.0.545",
+      "font_system": "V7.1.4 Permanent Typography System",
+      "font_families": [
+        "Barlow Condensed",
+        "Inter",
+        "IBM Plex Mono"
+      ]
+    },
+    {
+      "composition_id": "PlayerRevealSpecimen",
+      "filename": "player_reveal_specimen.png",
+      "description": "Player-name reveal over Endrick presentation portrait with large Barlow Condensed name and supporting Inter context",
+      "resolution": "1080x1920",
+      "file_size_bytes": 1758477,
+      "rendered_via": "Remotion Still CLI v4.0.545",
+      "font_system": "V7.1.4 Permanent Typography System",
+      "font_families": [
+        "Barlow Condensed",
+        "Inter",
+        "IBM Plex Mono"
+      ]
+    },
+    {
+      "composition_id": "SingleLineSubtitleSpecimen",
+      "filename": "single_line_subtitle_specimen.png",
+      "description": "Clean 1-line sentence-case narration subtitle in Inter 46px over Santiago Bernab\u00e9u night frame",
+      "resolution": "1080x1920",
+      "file_size_bytes": 2464527,
+      "rendered_via": "Remotion Still CLI v4.0.545",
+      "font_system": "V7.1.4 Permanent Typography System",
+      "font_families": [
+        "Barlow Condensed",
+        "Inter",
+        "IBM Plex Mono"
+      ]
+    },
+    {
+      "composition_id": "TwoLineSubtitleSpecimen",
+      "filename": "two_line_subtitle_specimen.png",
+      "description": "Clean 2-line sentence-case narration subtitle in Inter 46px over Valdebebas training frame",
+      "resolution": "1080x1920",
+      "file_size_bytes": 1858522,
+      "rendered_via": "Remotion Still CLI v4.0.545",
+      "font_system": "V7.1.4 Permanent Typography System",
+      "font_families": [
+        "Barlow Condensed",
+        "Inter",
+        "IBM Plex Mono"
+      ]
+    },
+    {
+      "composition_id": "SubtitleSpecimen",
+      "filename": "subtitle_specimen.png",
+      "description": "Narration subtitles demonstrating sentence case wrapping over dark and bright backgrounds",
+      "resolution": "1080x1920",
+      "file_size_bytes": 1858522,
+      "rendered_via": "Remotion Still CLI v4.0.545",
+      "font_system": "V7.1.4 Permanent Typography System",
+      "font_families": [
+        "Barlow Condensed",
+        "Inter",
+        "IBM Plex Mono"
+      ]
+    },
+    {
+      "composition_id": "TransferGraphicSpecimen",
+      "filename": "transfer_graphic_specimen.png",
+      "description": "Transfer graphic with \u20ac60M fixed + \u20ac10M bonuses, \u20ac80M-\u20ac85M buy-back range, and prominent NOT AGREED status",
+      "resolution": "1080x1920",
+      "file_size_bytes": 142325,
+      "rendered_via": "Remotion Still CLI v4.0.545",
+      "font_system": "V7.1.4 Permanent Typography System",
+      "font_families": [
+        "Barlow Condensed",
+        "Inter",
+        "IBM Plex Mono"
+      ]
+    },
+    {
+      "composition_id": "LowerThirdSpecimen",
+      "filename": "lower_third_specimen.png",
+      "description": "Two-tier broadcast lower-third over Valdebebas training photograph with badges and source attribution",
+      "resolution": "1080x1920",
+      "file_size_bytes": 1680561,
+      "rendered_via": "Remotion Still CLI v4.0.545",
+      "font_system": "V7.1.4 Permanent Typography System",
+      "font_families": [
+        "Barlow Condensed",
+        "Inter",
+        "IBM Plex Mono"
+      ]
+    },
+    {
+      "composition_id": "OutroSpecimen",
+      "filename": "outro_specimen.png",
+      "description": "Restrained broadcast outro with 3D bezel crest, wordmark, and clean call-to-action",
+      "resolution": "1080x1920",
+      "file_size_bytes": 581875,
+      "rendered_via": "Remotion Still CLI v4.0.545",
+      "font_system": "V7.1.4 Permanent Typography System",
+      "font_families": [
+        "Barlow Condensed",
+        "Inter",
+        "IBM Plex Mono"
+      ]
+    },
+    {
+      "composition_id": "PtBrSpecimen",
+      "filename": "pt_br_specimen.png",
+      "description": "Brazilian Portuguese specimen verifying full diacritic accents (\u00e1, \u00e0, \u00e2, \u00e3, \u00e9, \u00ea, \u00ed, \u00f3, \u00f4, \u00f5, \u00fa, \u00fc, \u00e7)",
+      "resolution": "1080x1920",
+      "file_size_bytes": 1836984,
+      "rendered_via": "Remotion Still CLI v4.0.545",
+      "font_system": "V7.1.4 Permanent Typography System",
+      "font_families": [
+        "Barlow Condensed",
+        "Inter",
+        "IBM Plex Mono"
+      ]
+    },
+    {
+      "composition_id": "Es419Specimen",
+      "filename": "es_419_specimen.png",
+      "description": "Latin American Spanish specimen verifying accents and punctuation (\u00e1, \u00e9, \u00ed, \u00f3, \u00fa, \u00fc, \u00f1, \u00bf, \u00a1)",
+      "resolution": "1080x1920",
+      "file_size_bytes": 1854962,
+      "rendered_via": "Remotion Still CLI v4.0.545",
+      "font_system": "V7.1.4 Permanent Typography System",
+      "font_families": [
+        "Barlow Condensed",
+        "Inter",
+        "IBM Plex Mono"
+      ]
+    },
+    {
+      "composition_id": "TypographyMasterClean",
+      "filename": "typography_master_clean.png",
+      "description": "Clean master broadcast composition combining all typography elements without diagnostic overlays",
+      "resolution": "1080x1920",
+      "file_size_bytes": 2108278,
+      "rendered_via": "Remotion Still CLI v4.0.545",
+      "font_system": "V7.1.4 Permanent Typography System",
+      "font_families": [
+        "Barlow Condensed",
+        "Inter",
+        "IBM Plex Mono"
+      ]
+    },
+    {
+      "composition_id": "TypographyDiagnostic",
+      "filename": "typography_diagnostic.png",
+      "description": "Diagnostic master sheet displaying font metrics, weights, safe-zone boundaries (x=84, x=996, y=1640)",
+      "resolution": "1080x1920",
+      "file_size_bytes": 2110133,
+      "rendered_via": "Remotion Still CLI v4.0.545",
+      "font_system": "V7.1.4 Permanent Typography System",
+      "font_families": [
+        "Barlow Condensed",
+        "Inter",
+        "IBM Plex Mono"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,50 @@
+[
+  {
+    "scene_id": "S01",
+    "wav_path": "C:\\Users\\sb000\\.gemini\\antigravity\\scratch\\football-video-pipeline\\beta\\workspaces\\endrick_milan\\run_v7_1\\voice\\v7_1_6_6_scenes_with_transitions\\scene_S01.wav",
+    "duration_sec": 3.657,
+    "duration_frames": 110,
+    "has_sting": false,
+    "has_breath": true
+  },
+  {
+    "scene_id": "S02",
+    "wav_path": "C:\\Users\\sb000\\.gemini\\antigravity\\scratch\\football-video-pipeline\\beta\\workspaces\\endrick_milan\\run_v7_1\\voice\\v7_1_6_6_scenes_with_transitions\\scene_S02.wav",
+    "duration_sec": 7.086,
+    "duration_frames": 213,
+    "has_sting": true,
+    "has_breath": true
+  },
+  {
+    "scene_id": "S03",
+    "wav_path": "C:\\Users\\sb000\\.gemini\\antigravity\\scratch\\football-video-pipeline\\beta\\workspaces\\endrick_milan\\run_v7_1\\voice\\v7_1_6_6_scenes_with_transitions\\scene_S03.wav",
+    "duration_sec": 7.076,
+    "duration_frames": 212,
+    "has_sting": true,
+    "has_breath": true
+  },
+  {
+    "scene_id": "S04",
+    "wav_path": "C:\\Users\\sb000\\.gemini\\antigravity\\scratch\\football-video-pipeline\\beta\\workspaces\\endrick_milan\\run_v7_1\\voice\\v7_1_6_6_scenes_with_transitions\\scene_S04.wav",
+    "duration_sec": 5.266,
+    "duration_frames": 158,
+    "has_sting": true,
+    "has_breath": true
+  },
+  {
+    "scene_id": "S05",
+    "wav_path": "C:\\Users\\sb000\\.gemini\\antigravity\\scratch\\football-video-pipeline\\beta\\workspaces\\endrick_milan\\run_v7_1\\voice\\v7_1_6_6_scenes_with_transitions\\scene_S05.wav",
+    "duration_sec": 5.795,
+    "duration_frames": 174,
+    "has_sting": true,
+    "has_breath": true
+  },
+  {
+    "scene_id": "outro",
+    "wav_path": "C:\\Users\\sb000\\.gemini\\antigravity\\scratch\\football-video-pipeline\\beta\\workspaces\\endrick_milan\\run_v7_1\\voice\\v7_1_6_6_scenes_with_transitions\\scene_outro.wav",
+    "duration_sec": 5.906,
+    "duration_frames": 177,
+    "has_sting": true,
+    "has_breath": true
+  }
+]

@@ -1,0 +1,61 @@
+{
+  "version": "v7.1.6.4",
+  "voice": "Voice Candidate A (Ryan, Correspondent Newsdesk)",
+  "speed_factor": 1.2,
+  "pronunciation_dictionary": {
+    "Endrick": "EN-drick (phonetic: En-drick)",
+    "Mourinho": "moo-REEN-yoh (phonetic: Moo-reen-yoh)",
+    "Milan": "mih-LAHN (phonetic: Mee-lahn)"
+  },
+  "total_physical_duration_sec": 34.57,
+  "scenes": [
+    {
+      "scene_id": "S01",
+      "display_text": "Milan have made their move, but Mourinho wants him to stay.",
+      "tts_phonetic_text": "Mee-lahn have made their move, but Moo-reen-yoh wants him to stay.",
+      "speed": 1.2,
+      "physical_duration_sec": 4.86,
+      "file_path": "C:\\Users\\sb000\\.gemini\\antigravity\\scratch\\football-video-pipeline\\beta\\workspaces\\endrick_milan\\run_v7_1\\data\\audio\\scene_S01.wav"
+    },
+    {
+      "scene_id": "S02",
+      "display_text": "Italian reports put Milan's package for Endrick at sixty million fixed, plus ten in potential bonuses.",
+      "tts_phonetic_text": "Italian reports put Mee-lahn's package for En-drick at sixty million fixed, plus ten in potential bonuses.",
+      "speed": 1.2,
+      "physical_duration_sec": 6.7,
+      "file_path": "C:\\Users\\sb000\\.gemini\\antigravity\\scratch\\football-video-pipeline\\beta\\workspaces\\endrick_milan\\run_v7_1\\data\\audio\\scene_S02.wav"
+    },
+    {
+      "scene_id": "S03",
+      "display_text": "Reports cite eighty to eighty-five million repurchase figures, but nothing is agreed.",
+      "tts_phonetic_text": "Reports cite eighty to eighty-five million repurchase figures, but nothing is agreed.",
+      "speed": 1.2,
+      "physical_duration_sec": 4.7,
+      "file_path": "C:\\Users\\sb000\\.gemini\\antigravity\\scratch\\football-video-pipeline\\beta\\workspaces\\endrick_milan\\run_v7_1\\data\\audio\\scene_S03.wav"
+    },
+    {
+      "scene_id": "S04",
+      "display_text": "Now a left-leg muscle injury complicates matters, with no official return date.",
+      "tts_phonetic_text": "Now a left-leg muscle injury complicates matters, with no official return date.",
+      "speed": 1.2,
+      "physical_duration_sec": 6.26,
+      "file_path": "C:\\Users\\sb000\\.gemini\\antigravity\\scratch\\football-video-pipeline\\beta\\workspaces\\endrick_milan\\run_v7_1\\data\\audio\\scene_S04.wav"
+    },
+    {
+      "scene_id": "S05",
+      "display_text": "Will Mourinho keep the Brazilian or will Milan force a compromise?",
+      "tts_phonetic_text": "Will Moo-reen-yoh keep the Brazilian or will Mee-lahn force a compromise?",
+      "speed": 1.2,
+      "physical_duration_sec": 8.63,
+      "file_path": "C:\\Users\\sb000\\.gemini\\antigravity\\scratch\\football-video-pipeline\\beta\\workspaces\\endrick_milan\\run_v7_1\\data\\audio\\scene_S05.wav"
+    },
+    {
+      "scene_id": "outro",
+      "display_text": "This is football in 30 seconds. Follow for more.",
+      "tts_phonetic_text": "This is football in thirty seconds. Follow for more.",
+      "speed": 1.2,
+      "physical_duration_sec": 3.42,
+      "file_path": "C:\\Users\\sb000\\.gemini\\antigravity\\scratch\\football-video-pipeline\\beta\\workspaces\\endrick_milan\\run_v7_1\\data\\audio\\scene_outro.wav"
+    }
+  ]
+}

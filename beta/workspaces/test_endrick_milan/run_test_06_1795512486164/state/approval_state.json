@@ -1,0 +1,44 @@
+{
+  "story_id": "test_endrick_milan",
+  "run_id": "run_test_06_1795512486164",
+  "current_state": "DUAL_SCRIPT_GENERATED",
+  "script_version": "v7.2",
+  "script_approved_by": null,
+  "visuals_approved_by": null,
+  "voice_approved_by": null,
+  "updated_at": "2026-11-24T09:28:06Z",
+  "last_transition_reason": "Downstream invalidated due to script change",
+  "history": [
+    {
+      "from": "STORY_SELECTED",
+      "to": "DUAL_SCRIPT_GENERATED",
+      "actor": "author",
+      "reason": "Draft",
+      "timestamp": "2026-11-24T09:28:06Z",
+      "metadata": {}
+    },
+    {
+      "from": "DUAL_SCRIPT_GENERATED",
+      "to": "SCRIPT_REVIEW_PENDING",
+      "actor": "telegram",
+      "reason": "Sent",
+      "timestamp": "2026-11-24T09:28:06Z",
+      "metadata": {}
+    },
+    {
+      "from": "SCRIPT_REVIEW_PENDING",
+      "to": "SCRIPT_APPROVED",
+      "actor": "owner",
+      "reason": "Approved",
+      "timestamp": "2026-11-24T09:28:06Z",
+      "metadata": {}
+    },
+    {
+      "from": "ANY",
+      "to": "DUAL_SCRIPT_GENERATED",
+      "actor": "editor",
+      "reason": "Script invalidated due to content modification (version v7.2)",
+      "timestamp": "2026-11-24T09:28:06Z"
+    }
+  ]
+}

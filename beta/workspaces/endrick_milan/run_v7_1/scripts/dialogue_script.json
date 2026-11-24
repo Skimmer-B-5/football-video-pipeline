@@ -1,0 +1,198 @@
+{
+  "metadata": {
+    "story_id": "endrick_milan",
+    "run_id": "run_v7_1",
+    "script_version": "v7.1.6.3",
+    "headline": "MILAN PLOT ENDRICK MOVE AS MOURINHO RESISTS EXIT",
+    "source": "Cadena SER / Corriere dello Sport / TNT Sports Brazil / Real Madrid Official",
+    "reliability_tier": "REPORTED_AND_OFFICIAL",
+    "category": "transfer_and_squad_update",
+    "primary_subject": "Endrick",
+    "player_age": 20,
+    "date_of_birth": "2006-07-21",
+    "created_at": "2026-11-24T05:45:18Z",
+    "opening_candidates": [
+      {
+        "candidate_id": "OPENING_OPT_1_FORMAL_MOVE_MOURINHO_RESISTS",
+        "text": "Milan have made their move, but Mourinho wants him to stay.",
+        "written_words": 11,
+        "spoken_tokens": 11,
+        "secrecy_duration_sec": 5.28,
+        "status": "SELECTED_STRONGEST",
+        "evaluation": "Reflects the stronger reported status (Milan presenting an offer close to \u20ac70M per Nov 23 SER report) while concealing Endrick's name and face for 5.28s (>4s threshold)."
+      },
+      {
+        "candidate_id": "OPENING_OPT_2_WINTER_MOVE_SER",
+        "text": "Milan are pushing for a winter deal, but Mourinho resists.",
+        "written_words": 10,
+        "spoken_tokens": 10,
+        "secrecy_duration_sec": 4.85,
+        "status": "ALTERNATIVE",
+        "evaluation": "Concise, but slightly less active than 'made their move'."
+      },
+      {
+        "candidate_id": "OPENING_OPT_3_MADRID_RESOLVE",
+        "text": "Milan have presented a winter offer, yet Mourinho wants him to stay.",
+        "written_words": 12,
+        "spoken_tokens": 12,
+        "secrecy_duration_sec": 5.72,
+        "status": "ALTERNATIVE",
+        "evaluation": "Accurate, but higher token count."
+      }
+    ],
+    "asset_tracking_schema": [
+      "exact_source_url",
+      "asset_id",
+      "creator_or_photographer",
+      "license_terms",
+      "required_attribution",
+      "retrieval_date",
+      "local_filename",
+      "sha256",
+      "permitted_usage_and_restrictions"
+    ],
+    "deliverable": "SCRIPT_A_DIALOGUE_SCREENPLAY",
+    "total_written_words": 62,
+    "total_spoken_tokens": 64,
+    "total_spoken_words": 62,
+    "total_duration_sec": 30.15,
+    "target_wpm": 138.0
+  },
+  "full_spoken_narration": "Milan have made their move, but Mourinho wants him to stay. Italian reports put Milan's package for Endrick at sixty million fixed, plus ten in potential bonuses. Reports cite eighty to eighty-five million repurchase figures, but nothing is agreed. Now a left-leg muscle injury complicates matters, with no official return date. Will Mourinho keep the Brazilian or will Milan force a compromise?",
+  "beats": [
+    {
+      "beat_id": "S01",
+      "spoken_dialogue": "Milan have made their move, but Mourinho wants him to stay.",
+      "narrative_purpose": "Anonymous broadcast hook reflecting reported formal proposal from Milan versus Mourinho's desire to retain him, strictly concealing Endrick's name and face (5.28s secrecy > 4s).",
+      "fact_claim_ids": [
+        "CLAIM_ENDRICK_04_CADENA_SER_NOV23_FORMAL_OFFER",
+        "CLAIM_ENDRICK_05_CADENA_SER_NOV24_MOURINHO_RESISTANCE"
+      ],
+      "pronunciation_guidance": "Milan: [mee-LAHN]. Mourinho: [moo-REEN-yoh]. Made their move: punchy opening cadence.",
+      "estimated_duration_sec": 5.28,
+      "start_time_sec": 0.0,
+      "end_time_sec": 5.28,
+      "written_word_count": 11,
+      "spoken_token_count": 11,
+      "word_count": 11,
+      "secrecy_requirements": {
+        "player_name_hidden": true,
+        "face_revealed": false,
+        "opening_window_sec": 4.0
+      },
+      "on_screen_graphics": {
+        "kicker": "\u25cf TRANSFER REPORT",
+        "headline": "MILAN MAKE MOVE",
+        "subheadline": "MOURINHO WANTS STAY",
+        "status_badge": "REPORTED"
+      }
+    },
+    {
+      "beat_id": "S02",
+      "spoken_dialogue": "Italian reports put Milan's package for Endrick at sixty million fixed, plus ten in potential bonuses.",
+      "narrative_purpose": "Subject identity reveal explicitly naming Endrick in narration and attributing Italian reporting (Corriere dello Sport, Nov 16), making the fixed (\u20ac60M) and variable (+\u20ac10M in potential bonuses) portions unambiguous as an exploratory package.",
+      "fact_claim_ids": [
+        "CLAIM_ENDRICK_01_AGE",
+        "CLAIM_ENDRICK_06_CORRIERE_NOV16_PACKAGE_AND_BUYBACK"
+      ],
+      "pronunciation_guidance": "Endrick: [EN-drick]. Sixty million fixed: deliberate numerical articulation.",
+      "estimated_duration_sec": 7.46,
+      "start_time_sec": 5.28,
+      "end_time_sec": 12.74,
+      "written_word_count": 16,
+      "spoken_token_count": 16,
+      "word_count": 16,
+      "secrecy_requirements": {
+        "player_name_hidden": false,
+        "face_revealed": true,
+        "opening_window_sec": 0.0
+      },
+      "on_screen_graphics": {
+        "kicker": "\u25cf PROPOSED PACKAGE",
+        "headline": "ENDRICK TARGETED",
+        "subheadline": "\u20ac60M FIXED + \u20ac10M BONUSES",
+        "status_badge": "PROPOSAL"
+      }
+    },
+    {
+      "beat_id": "S03",
+      "spoken_dialogue": "Reports cite eighty to eighty-five million repurchase figures, but nothing is agreed.",
+      "narrative_purpose": "Attribute the \u20ac80M (Corriere dello Sport) and \u20ac85M (TNT Sports Brazil) buy-back figures to differing press reports, explicitly establishing that no buy-back clause has been agreed between clubs.",
+      "fact_claim_ids": [
+        "CLAIM_ENDRICK_06_CORRIERE_NOV16_PACKAGE_AND_BUYBACK",
+        "CLAIM_ENDRICK_07_TNT_SPORTS_BUYBACK_FIGURE"
+      ],
+      "pronunciation_guidance": "Eighty to eighty-five million: deliberate measured cadence. Repurchase: [ree-PUR-chuhs].",
+      "estimated_duration_sec": 6.15,
+      "start_time_sec": 12.74,
+      "end_time_sec": 18.89,
+      "written_word_count": 12,
+      "spoken_token_count": 13,
+      "word_count": 12,
+      "secrecy_requirements": {
+        "player_name_hidden": false,
+        "face_revealed": true,
+        "opening_window_sec": 0.0
+      },
+      "on_screen_graphics": {
+        "kicker": "\u25cf DEAL CLAUSE",
+        "headline": "\u20ac80M\u2013\u20ac85M REPURCHASE",
+        "subheadline": "REPORTED \u2022 NOT AGREED",
+        "status_badge": "UNAGREED"
+      }
+    },
+    {
+      "beat_id": "S04",
+      "spoken_dialogue": "Now a left-leg muscle injury complicates matters, with no official return date.",
+      "narrative_purpose": "Factual inclusion of the November 23 official Real Madrid medical bulletin (abductor of left leg, pending evolution, no official return date), using safer spoken phrasing without speculative recovery estimates.",
+      "fact_claim_ids": [
+        "CLAIM_ENDRICK_02_MEDICAL_BULLETIN",
+        "CLAIM_ENDRICK_03_INDOOR_TRAINING"
+      ],
+      "pronunciation_guidance": "Left-leg muscle injury: neutral factual delivery. Complicates matters: clear articulation.",
+      "estimated_duration_sec": 6.15,
+      "start_time_sec": 18.89,
+      "end_time_sec": 25.04,
+      "written_word_count": 12,
+      "spoken_token_count": 13,
+      "word_count": 12,
+      "secrecy_requirements": {
+        "player_name_hidden": false,
+        "face_revealed": true,
+        "opening_window_sec": 0.0
+      },
+      "on_screen_graphics": {
+        "kicker": "\u25cf MEDICAL BULLETIN",
+        "headline": "LEFT-LEG MUSCLE INJURY",
+        "subheadline": "NO OFFICIAL RETURN DATE",
+        "status_badge": "OFFICIAL"
+      }
+    },
+    {
+      "beat_id": "S05",
+      "spoken_dialogue": "Will Mourinho keep the Brazilian or will Milan force a compromise?",
+      "narrative_purpose": "Closing editorial question driving viewer reflection on the central managerial tension without clich\u00e9s.",
+      "fact_claim_ids": [
+        "CLAIM_ENDRICK_05_CADENA_SER_NOV24_MOURINHO_RESISTANCE"
+      ],
+      "pronunciation_guidance": "Mourinho: [moo-REEN-yoh]. Force a compromise: measured closing inflection.",
+      "estimated_duration_sec": 5.1,
+      "start_time_sec": 25.04,
+      "end_time_sec": 30.15,
+      "written_word_count": 11,
+      "spoken_token_count": 11,
+      "word_count": 11,
+      "secrecy_requirements": {
+        "player_name_hidden": false,
+        "face_revealed": true,
+        "opening_window_sec": 0.0
+      },
+      "on_screen_graphics": {
+        "kicker": "\u25cf THE VERDICT",
+        "headline": "MOURINHO OR MILAN?",
+        "subheadline": "SANCTION OR RETAIN",
+        "status_badge": "EDITORIAL"
+      }
+    }
+  ]
+}

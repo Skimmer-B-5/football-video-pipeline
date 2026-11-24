@@ -1,0 +1,6 @@
+file 'C:/Users/sb000/.gemini/antigravity/scratch/football-video-pipeline/beta/workspaces/bassey_his_curr/tg_1795515898/voice/vocal_transitions/scene_S01.wav'
+file 'C:/Users/sb000/.gemini/antigravity/scratch/football-video-pipeline/beta/workspaces/bassey_his_curr/tg_1795515898/voice/vocal_transitions/scene_S02.wav'
+file 'C:/Users/sb000/.gemini/antigravity/scratch/football-video-pipeline/beta/workspaces/bassey_his_curr/tg_1795515898/voice/vocal_transitions/scene_S03.wav'
+file 'C:/Users/sb000/.gemini/antigravity/scratch/football-video-pipeline/beta/workspaces/bassey_his_curr/tg_1795515898/voice/vocal_transitions/scene_S04.wav'
+file 'C:/Users/sb000/.gemini/antigravity/scratch/football-video-pipeline/beta/workspaces/bassey_his_curr/tg_1795515898/voice/vocal_transitions/scene_S05.wav'
+file 'C:/Users/sb000/.gemini/antigravity/scratch/football-video-pipeline/beta/workspaces/bassey_his_curr/tg_1795515898/voice/vocal_transitions/scene_outro.wav'

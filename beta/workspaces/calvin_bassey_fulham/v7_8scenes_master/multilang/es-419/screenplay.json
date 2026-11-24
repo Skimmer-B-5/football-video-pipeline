@@ -1,0 +1,82 @@
+{
+  "scenes": [
+    {
+      "scene_id": "S01",
+      "spoken_narration": "Fulham bajo presión, futuro del defensor incierto.",
+      "on_screen": {
+        "kicker": "● INFORME DE TRASPASOS",
+        "headline": "Futuro del defensor del Fulham incierto",
+        "subheadline": "Club bajo presión mientras circulan rumores",
+        "status_badge": "EN DESARROLLO"
+      }
+    },
+    {
+      "scene_id": "S02",
+      "spoken_narration": "Calvin Bassey enfrenta oferta de United.",
+      "on_screen": {
+        "kicker": "● PAQUETE PROPUESTO",
+        "headline": "Calvin Bassey vinculado a United",
+        "subheadline": "Los Red Devils apuntan a movimiento de £30 M",
+        "status_badge": "REVELADO"
+      }
+    },
+    {
+      "scene_id": "S03",
+      "spoken_narration": "United rodea, listo para oferta decisiva.",
+      "on_screen": {
+        "kicker": "● INTERÉS DEL SUITOR",
+        "headline": "United intensifica la persecución",
+        "subheadline": "United listo para oferta decisiva",
+        "status_badge": "REPORTADO"
+      }
+    },
+    {
+      "scene_id": "S04",
+      "spoken_narration": "Tarifa reportada: £30 M, más bonos por rendimiento.",
+      "on_screen": {
+        "kicker": "● CLÁUSULA DE ACUERDO",
+        "headline": "Tarifa de £30 M reportada",
+        "subheadline": "Posibles complementos podrían elevar total",
+        "status_badge": "NO ACORDADO"
+      }
+    },
+    {
+      "scene_id": "S05",
+      "spoken_narration": "Silva exige que directiva rechace venta.",
+      "on_screen": {
+        "kicker": "● POSTURA MANAGERIAL",
+        "headline": "Silva exige que directiva bloquee venta",
+        "subheadline": "Entrenador pide extensión antes de cualquier salida",
+        "status_badge": "EN DESARROLLO"
+      }
+    },
+    {
+      "scene_id": "S06",
+      "spoken_narration": "Bassey busca extensión, seguridad antes de traspaso.",
+      "on_screen": {
+        "kicker": "● ACTUALIZACIÓN DE SITUACIÓN",
+        "headline": "Bassey quiere nuevo contrato",
+        "subheadline": "Jugador busca seguridad ante rumores de traspaso",
+        "status_badge": "OFICIAL"
+      }
+    },
+    {
+      "scene_id": "S07",
+      "spoken_narration": "¿Fulham retendrá a Bassey o United forzará traspaso?",
+      "on_screen": {
+        "kicker": "● EL VEREDICTO",
+        "headline": "Fulham o United: decisión pendiente",
+        "subheadline": "Club y suitor en encrucijada",
+        "status_badge": "EDITORIAL"
+      }
+    },
+    {
+      "scene_id": "outro",
+      "spoken_narration": "Esto es fútbol en treinta segundos. Síguenos para actualizaciones diarias.",
+      "on_screen": {
+        "headline": "ESTO ES FÚTBOL EN 30 SEGUNDOS",
+        "kicker": "SÍGUENOS PARA MÁS"
+      }
+    }
+  ]
+}

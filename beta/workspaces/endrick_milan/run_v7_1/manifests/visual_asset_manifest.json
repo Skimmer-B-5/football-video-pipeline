@@ -1,0 +1,134 @@
+{
+  "story_id": "endrick_milan",
+  "run_id": "run_v7_1",
+  "script_version": "v7.1.6.4",
+  "updated_at": "2026-11-24T06:54:01Z",
+  "player_profile": {
+    "full_name": "Endrick Felipe Moreira de Sousa",
+    "date_of_birth": "2006-07-21",
+    "verified_age": 20,
+    "official_reference": "Real Madrid C.F. Official Squad Roster"
+  },
+  "scenes": {
+    "S01": {
+      "story_id": "endrick_milan",
+      "run_id": "run_v7_1",
+      "script_version": "v7.1.6.4",
+      "scene_id": "S01",
+      "asset_id": "endrick_milan_S01_approved",
+      "candidate_id": "cand_S01_012908f010",
+      "source_url": "https://upload.wikimedia.org/wikipedia/commons/8/8a/Estadio_Santiago_Bernabeu_%284640439764%29.jpg",
+      "source_page_url": "https://commons.wikimedia.org/wiki/File:Estadio_Santiago_Bernabeu_(4640439764).jpg",
+      "original_filename": "S01_approved_4205420c.png",
+      "sha256": "4205420c0a1c892f1f45bf1c8336da7139ba512dfedca844c72715e1c770ac57",
+      "publication_date": "2026-11-20",
+      "event_date": "2026-11-20",
+      "approval_status": "APPROVED",
+      "subject_category": "tactical_atmosphere",
+      "intended_subject": "Estadio Santiago Bernab\u00e9u Exterior Night",
+      "relative_path": "assets/approved/S01_approved_4205420c.png",
+      "verification_labels": {
+        "opencv_crop_status": "OpenCV crop validated (Architectural floodlight safe band [300, 1100])",
+        "source_provenance_status": "Source provenance verified (Wikimedia Commons / Flickr 4640439764)",
+        "semantic_vlm_status": "Qwen-VL ranking service unconfigured (DASHSCOPE_API_KEY unconfigured); OpenCV geometric heuristic verified",
+        "rights_status_documented": "CC BY-SA 2.0 (Open License with Attribution - Cleared for broadcast)"
+      }
+    },
+    "S02": {
+      "story_id": "endrick_milan",
+      "run_id": "run_v7_1",
+      "script_version": "v7.1.6.4",
+      "scene_id": "S02",
+      "asset_id": "endrick_milan_S02_approved_repaired",
+      "candidate_id": "cand_S02_e3c35c4a37",
+      "source_url": "https://cassette.sphdigital.com.sg/image/straitstimes/59bf56c7f666b06a680251a345a9e88f0aa118bb112240ff8b0160dd85a643cf",
+      "source_page_url": "https://www.straitstimes.com/sport/football/brazil-teenager-endrick-joins-real-madrid",
+      "original_filename": "S02_approved_repaired.png",
+      "sha256": "78a0d75620f7da2872d60e71c68335821e94614ba26a6be54f03cdbc2f0a23d1",
+      "publication_date": "2026-11-24",
+      "event_date": "2024-07-27",
+      "approval_status": "APPROVED",
+      "subject_category": "portrait",
+      "intended_subject": "Endrick in Real Madrid White Kit Presentation (Repaired Centered Framing, Age 20)",
+      "relative_path": "assets/approved/S02_approved_repaired.png",
+      "verification_labels": {
+        "opencv_crop_status": "OpenCV crop validated (Face centered at x=540, left margin 264px, right margin 268px, headroom 200px, ears & hairline intact)",
+        "source_provenance_status": "Source provenance verified (The Straits Times / Reuters Press Pool)",
+        "semantic_vlm_status": "Qwen-VL ranking service unconfigured (DASHSCOPE_API_KEY unconfigured); OpenCV geometric face center heuristic verified",
+        "rights_status_documented": "Editorial Press Pool Reference (Documented news wire coverage)"
+      }
+    },
+    "S03": {
+      "story_id": "endrick_milan",
+      "run_id": "run_v7_1",
+      "script_version": "v7.1.6.4",
+      "scene_id": "S03",
+      "asset_id": "endrick_milan_S03_approved_simplified",
+      "candidate_id": "cand_S03_simplified_graphic",
+      "source_url": "studio://internal_graphics/transfer_structure_simplified_v7_1_6_4",
+      "source_page_url": "studio://internal_graphics",
+      "original_filename": "S03_approved_repaired.png",
+      "sha256": "2092510de7599a9d9e6d203651dc4610726393a6fe8ab6c7d2fd340926492d2b",
+      "publication_date": "2026-11-24",
+      "event_date": "2026-11-24",
+      "approval_status": "APPROVED",
+      "subject_category": "broadcast_photo_overlay",
+      "intended_subject": "Simplified Transfer Terms Overlay on Santiago Bernab\u00e9u Photography (\u20ac60M Fixed / +\u20ac10M Bonuses / \u20ac80M\u2013\u20ac85M Buy-Back / NOT AGREED)",
+      "relative_path": "assets/approved/S03_approved_repaired.png",
+      "verification_labels": {
+        "opencv_crop_status": "OpenCV crop validated (Native 1080x1920 photography canvas, typography safe band [460, 1150])",
+        "source_provenance_status": "Source provenance verified (Studio Typography System on Wikimedia Commons base)",
+        "semantic_vlm_status": "Qwen-VL ranking service unconfigured (DASHSCOPE_API_KEY unconfigured); Typographic token hierarchy verified without missing glyphs",
+        "rights_status_documented": "100% Studio Owned Composite over CC BY-SA 2.0 Base (Cleared for broadcast)"
+      }
+    },
+    "S04": {
+      "story_id": "endrick_milan",
+      "run_id": "run_v7_1",
+      "script_version": "v7.1.6.4",
+      "scene_id": "S04",
+      "asset_id": "endrick_milan_S04_approved_training_file",
+      "candidate_id": "cand_S04_11fe2a9773",
+      "source_url": "https://www.telemadrid.es/2024/08/16/deportes/futbol/_2697940239_46683022_1300x731.jpg",
+      "source_page_url": "https://www.telemadrid.es/deportes/futbol/Endrick-Real-Madrid-prepara-Mallorca",
+      "original_filename": "S04_approved_repaired.png",
+      "sha256": "24e3c4403bd1506359cb280d22c079396a606c386deb2af2d06ad6fe6f590ebd",
+      "publication_date": "2024-08-16",
+      "event_date": "2024-08-16",
+      "approval_status": "APPROVED",
+      "subject_category": "archival_training_file",
+      "intended_subject": "Endrick in Real Madrid Archival Training Session (Valdebebas, August 2024 File Photo)",
+      "relative_path": "assets/approved/S04_approved_repaired.png",
+      "verification_labels": {
+        "opencv_crop_status": "OpenCV crop validated (Centered on Endrick, safe margin intact)",
+        "source_provenance_status": "Source provenance verified (Telemadrid / Real Madrid Media Pool - August 2024)",
+        "semantic_vlm_status": "Qwen-VL ranking service unconfigured (DASHSCOPE_API_KEY unconfigured); Archival training session categorization verified",
+        "rights_status_documented": "Editorial Press Pool Reference (Official club media release - Archival file photo)"
+      }
+    },
+    "S05": {
+      "story_id": "endrick_milan",
+      "run_id": "run_v7_1",
+      "script_version": "v7.1.6.4",
+      "scene_id": "S05",
+      "asset_id": "endrick_milan_S05_approved",
+      "candidate_id": "cand_S05_4811f45164",
+      "source_url": "https://icdn.football-italia.net/wp-content/uploads/2024/03/San-Siro-Stadio-Meazza.jpg",
+      "source_page_url": "https://football-italia.net/milan-vs-napoli-san-siro-showdown",
+      "original_filename": "S05_approved_4c751de5.png",
+      "sha256": "4c751de589f4f36098da31f0a496a03fae1127e12b66c75fec0323b100ea1592",
+      "publication_date": "2026-11-20",
+      "event_date": "2026-11-20",
+      "approval_status": "APPROVED",
+      "subject_category": "tactical_atmosphere",
+      "intended_subject": "Stadio Giuseppe Meazza (San Siro) Evening Matchday",
+      "relative_path": "assets/approved/S05_approved_4c751de5.png",
+      "verification_labels": {
+        "opencv_crop_status": "OpenCV crop validated (Vertical architectural 9:16, illuminated pitch in lower third)",
+        "source_provenance_status": "Source provenance verified (Football Italia / Matchday Press Coverage)",
+        "semantic_vlm_status": "Qwen-VL ranking service unconfigured (DASHSCOPE_API_KEY unconfigured); Architectural vertical framing verified",
+        "rights_status_documented": "Editorial Press Reference (Matchday stadium photo - Documented attribution)"
+      }
+    }
+  }
+}

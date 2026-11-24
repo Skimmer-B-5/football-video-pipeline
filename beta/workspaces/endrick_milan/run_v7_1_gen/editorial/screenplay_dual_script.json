@@ -1,0 +1,67 @@
+{
+  "story_id": "endrick_milan",
+  "master_headline": "MILAN PLOT ENDRICK MOVE AS MOURINHO RESISTS EXIT",
+  "kicker": "\u25cf TRANSFER WATCH",
+  "ticker_text": "CORRIERE DELLO SPORT: MILAN PREPARE \u20ac60M PROPOSAL FOR ENDRICK \u2726 CADENA SER: MOURINHO RESISTS EXIT \u2726 REAL MADRID: ADDUCTOR INJURY CONFIRMED \u2726",
+  "scenes": [
+    {
+      "scene_id": "S01",
+      "spoken_narration": "Milan have made their move, but Mourinho wants him to stay.",
+      "on_screen": {
+        "kicker": "\u25cf TRANSFER REPORT",
+        "headline": "MILAN MAKE MOVE",
+        "subheadline": "MOURINHO WANTS STAY",
+        "status_badge": "REPORTED"
+      }
+    },
+    {
+      "scene_id": "S02",
+      "spoken_narration": "And \u2014 Italian reports put Milan's package for Endrick at sixty million fixed, plus ten in potential bonuses.",
+      "on_screen": {
+        "kicker": "\u25cf PROPOSED PACKAGE",
+        "headline": "ENDRICK TARGETED",
+        "subheadline": "\u20ac60M FIXED + \u20ac10M BONUSES",
+        "status_badge": "PROPOSAL"
+      }
+    },
+    {
+      "scene_id": "S03",
+      "spoken_narration": "Now \u2014 reports cite eighty to eighty-five million repurchase figures, but crucially... nothing is agreed.",
+      "on_screen": {
+        "kicker": "\u25cf DEAL CLAUSE",
+        "headline": "TERMS UNRESOLVED",
+        "subheadline": "REPORTED \u2022 NOT AGREED",
+        "status_badge": "UNAGREED",
+        "data_callout": "REPORTED"
+      }
+    },
+    {
+      "scene_id": "S04",
+      "spoken_narration": "Meanwhile \u2014 a left-leg muscle injury complicates matters, with no official return date.",
+      "on_screen": {
+        "kicker": "\u25cf MEDICAL BULLETIN",
+        "headline": "LEFT-LEG MUSCLE INJURY",
+        "subheadline": "NO OFFICIAL RETURN DATE",
+        "status_badge": "OFFICIAL"
+      }
+    },
+    {
+      "scene_id": "S05",
+      "spoken_narration": "So \u2014 will Mourinho keep the Brazilian, or will Milan force a compromise?",
+      "on_screen": {
+        "kicker": "\u25cf THE VERDICT",
+        "headline": "MOURINHO OR MILAN?",
+        "subheadline": "SANCTION OR RETAIN",
+        "status_badge": "EDITORIAL"
+      }
+    },
+    {
+      "scene_id": "outro",
+      "spoken_narration": "Either way \u2014 this is football in thirty seconds. Follow for daily transfer updates.",
+      "on_screen": {
+        "headline": "THIS IS FOOTBALL IN 30 SECONDS",
+        "kicker": "FOLLOW FOR MORE"
+      }
+    }
+  ]
+}

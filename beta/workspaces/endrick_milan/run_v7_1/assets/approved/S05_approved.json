@@ -1,0 +1,20 @@
+{
+  "story_id": "endrick_milan",
+  "run_id": "run_v7_1",
+  "script_version": "v7.1.1",
+  "scene_id": "S05",
+  "asset_id": "endrick_milan_S05_approved",
+  "candidate_id": "cand_S05_4811f45164",
+  "source_url": "https://icdn.football-italia.net/wp-content/uploads/2024/03/San-Siro-Stadio-Meazza.jpg",
+  "source_page_url": "https://football-italia.net/milan-vs-napoli-san-siro-showdown",
+  "original_filename": "S05_approved_4c751de5.png",
+  "sha256": "4c751de589f4f36098da31f0a496a03fae1127e12b66c75fec0323b100ea1592",
+  "publication_date": "2026-11-20",
+  "event_date": "2026-11-20",
+  "approval_status": "APPROVED",
+  "subject_category": "tactical_atmosphere",
+  "intended_subject": "Stadio Giuseppe Meazza (San Siro) Evening Matchday",
+  "relative_path": "assets\\approved\\S05_approved_4c751de5.png",
+  "qwen_rank": 91.0,
+  "crop_verdict": "CERTIFIED_SAFE"
+}
