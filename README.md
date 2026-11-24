@@ -1,10 +1,19 @@
-# ⚽ Football in 30 Seconds (FS30) — Autonomous Video Studio
+# ⚽ Football in 30 Seconds (FS30) & 30 Football Plus — V2 Broadcast Studio
 
 An end-to-end, high-retention video production pipeline for vertical short-form content (**YouTube Shorts**, **Instagram Reels**, **TikTok**).
 
 Combines two complementary production pipelines:
-1. **FS30 Historical Documentary Engine**: Vox-style 1990s newspaper collage aesthetic, 5-variant reusable graphic banners, authentic archival broadcast motion, dry British scholarly narration, and word-by-word **MrBeast-style kinetic captions**.
-2. **Autonomous Broadcast Engine Studio**: 90s TV broadcast aesthetic, Groq LPUs running OpenAI GPT-OSS 120B scriptwriter, Martin Tyler commentary, and remote Telegram bot control (`@Football30secbot`).
+1. **30 Football Plus V2 Primary Broadcast Engine** (`beta/`):
+   - **8-Scene Screenplay Engine**: Written by OpenAI GPT-OSS 120B / Qwen 27B, strictly budgeted to 30–33 seconds (story ~26s + branded outro ~5s).
+   - **Ground-Truth Fact-Checking**: Verified club database (e.g. Mauricio Pochettino officially appointed manager of Manchester United, Marco Silva at Fulham).
+   - **Action-Aware Visual Director & Scraper**: Strictly bans static standing portraits; mandates real match action photography (sliding tackles, duels, sprints, celebrations, touchline shouts). Zero image reuse.
+   - **Acoustic Quality Auditor & Presenter Voiceover**: Energetic original British sports presenter narration via Qwen3-TTS / Edge-TTS with pause pacing, silence trimming, and whisper/stutter suppression.
+   - **Sony Trinitron CRT Analog Master**: Authentic 1990s TV broadcast aesthetic with 4px scanlines, aperture grille mask, curved tube vignette, chromatic aberration, and tape noise.
+   - **Multilingual Support**: Fully localized Latin American Spanish (ES-419) with `es-MX-JorgeNeural` and Brazilian Portuguese (PT-BR) with `pt-BR-AntonioNeural` utilizing syllable-budgeted translations (6–8 words/scene).
+   - **Interactive Telegram Remote Control**: Full `/new` scraper selection, script approval buttons ([Approve], [AI Rewrite], [Manual Edit], [Reject]), and in-place live progress bar.
+
+2. **FS30 Historical Documentary Engine** (`fs30/`):
+   - Vox-style 1990s newspaper collage aesthetic, 5-variant reusable graphic banners, authentic archival broadcast motion, dry British scholarly narration, and word-by-word **MrBeast-style kinetic captions**. Preserved and fully intact.
 
 ---
 
@@ -34,7 +43,7 @@ Double-click `start.bat`:
 start.bat
 ```
 Provides an interactive menu:
-- `[1] Launch Studio Daemon & Telegram Bot` (remote phone control)
+- `[1] Launch 30 Football Plus Primary V2 Broadcast Engine & Telegram Bot` (@Football30secbot)
 - `[2] Produce Historical Documentary Video` (Zidane 2006, Cantona 1995, Suarez 2014)
 - `[3] View Final Masters Vault & Open Catalog CSV`
 - `[4] Run Studio QA Diagnostic & Verify Dependencies`

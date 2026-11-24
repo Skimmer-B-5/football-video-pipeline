@@ -25,7 +25,8 @@ if not exist ".env" (
 )
 
 echo [*] Workspace: %CD%
-echo [*] Launching Pipeline Service Daemon (@Football30secbot)...
+echo [*] Launching Primary V2 Broadcast Engine Daemon (@Football30secbot)...
+echo [*] Features: 8-Scene Visual Director, Real Match Action Photos, Trinitron CRT, Multilang (EN/ES/PT)
 echo [*] Use your phone in Telegram:
 echo       /new    - Trigger news research and assemble a new 90s broadcast short
 echo       /status - Inspect studio daemon status and active job queue
@@ -35,7 +36,7 @@ echo Press Ctrl+C in this terminal to stop the studio.
 echo ===============================================================================
 echo.
 
-".venv\Scripts\python.exe" -u run_pipeline_service.py
+".venv\Scripts\python.exe" -u beta\run_telegram_broadcast_service.py
 
 echo.
 echo -------------------------------------------------------------------------------

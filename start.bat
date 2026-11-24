@@ -48,15 +48,16 @@ goto MENU
 :DAEMON
 cls
 echo ===============================================================================
-echo             LAUNCHING STUDIO DAEMON & TELEGRAM REMOTE CONTROL
+echo   30 FOOTBALL PLUS V2 - LAUNCHING PRIMARY BROADCAST DAEMON & TELEGRAM BOT
 echo ===============================================================================
-echo [*] Service running. Control via Telegram:
-echo       /new    - Trigger breaking story research & assembly
-echo       /status - Inspect job queue & render pipeline
+echo [*] Engine: V2 1990s TV Broadcast (Fact-Checked, Real Match Action, Trinitron CRT)
+echo [*] Service running. Control via Telegram (@Football30secbot):
+echo       /new    - Trigger breaking story research & 8-scene visual assembly
+echo       /status - Inspect studio daemon status and active jobs
 echo.
 echo Press Ctrl+C to stop.
 echo.
-".venv\Scripts\python.exe" -u run_pipeline_service.py
+".venv\Scripts\python.exe" -u beta\run_telegram_broadcast_service.py
 pause
 goto MENU
 
