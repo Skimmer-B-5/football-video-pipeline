@@ -312,7 +312,10 @@ SOURCES: {', '.join(d.reporting_sources or ['Football Desk'])}
                         sid_u = str(s.get("scene_id", "")).upper()
                         narr = s.get("spoken_narration", "")
                         if sid_u != "OUTRO":
-                            story_words += len(narr.split())
+                            sc_wc = len(narr.split())
+                            story_words += sc_wc
+                            if sc_wc > 10:
+                                issues.append(f"Scene {s.get('scene_id')} too wordy ({sc_wc} words > 10 max; tighten to 7-9 words)")
                         low_n = narr.lower()
                         for cl in BANNED_CLICHES:
                             if cl in low_n:

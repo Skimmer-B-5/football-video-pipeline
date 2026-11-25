@@ -11,6 +11,7 @@ Supports dual-key redundancy and automatic model failover between Qwen-27B and G
 
 import os
 import json
+import time
 import urllib.request
 import urllib.error
 import re
@@ -42,7 +43,7 @@ def get_groq_keys() -> List[str]:
                         val = line.split("=", 1)[1].strip().strip('"').strip("'")
                         if val and not k1:
                             k1 = val
-                    elif line.startswith("GROQ_API_KEY_BACKUP="):
+                    elif line.startswith("BETA_GROQ_API_KEY_BACKUP=") or line.startswith("GROQ_API_KEY_BACKUP="):
                         val = line.split("=", 1)[1].strip().strip('"').strip("'")
                         if val and not k2:
                             k2 = val
@@ -88,46 +89,52 @@ def call_groq_chat(
     models_to_try = [preferred_model]
     if fallback_model and fallback_model not in models_to_try:
         models_to_try.append(fallback_model)
-    for m in ("openai/gpt-oss-120b", "qwen/qwen3.8-27b", "openai/gpt-oss-20b"):
+    for m in ("openai/gpt-oss-120b", "openai/gpt-oss-20b", "qwen/qwen3.8-27b"):
         if m not in models_to_try:
             models_to_try.append(m)
 
     for current_model in models_to_try:
         for key in keys:
-            try:
-                headers = dict(HEADERS_BASE)
-                headers["Authorization"] = f"Bearer {key}"
+            for attempt in range(2):
+                try:
+                    headers = dict(HEADERS_BASE)
+                    headers["Authorization"] = f"Bearer {key}"
 
-                payload = {
-                    "model": current_model,
-                    "messages": messages,
-                    "max_tokens": max_tokens,
-                    "temperature": temperature
-                }
+                    payload = {
+                        "model": current_model,
+                        "messages": messages,
+                        "max_tokens": max_tokens,
+                        "temperature": temperature
+                    }
 
-                req = urllib.request.Request(
-                    GROQ_ENDPOINT,
-                    data=json.dumps(payload).encode("utf-8"),
-                    headers=headers
-                )
+                    req = urllib.request.Request(
+                        GROQ_ENDPOINT,
+                        data=json.dumps(payload).encode("utf-8"),
+                        headers=headers
+                    )
 
-                with urllib.request.urlopen(req, timeout=timeout) as resp:
-                    data = json.loads(resp.read().decode("utf-8"))
-                    choice = data.get("choices", [{}])[0]
-                    message = choice.get("message", {})
-                    content = message.get("content", "").strip()
+                    with urllib.request.urlopen(req, timeout=timeout) as resp:
+                        data = json.loads(resp.read().decode("utf-8"))
+                        choice = data.get("choices", [{}])[0]
+                        message = choice.get("message", {})
+                        content = message.get("content", "").strip()
 
-                    # Strip any lingering reasoning or think tags if present
-                    content = re.sub(r'<think>.*?</think>', '', content, flags=re.DOTALL).strip()
+                        # Strip any lingering reasoning or think tags if present
+                        content = re.sub(r'<think>.*?</think>', '', content, flags=re.DOTALL).strip()
 
-                    if content:
-                        return content
-
-            except urllib.error.HTTPError as he:
-                error_body = he.read().decode("utf-8", errors="ignore")
-                print(f"[GroqClient] Model '{current_model}' with key ...{key[-6:]} returned HTTP {he.code}: {error_body[:100]}")
-            except Exception as e:
-                print(f"[GroqClient] Model '{current_model}' with key ...{key[-6:]} failed: {e}")
+                        if content:
+                            return content
+                    break
+                except urllib.error.HTTPError as he:
+                    error_body = he.read().decode("utf-8", errors="ignore")
+                    print(f"[GroqClient] Model '{current_model}' with key ...{key[-6:]} returned HTTP {he.code}: {error_body[:100]}")
+                    if he.code == 429 and attempt == 0:
+                        time.sleep(0.9)
+                        continue
+                    break
+                except Exception as e:
+                    print(f"[GroqClient] Model '{current_model}' with key ...{key[-6:]} failed: {e}")
+                    break
 
     return None
 

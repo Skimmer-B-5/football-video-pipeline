@@ -468,7 +468,7 @@ def main():
     print("==================================================================")
     print("  30 FOOTBALL PLUS — LIVE SCRAPER & 90s BROADCAST SERVICE        ")
     print("  Websites: Google News, Sky Sports, BBC, Guardian, Transfermarkt ")
-    print("  Video Engine: V7.1.6.7 Master 1990s TV Broadcast (Original British Sports Presenter)")
+    print("  Video Engine: V7.1.6.7 Master 1990s TV Broadcast (Aiden Urgent Anchor)")
     print("==================================================================")
 
     token, chat_id = get_env_credentials()

@@ -41,10 +41,10 @@ PROJECT_ROOT = BETA_ROOT.parent
 VOICE_PROFILES = {
     "en": {
         "engine": "qwen3_tts",
-        "voice": "Ryan",
+        "voice": "Aiden",
         "rate": "+0%",
         "pitch": "+0Hz",
-        "reference": "British News Anchor (Original British Sports Presenter)",
+        "reference": "High-Voltage Breaking-News Anchor (Aiden)",
         "outro_text": "This is football in thirty seconds. Follow for daily transfer updates.",
         "outro_cta_main": "FOLLOW FOR DAILY UPDATES",
         "outro_cta_sub": "THIS IS FOOTBALL IN 30 SECONDS",
@@ -211,42 +211,28 @@ Output ONLY valid JSON matching this schema:
         return cls._sanitize_screenplay_payload(cls._rule_based_fallback(scenes, target_lang), target_lang)
 
     @classmethod
-    def _rule_based_fallback(cls, scenes: List[Dict[str, Any]], target_lang: str) -> Dict[str, Any]:
-        """High-quality fallback translations for the 8 scenes."""
+    def _rule_based_fallback(cls, scenes: List[Dict[str, Any]], target_lang: str, dossier: Optional[Any] = None) -> Dict[str, Any]:
+        """Generic entity-aware fallback if LLM translation hits a transient outage (zero hardcoded players)."""
         is_pt = (target_lang == "pt-BR")
-        pt_narrations = [
-            "Fulham sob pressão com futuro do zagueiro em aberto.",
-            "E Calvin Bassey encara forte proposta do United.",
-            "Manchester United avança decidido por um acordo imediato.",
-            "Valores chegam a trinta milhões de libras reportados.",
-            "Marco Silva exige que a diretoria segure Bassey.",
-            "Bassey quer estabilidade antes de qualquer transferência.",
-            "O Fulham mantém Bassey ou o United vence?",
-            "Isto é o futebol em trinta segundos. Siga para atualizações diárias."
-        ]
-        es_narrations = [
-            "Fulham bajo presión mientras el defensor define futuro.",
-            "Y Calvin Bassey afronta oferta formal del United.",
-            "Manchester United presiona fuerte por el fichaje inmediato.",
-            "Cifra reportada en treinta millones de libras esterlinas.",
-            "Marco Silva exige a directiva frenar la salida.",
-            "Bassey busca seguridad contractual antes de firmar.",
-            "¿Retendrá Fulham a Bassey o ganará el United?",
-            "Esto es fútbol en treinta segundos. Síguenos para actualizaciones diarias."
-        ]
-        narrations = pt_narrations if is_pt else es_narrations
-        kicker = "● RADAR DO MERCADO" if is_pt else "● RADAR DE FICHAJES"
-        
+        kicker = "RADAR DO MERCADO" if is_pt else "RADAR DE FICHAJES"
+        outro_txt = VOICE_PROFILES["pt-BR" if is_pt else "es-419"]["outro_text"]
+
         translated_scenes = []
-        for idx, sc in enumerate(scenes):
-            t_text = narrations[idx] if idx < len(narrations) else sc["spoken_narration"]
+        for sc in scenes:
+            sid = sc.get("scene_id", "S01")
+            orig_narr = (sc.get("spoken_narration") or "").strip()
+            if str(sid).lower() == "outro":
+                t_text = outro_txt
+            else:
+                # Preserve exact factual headline tokens rather than hallucinating another player's story
+                t_text = orig_narr
             t_sc = dict(sc)
             t_sc["spoken_narration"] = t_text
             t_sc["on_screen"] = {
                 "kicker": kicker,
                 "headline": sc.get("on_screen", {}).get("headline", "MERCADO"),
                 "subheadline": sc.get("on_screen", {}).get("subheadline", "TRANSFERÊNCIA" if is_pt else "FICHAJE"),
-                "status_badge": "OFICIAL" if is_pt else "OFICIAL"
+                "status_badge": "REPORTADO"
             }
             translated_scenes.append(t_sc)
 
