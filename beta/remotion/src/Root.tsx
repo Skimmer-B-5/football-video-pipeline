@@ -1,7 +1,8 @@
 import React from "react";
 import { Composition, staticFile } from "remotion";
 import { FootballShort } from "./FootballShort";
-import { FootballShortProps } from "./types";
+import { DocumentaryPaperShort } from "./DocumentaryPaperShort";
+import { DocumentaryPaperProps, FootballShortProps } from "./types";
 import { tokens } from "./design/tokens";
 
 const fontStyles = `
@@ -73,6 +74,24 @@ const fontStyles = `
   font-weight: 600;
   font-style: normal;
 }
+@font-face {
+  font-family: 'IBM Plex Sans';
+  src: url('${staticFile("fonts/ibm_plex_sans/IBMPlexSans.ttf")}') format('truetype');
+  font-weight: 600;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'Source Serif 4';
+  src: url('${staticFile("fonts/source_serif_4/SourceSerif4-Bold.ttf")}') format('truetype');
+  font-weight: 700;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'Source Serif 4';
+  src: url('${staticFile("fonts/source_serif_4/SourceSerif4-Italic.ttf")}') format('truetype');
+  font-weight: 700;
+  font-style: italic;
+}
 `;
 
 import {
@@ -100,6 +119,20 @@ const defaultProps: FootballShortProps = {
   subtitles: [],
 };
 
+const defaultDocProps: DocumentaryPaperProps = {
+  story_id: "sample_doc",
+  title: "Football Archive Documentary",
+  era: "2010 - 2014",
+  totalDurationInFrames: 1500,
+  outroDurationInFrames: 114,
+  outro_headline: "THIS IS FOOTBALL IN 30 SECONDS.",
+  outro_subtitle: "STORIES BEYOND THE SCORELINE.",
+  outro_cta: "FOLLOW FOR MORE",
+  shared_assets: {},
+  beats: [],
+  subtitles: [],
+};
+
 export const RemotionRoot: React.FC = () => {
   return (
     <>
@@ -116,6 +149,21 @@ export const RemotionRoot: React.FC = () => {
           const typedProps = props as FootballShortProps;
           return {
             durationInFrames: Number(typedProps?.totalDurationInFrames) || 1137,
+          };
+        }}
+      />
+      <Composition
+        id="DocumentaryPaperShort"
+        component={DocumentaryPaperShort}
+        durationInFrames={1500}
+        fps={tokens.canvas.fps}
+        width={tokens.canvas.width}
+        height={tokens.canvas.height}
+        defaultProps={defaultDocProps}
+        calculateMetadata={({ props }) => {
+          const typedProps = props as DocumentaryPaperProps;
+          return {
+            durationInFrames: Number(typedProps?.totalDurationInFrames) || 1500,
           };
         }}
       />

@@ -180,3 +180,95 @@ export interface FootballShortProps {
   enableRetroEffects?: boolean;
   [key: string]: unknown;
 }
+
+export interface DocHighlightRect {
+  x_pct: number;
+  y_pct: number;
+  w_pct: number;
+  h_pct: number;
+}
+
+export interface DocImageAsset {
+  path: string;
+  width: number;
+  height: number;
+  focal_x?: number;
+  focal_y?: number;
+  framing_mode?: string;
+}
+
+export interface DocTimelineEntry {
+  year: string;
+  event: string;
+  detail: string;
+}
+
+export interface DocTacticalReticle {
+  enabled: boolean;
+  label?: string;
+  target_x_pct?: number;
+  target_y_pct?: number;
+}
+
+export interface DocumentaryBeatProps {
+  beat_number: number;
+  layout_style:
+    | "vox_25d_cutout"
+    | "newspaper_highlighter"
+    | "archival_pinboard"
+    | "puppet_confrontation_25d"
+    | "tactile_timeline_card"
+    | "clean_editorial_epilogue"
+    | "fs30_brand_outro";
+  camera_move: string;
+  transition_in: string;
+  durationInFrames: number;
+  visual_kicker: string;
+  visual_headline: string;
+  sub_caption?: string;
+  bg_path?: string;
+  banner_path?: string;
+  cutout?: DocImageAsset;
+  secondary_cutout?: DocImageAsset;
+  mounted?: DocImageAsset;
+  editorial?: DocImageAsset;
+  newspaper_path?: string;
+  highlight_rects?: DocHighlightRect[];
+  stamp_path?: string;
+  timeline_items?: DocTimelineEntry[];
+  tactical_reticle?: DocTacticalReticle;
+}
+
+export interface DocumentaryWordTiming {
+  word: string;
+  start_frame: number;
+  end_frame: number;
+}
+
+export interface DocumentarySubtitleCue {
+  id: number;
+  start_frame: number;
+  end_frame: number;
+  words: DocumentaryWordTiming[];
+}
+
+export interface DocumentaryPaperProps {
+  story_id: string;
+  title: string;
+  era: string;
+  totalDurationInFrames: number;
+  outroDurationInFrames: number;
+  outro_headline: string;
+  outro_subtitle: string;
+  outro_cta: string;
+  shared_assets: {
+    badge?: string;
+    paper_texture?: string;
+    film_grain?: string;
+    reticle_circle?: string;
+    marker_arrow?: string;
+  };
+  beats: DocumentaryBeatProps[];
+  subtitles: DocumentarySubtitleCue[];
+  [key: string]: unknown;
+}

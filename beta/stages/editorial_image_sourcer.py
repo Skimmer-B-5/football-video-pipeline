@@ -23,7 +23,7 @@ DISQUALIFIED_DOMAINS = {
     'alamy.com', 'alamy', 'gettyimages.com', 'gettyimages', 'shutterstock.com', 'shutterstock',
     'istockphoto.com', 'stockphoto.com', 'depositphotos.com', 'depositphotos', '123rf.com',
     'adobestock', 'dreamstime.com', 'wallpaperaccess.com', 'wallpapercave.com', 'wallpapersafari.com',
-    'pinterest.com', 'aliexpress.com', 'amazon.com', 'ebay.com', 'freepik.com', 'vectorstock.com',
+    'pinterest.com', 'pinimg.com', 'i.pinimg.com', 'aliexpress.com', 'amazon.com', 'ebay.com', 'freepik.com', 'vectorstock.com',
     'clipart', 'iconfinder.com', 'flaticon.com', 'deviantart.com', 'lookfordiagnosis.com',
     'panoramastreetline.de', 'panoramastreetline', 'vecteezy.com', 'vecteezy', 'stockcake.com',
     'envato.com', 'graphicriver.net', 'stockfood.com', 'stockfood', 'imago-images', 'rexfeatures',
@@ -118,17 +118,17 @@ class EditorialImageSourcer:
         candidates = []
         if not player_name:
             return candidates
-        clean_title = urllib.parse.quote(player_name.strip().replace(" ", "_"))
-        url = f"https://en.wikipedia.org/api/rest_v1/page/media-list/{clean_title}"
-        req = urllib.request.Request(
-            url,
-            headers={"User-Agent": "FootballNewsDesk/2.0 (broadcast@footballin30sec.com)"}
-        )
-        try:
+        def _fetch_media_list(wiki_title: str) -> List[Dict[str, Any]]:
+            found = []
+            c_title = urllib.parse.quote(wiki_title.strip().replace(" ", "_"))
+            url = f"https://en.wikipedia.org/api/rest_v1/page/media-list/{c_title}"
+            req = urllib.request.Request(
+                url,
+                headers={"User-Agent": "FootballNewsDesk/2.0 (broadcast@footballin30sec.com)"}
+            )
             with urllib.request.urlopen(req, timeout=8) as r:
                 data = json.loads(r.read().decode('utf-8'))
-            items = data.get("items", [])
-            for it in items:
+            for it in data.get("items", []):
                 title = it.get("title", "")
                 if title.endswith((".svg", ".ogg", ".ogv", ".pdf", ".tif")):
                     continue
@@ -137,27 +137,48 @@ class EditorialImageSourcer:
                 if src:
                     if src.startswith("//"):
                         src = "https:" + src
-
-                    # Convert Wikimedia thumbnail to Original Full-Res Image URL
-                    # e.g. https://thumb.wikimedia.org/wikipedia/commons/thumb/f/f3/Calvin_Bassey.jpg/500px-Calvin_Bassey.jpg
-                    # -> https://upload.wikimedia.org/wikipedia/commons/f/f3/Calvin_Bassey.jpg
                     full_res_url = src
                     if "thumb.wikimedia.org/wikipedia/commons/thumb/" in src:
                         m = re.match(r'https://thumb\.wikimedia\.org/wikipedia/commons/thumb/([0-9a-f]/[0-9a-f]{2}/[^/]+)/.*', src)
                         if m:
                             full_res_url = f"https://upload.wikimedia.org/wikipedia/commons/{m.group(1)}"
-
                     if full_res_url not in self.used_urls:
-                        candidates.append({
+                        found.append({
                             "url": full_res_url,
                             "title": title,
                             "source": "Wikipedia Official Archive (Original)",
                             "priority": 2
                         })
-                        if len(candidates) >= max_results:
+                        if len(found) >= max_results:
                             break
+            return found
+
+        try:
+            candidates = _fetch_media_list(player_name)
         except Exception:
-            pass
+            candidates = []
+
+        # Canonical accent/disambiguation fallback via opensearch (e.g. 'Luis Suarez' -> 'Luis Suárez (footballer, born 1987)')
+        if not candidates:
+            for q_os in (f"{player_name} footballer", player_name):
+                try:
+                    os_url = f"https://en.wikipedia.org/w/api.php?action=opensearch&search={urllib.parse.quote(q_os)}&limit=4&format=json"
+                    os_req = urllib.request.Request(os_url, headers={"User-Agent": "FootballNewsDesk/2.0 (broadcast@footballin30sec.com)"})
+                    with urllib.request.urlopen(os_req, timeout=8) as r:
+                        os_data = json.loads(r.read().decode('utf-8'))
+                    titles = [str(w).strip() for w in (os_data[1] if len(os_data) > 1 else []) if w]
+                    titles.sort(key=lambda t: (0 if "football" in t.lower() or "soccer" in t.lower() else 1))
+                    for wt in titles[:3]:
+                        try:
+                            candidates = _fetch_media_list(wt)
+                            if candidates:
+                                break
+                        except Exception:
+                            continue
+                    if candidates:
+                        break
+                except Exception:
+                    continue
         return candidates
 
     def search_wikimedia_commons(self, query: str, max_results: int = 5) -> List[Dict[str, Any]]:
@@ -266,14 +287,18 @@ class EditorialImageSourcer:
                 except Exception:
                     continue
 
-        ent_tokens = [t.lower() for t in (entity_name or "").split() if len(t) > 2]
-        club_tokens = [t.lower() for t in (club_name or "").split() if len(t) > 3]
+        import unicodedata
+        def _fold(s: str) -> str:
+            return "".join(ch for ch in unicodedata.normalize("NFKD", s.lower()) if not unicodedata.combining(ch))
+
+        ent_tokens = [_fold(t) for t in (entity_name or "").split() if len(t) > 2]
+        club_tokens = [_fold(t) for t in (club_name or "").split() if len(t) > 3]
         for row in self._espn_cache:
             u = row["url"]
             if u in self.used_urls or any(b in u.lower() for b in DISQUALIFIED_DOMAINS):
                 continue
-            t_low = row["title"].lower()
-            ent_hit = ent_tokens and (all(tok in t_low for tok in ent_tokens) or ent_tokens[-1] in t_low)
+            t_low = _fold(row["title"])
+            ent_hit = ent_tokens and all(tok in t_low for tok in ent_tokens[:2])
             club_hit = club_tokens and any(ct in t_low for ct in club_tokens)
             if ent_hit or club_hit:
                 candidates.append({
