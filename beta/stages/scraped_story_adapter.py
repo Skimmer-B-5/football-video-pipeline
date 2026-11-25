@@ -68,28 +68,30 @@ def canonicalize_club(name: str) -> str:
     return CANONICAL_CLUBS.get(name.lower().strip(), name.strip())
 
 def extract_entities_llm(headline: str, raw_text: str = "") -> Dict[str, str]:
-    """Uses LLM to accurately extract football entities, club roles, and fees."""
+    """Uses LLM to accurately extract football entities, story category, club roles, and fees."""
     prompt = f"""Extract the football entities from this breaking news story.
 HEADLINE: {headline}
-TEXT: {raw_text[:600]}
+ARTICLE TEXT:
+{raw_text[:2500]}
 
 Return ONLY valid JSON with these exact keys:
 {{
   "protagonist_name": "Full name of the player or manager at the center of the story",
-  "current_club": "The club the player currently belongs to (e.g. Fulham)",
+  "current_club": "The club the player/manager currently belongs to (e.g. Fulham)",
   "current_manager": "Manager of current club (e.g. Marco Silva)",
-  "pursuing_club": "The club trying to sign/bid for him (e.g. Manchester United)",
-  "reported_base_fee": "Reported fee or clause if mentioned, else 'undisclosed'",
-  "reported_bonuses": "Add-ons or bonuses if mentioned, else 'performance incentives'",
-  "complication": "Key complication, injury, contract standoff, or rival interest"
+  "pursuing_club": "The club trying to sign/bid, or main rival club in context (e.g. Manchester United)",
+  "story_category": "transfer_rumour | confirmed_deal | managerial_change | contract_negotiation | injury_crisis | tactical_drama",
+  "reported_base_fee": "Exact reported fee, clause, or contract value if mentioned, else 'undisclosed'",
+  "reported_bonuses": "Add-ons, contract length, or key terms if mentioned, else 'performance incentives'",
+  "complication": "Concrete factual complication, board stance, injury, or rival interest"
 }}
 """
     try:
         raw = call_groq_chat(
-            system_prompt="You are an elite football transfer desk data analyst. Output ONLY valid JSON.",
+            system_prompt="You are an elite football desk analyst. Extract ONLY grounded entities and figures. Output ONLY valid JSON.",
             user_prompt=prompt,
             temperature=0.1,
-            timeout=10
+            timeout=12
         )
         if raw:
             m = re.search(r'\{.*\}', raw, re.DOTALL)
@@ -114,10 +116,36 @@ def _finalize_dossier(dossier: StoryDossier, headline: str, protagonist: str) ->
 
 
 def scraped_story_to_dossier(story: Dict[str, Any]) -> StoryDossier:
-    """Extracts entities and facts from a scraped news story into a StoryDossier."""
-    headline = story.get("headline", "Breaking Transfer Report")
-    raw_text = story.get("raw_text") or headline
-    source = story.get("source") or "Transfer Desk"
+    """Extracts entities, full article body, hero images, and facts into a StoryDossier."""
+    headline = story.get("headline", "Breaking Football Report")
+    raw_text = story.get("raw_text") or story.get("article_text") or headline
+    source = story.get("source") or "Football Desk"
+    story_url = story.get("url") or ""
+    hero_img = story.get("hero_image_url") or story.get("image_url")
+    cand_imgs = list(story.get("candidate_images") or ([] if not hero_img else [hero_img]))
+    art_urls = list(story.get("article_urls") or ([story_url] if story_url else []))
+
+    # Hydrate sparse text/direct URLs automatically via upgraded url_scraper
+    if story_url and ("news.google.com/rss/articles/" not in story_url) and (len(raw_text) < 450 or not hero_img or headline == "Direct Article Report"):
+        try:
+            try:
+                from stages.url_scraper import scrape_article_from_url
+            except ModuleNotFoundError:
+                from beta.stages.url_scraper import scrape_article_from_url
+            scraped = scrape_article_from_url(story_url, timeout=8)
+            if scraped.get("title") and headline in ("Direct Article Report", "Breaking Football Report"):
+                headline = scraped["title"]
+            if scraped.get("source") and source in ("Web Article", "Football Desk"):
+                source = scraped["source"]
+            if len(scraped.get("raw_text") or "") > len(raw_text):
+                raw_text = scraped["raw_text"]
+            if not hero_img and scraped.get("image_url"):
+                hero_img = scraped["image_url"]
+            for ci in (scraped.get("candidate_images") or []):
+                if ci not in cand_imgs:
+                    cand_imgs.append(ci)
+        except Exception as e:
+            print(f"[Adapter] Article hydration note for '{story_url}': {e}")
 
     # Try LLM extraction first
     llm_data = extract_entities_llm(headline, raw_text)
@@ -129,6 +157,7 @@ def scraped_story_to_dossier(story: Dict[str, Any]) -> StoryDossier:
         base_fee = llm_data.get("reported_base_fee") or "an undisclosed fee"
         bonuses = llm_data.get("reported_bonuses") or "performance incentives"
         complication = llm_data.get("complication") or "contractual standoff and rival interest"
+        category = llm_data.get("story_category") or story.get("category") or "transfer_rumour"
 
         # Prevent curr_club and purs_club from being identical if suitor is unknown
         if curr_club == purs_club:
@@ -150,7 +179,12 @@ def scraped_story_to_dossier(story: Dict[str, Any]) -> StoryDossier:
             reporting_sources=[source],
             headline_kicker="TRANSFER WATCH",
             main_headline=headline.upper(),
-            ticker_text=f"{source.upper()}: {headline.upper()} ✦ 1990s TV BROADCAST DESK ✦"
+            ticker_text=f"{source.upper()}: {headline.upper()} ✦ 1990s TV BROADCAST DESK ✦",
+            raw_article_text=raw_text[:4000],
+            story_category=category,
+            hero_image_url=hero_img,
+            candidate_images=cand_imgs[:10],
+            article_urls=art_urls[:5],
         )
         return _finalize_dossier(dossier, headline, protagonist)
 
@@ -195,6 +229,11 @@ def scraped_story_to_dossier(story: Dict[str, Any]) -> StoryDossier:
         reporting_sources=[source],
         headline_kicker="TRANSFER WATCH",
         main_headline=headline.upper(),
-        ticker_text=f"{source.upper()}: {headline.upper()} ✦ 1990s TV BROADCAST DESK ✦"
+        ticker_text=f"{source.upper()}: {headline.upper()} ✦ 1990s TV BROADCAST DESK ✦",
+        raw_article_text=raw_text[:4000],
+        story_category=story.get("category") or "transfer_rumour",
+        hero_image_url=hero_img,
+        candidate_images=cand_imgs[:10],
+        article_urls=art_urls[:5],
     )
     return _finalize_dossier(dossier, headline, protagonist)

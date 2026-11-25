@@ -21,7 +21,7 @@ from pathlib import Path
 from typing import List, Dict, Any, Optional
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
-DB_PATH = PROJECT_ROOT / "data" / "news.db"
+DB_PATH = PROJECT_ROOT / "data" / "beta_news.db"
 
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
@@ -188,7 +188,7 @@ def search_local_db(keywords: List[str], limit: int = 4) -> List[Dict[str, Any]]
             
             # Must match at least one keyword in the TITLE
             sql = f"""
-                SELECT title, source, url, published_at, raw_text
+                SELECT title, source, url, published_at, raw_text, hero_image_url
                 FROM articles
                 WHERE {' OR '.join(conditions)}
                 ORDER BY published_at DESC
@@ -211,6 +211,8 @@ def search_local_db(keywords: List[str], limit: int = 4) -> List[Dict[str, Any]]
                     "timestamp": parse_date_to_timestamp(pub),
                     "reliability_tier": determine_reliability_tier(source, url),
                     "article_text": text,
+                    "raw_text": text,
+                    "hero_image_url": r["hero_image_url"] if "hero_image_url" in r.keys() else None,
                     "search_source": "DB_ARCHIVE"
                 })
     except Exception as e:

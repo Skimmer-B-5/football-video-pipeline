@@ -196,6 +196,16 @@ Reply ONLY valid JSON: {{"approved": true/false, "reason": "..."}}"""
         ent_low = ent.lower()
         is_venue_shot = any(k in ent_low for k in ("stadium", "cottage", "trafford", "anfield", "emirates", "bernabeu", "arena", "matchday", "park", "bridge"))
 
+        # 0. GPU Person / Sports-Ball Object Detection & Pixel Content Awareness
+        scene_objects = det_engine.detect_scene_objects(cv_bgr)
+        self._last_scene_objects = scene_objects
+        aware_ok, aware_reason, aware_metrics = det_engine.evaluate_content_awareness(
+            cv_bgr, strategy=spec.crop_strategy, is_venue=is_venue_shot, objects=scene_objects
+        )
+        self._last_content_metrics = aware_metrics
+        if not aware_ok:
+            return False, f"Content Awareness Reject: {aware_reason}"
+
         # 1. S01 Protagonist Concealment Enforcement (Pixels)
         if spec.scene_id == "S01" and protagonist_name:
             prot_match, prot_sim, _ = det_engine.verify_face_identity(cv_bgr, protagonist_name, threshold=0.28)
@@ -240,12 +250,14 @@ Reply ONLY valid JSON: {{"approved": true/false, "reason": "..."}}"""
         out_path: Path,
         ledger: Optional[Any] = None,
         protagonist_name: str = "",
-        story_id: str = ""
+        story_id: str = "",
+        extra_candidate_urls: Optional[List[str]] = None,
+        out_audit: Optional[Dict[str, Any]] = None,
     ) -> bool:
         """
         Finds, verifies, crops, and locks in a verified photo for this exact shot spec.
         Guarantees zero image reuse (URL + SHA256 + dHash), pixel identity matching,
-        blur floor, and X/Y safe-zone framing.
+        CUDA person/ball content awareness, blur floor, and X/Y safe-zone framing.
         """
         print(f"\n[Inspector] Auditing Shot {spec.shot_id} [{spec.role}]: Target '{spec.primary_entity}'")
         self._meta_llm_calls = 0
@@ -253,24 +265,55 @@ Reply ONLY valid JSON: {{"approved": true/false, "reason": "..."}}"""
 
         candidates = []
 
-        # If manager shot (or stadium shot), Wikipedia official archive often has authentic high-res images!
-        ent_low = spec.primary_entity.lower()
+        # Tier 0: Exact Scraped Article Hero / Candidate Images (skip protagonist beats if S01 anonymity active)
+        if extra_candidate_urls and spec.scene_id != "S01":
+            for eu in extra_candidate_urls:
+                if eu and not self.sourcer.is_url_or_hash_used(url=eu):
+                    candidates.append({
+                        "url": eu,
+                        "title": f"{spec.primary_entity} {spec.club_affiliation} article hero photo",
+                        "source": "Scraped Article Hero (Direct)",
+                        "priority": 0,
+                    })
+
+        # Tier 1: ESPN Multi-League Public Media Bank
+        espn_photos = self.sourcer.fetch_espn_photo_bank(spec.primary_entity, spec.club_affiliation, max_results=6)
+        if espn_photos:
+            print(f"  [ESPN Media] Found {len(espn_photos)} match/news photos for '{spec.primary_entity}'")
+            candidates.extend(espn_photos)
+
+        # Tier 2: Wikipedia Official Archive (best for managers/players)
         if spec.crop_strategy in ["portrait", "celebration", "managerial"] and " " in spec.primary_entity:
             wiki_photos = self.sourcer.fetch_wikipedia_player_photos(spec.primary_entity)
             if wiki_photos:
                 print(f"  [Wikipedia Archive] Found {len(wiki_photos)} verified photos for '{spec.primary_entity}'")
                 candidates.extend(wiki_photos)
 
-        # Search Wikimedia Commons
+        # Tier 3: Sports News Article Hero Extraction (Sky Sports, BBC, Guardian, FourFourTwo)
+        if spec.search_queries:
+            news_hero_photos = self.sourcer.search_news_article_images(
+                spec.search_queries[0], avoid_terms=spec.avoid_terms, max_results=6
+            )
+            if news_hero_photos:
+                print(f"  [News Articles] Extracted {len(news_hero_photos)} editorial article hero photos")
+                candidates.extend(news_hero_photos)
+
+        # Tier 4: Wikimedia Commons
         for q in spec.search_queries[:2]:
             commons_photos = self.sourcer.search_wikimedia_commons(q)
             if commons_photos:
                 candidates.extend(commons_photos)
 
-        # Search Bing Full-Res
+        # Tier 5: Bing Full-Res + Social/Editorial Coverage (ESPN FC, Sky, BBC, PL, Fabrizio/Reddit press)
         for q in spec.search_queries:
             bing_photos = self.sourcer.search_bing_full_res(q, avoid_terms=spec.avoid_terms, max_results=10)
             candidates.extend(bing_photos)
+        social_photos = self.sourcer.search_social_editorial_candidates(
+            spec.primary_entity, spec.club_affiliation, avoid_terms=spec.avoid_terms, max_results=8
+        )
+        candidates.extend(social_photos)
+
+        candidates.sort(key=lambda c: int(c.get("priority", 3)))
 
         print(f"  [Discovery] Total candidate images to inspect: {len(candidates)}")
 
@@ -313,18 +356,25 @@ Reply ONLY valid JSON: {{"approved": true/false, "reason": "..."}}"""
                 print(f"    Candidate {idx} rejected by Pixel Gate: {px_reason}")
                 continue
 
-            # Gate E: ActionAwareCropper (Identity-Locked X+Y Safe-Zone, Sharpness, Multi-Player check)
+            # Gate E: ActionAwareCropper (Body+Face+Ball Joint Framing + Wide Broadcast Card fallback)
             preferred_box = getattr(self, "_last_matched_bbox", None)
+            scene_objs = getattr(self, "_last_scene_objects", {}) or {}
+            det_engine = self.cropper.detector
+            matched_body = det_engine.match_face_to_person_box(preferred_box, scene_objs.get("persons", []))
+            top_ball = scene_objs["balls"][0][:4] if scene_objs.get("balls") else None
             passed, final_bgr, crop_audit = self.cropper.crop_candidate(
                 cv_bgr=cv_img,
                 strategy=spec.crop_strategy,
                 preferred_bbox=preferred_box,
+                body_box=matched_body,
+                ball_box=top_ball,
+                person_boxes=scene_objs.get("persons", []),
             )
             if not passed:
                 continue
 
-            # Gate F: Post-Crop Pixel Identity & Anonymity Verification (prevents multi-player bait-and-switch)
-            det_engine = self.cropper.detector
+            # Gate F: Post-Crop Pixel Identity & Anonymity Verification (skip strict post-crop SFace on broadcast_card
+            # ONLY if downscaled inset face < 35px, though 1000x562 inset keeps faces > 60px!)
             ent_name = (spec.primary_entity or "").strip()
             if spec.scene_id == "S01" and protagonist_name:
                 leak_match, leak_sim, _ = det_engine.verify_face_identity(final_bgr, protagonist_name, threshold=0.25)
@@ -336,6 +386,11 @@ Reply ONLY valid JSON: {{"approved": true/false, "reason": "..."}}"""
                 if post_match is False:
                     print(f"    Candidate {idx} rejected Post-Crop: {post_reason}")
                     continue
+
+            crop_audit["content_metrics"] = getattr(self, "_last_content_metrics", {})
+            if out_audit is not None:
+                out_audit.clear()
+                out_audit.update(crop_audit)
 
             # Approved! Save and lock into both asset ledger & zero-reuse registry
             out_path.parent.mkdir(parents=True, exist_ok=True)

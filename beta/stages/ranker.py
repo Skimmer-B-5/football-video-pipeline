@@ -144,6 +144,60 @@ def is_valid_transfer_story(title: str, text: str) -> bool:
 
     return True
 
+def classify_story_category(title: str, text: str = "") -> str:
+    """Classifies breaking story into editorial category for dynamic screenplay pacing."""
+    low = f"{title} {text[:300]}".lower()
+    if any(k in low for k in ("sacked", "sack", "appointed", "appoints", "head coach", "managerial", "replace manager", "new manager")):
+        return "managerial_change"
+    if any(k in low for k in ("acl", "ruled out", "surgery", "sidelined", "injury blow", "months out", "suspended", "ban")):
+        return "injury_crisis"
+    if any(k in low for k in ("signed", "official", "unveiled", "complete", "completed move", "here we go", "agrees permanent")):
+        return "confirmed_deal"
+    if any(k in low for k in ("contract", "extension", "renewal", "new deal", "salary", "release clause")):
+        return "contract_negotiation"
+    if any(k in low for k in ("transfer", "bid", "offer", "talks", "target", "loan", "swap", "pursuit", "interest")):
+        return "transfer_rumour"
+    return "tactical_drama"
+
+
+def _hydrate_top_clusters(clusters_list: List[Dict[str, Any]], max_hydrate: int = 5) -> None:
+    """Hydrates top ranked clusters with full article text & verified og:image hero URLs when sparse."""
+    try:
+        try:
+            from stages.url_scraper import scrape_article_from_url
+        except ModuleNotFoundError:
+            from beta.stages.url_scraper import scrape_article_from_url
+    except Exception:
+        return
+
+    hydrated = 0
+    for cl in clusters_list:
+        if hydrated >= max_hydrate:
+            break
+        existing_text = cl.get("raw_text") or cl.get("sample_text") or ""
+        urls = [u for u in (cl.get("article_urls") or [cl.get("url")]) if u and "news.google.com/rss/articles/" not in u]
+        if not urls or (len(existing_text) >= 700 and cl.get("hero_image_url")):
+            continue
+        for u in urls[:2]:
+            try:
+                art = scrape_article_from_url(u, timeout=7)
+                if art.get("raw_text") and len(art["raw_text"]) > len(existing_text):
+                    cl["raw_text"] = art["raw_text"]
+                    cl["sample_text"] = art["raw_text"][:350]
+                if not cl.get("hero_image_url") and art.get("image_url"):
+                    cl["hero_image_url"] = art["image_url"]
+                cand_imgs = art.get("candidate_images") or []
+                if cand_imgs:
+                    cl.setdefault("candidate_images", [])
+                    for ci in cand_imgs:
+                        if ci not in cl["candidate_images"]:
+                            cl["candidate_images"].append(ci)
+                hydrated += 1
+                break
+            except Exception:
+                continue
+
+
 def cluster_and_rank() -> List[Dict[str, Any]]:
     """Cluster stories, compute deterministic reliability tiers, and rank top stories."""
     with ResourceTracker("Ranker"):
@@ -156,11 +210,18 @@ def cluster_and_rank() -> List[Dict[str, Any]]:
         max_age_hours = config.get("ranking", {}).get("max_article_age_hours", 72.0)
 
         with get_db_connection() as conn:
-            rows = conn.execute("""
-                SELECT id, hash, title, source, url, published_at, raw_text, scraped_at
-                FROM articles
-                ORDER BY id DESC LIMIT 250
-            """).fetchall()
+            try:
+                rows = conn.execute("""
+                    SELECT id, hash, title, source, url, published_at, raw_text, hero_image_url, scraped_at
+                    FROM articles
+                    ORDER BY id DESC LIMIT 250
+                """).fetchall()
+            except Exception:
+                rows = conn.execute("""
+                    SELECT id, hash, title, source, url, published_at, raw_text, scraped_at
+                    FROM articles
+                    ORDER BY id DESC LIMIT 250
+                """).fetchall()
 
         if not rows:
             print("[Ranker] No articles found in database.")
@@ -261,19 +322,28 @@ def cluster_and_rank() -> List[Dict[str, Any]]:
                         WHERE id = ?
                     """, (cluster_idx, tier, final_score, item["id"]))
 
+                hero_img = next((it.get("hero_image_url") for it in cl if it.get("hero_image_url")), None)
+                art_urls = [it["url"] for it in cl if it.get("url")]
+                story_cat = classify_story_category(representative["title"], representative["raw_text"] or "")
+
                 cluster_info = {
                     "cluster_id": cluster_idx,
                     "representative_id": representative["id"],
                     "headline": representative["title"],
                     "source": representative["source"],
                     "url": representative["url"],
+                    "article_urls": art_urls[:5],
+                    "hero_image_url": hero_img,
+                    "candidate_images": [hero_img] if hero_img else [],
+                    "category": story_cat,
                     "published_at": representative["published_at"],
                     "reliability_tier": tier,
                     "source_count": source_count,
                     "sources": list(sources),
                     "ranking_score": final_score,
                     "recency_factor": round(recency_factor, 3),
-                    "sample_text": representative["raw_text"][:250]
+                    "raw_text": representative["raw_text"] or "",
+                    "sample_text": (representative["raw_text"] or "")[:350]
                 }
                 ranked_clusters.append(cluster_info)
 
@@ -282,10 +352,14 @@ def cluster_and_rank() -> List[Dict[str, Any]]:
                     "representative_id": representative["id"],
                     "headline": representative["title"],
                     "tier": tier,
+                    "category": story_cat,
                     "tier_rationale": "Tier 1 outlet or >=3 sources" if tier == "confirmed" else ("2 credible sources" if tier == "credible" else "Single source / unverified"),
                     "source_count": source_count,
                     "sources": list(sources),
                     "url": representative["url"],
+                    "article_urls": art_urls[:5],
+                    "hero_image_url": hero_img,
+                    "candidate_images": [hero_img] if hero_img else [],
                     "recency_factor": round(recency_factor, 3),
                     "score": final_score,
                     "raw_text": representative["raw_text"]
@@ -296,10 +370,17 @@ def cluster_and_rank() -> List[Dict[str, Any]]:
         # Sort clusters by deterministic base score descending
         ranked_clusters.sort(key=lambda x: x["ranking_score"], reverse=True)
         ranked_clusters = rerank_with_llm(ranked_clusters, top_k=10)
+        _hydrate_top_clusters(ranked_clusters, max_hydrate=5)
         score_by_id = {c["cluster_id"]: c["ranking_score"] for c in ranked_clusters}
+        ledger_by_id = {c["cluster_id"]: c for c in ranked_clusters}
         for entry in ranking_ledger:
-            if entry["cluster_id"] in score_by_id:
-                entry["score"] = score_by_id[entry["cluster_id"]]
+            cid = entry["cluster_id"]
+            if cid in score_by_id:
+                entry["score"] = score_by_id[cid]
+            if cid in ledger_by_id:
+                entry["raw_text"] = ledger_by_id[cid].get("raw_text") or entry.get("raw_text", "")
+                entry["hero_image_url"] = ledger_by_id[cid].get("hero_image_url") or entry.get("hero_image_url")
+                entry["candidate_images"] = ledger_by_id[cid].get("candidate_images") or entry.get("candidate_images", [])
         ranking_ledger.sort(key=lambda x: x["score"], reverse=True)
 
         EVIDENCE_DIR.mkdir(parents=True, exist_ok=True)

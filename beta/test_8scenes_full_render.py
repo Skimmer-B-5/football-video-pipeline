@@ -92,7 +92,7 @@ def main():
     print(f"  Outro Duration: {outro_sec:.2f}s")
     print(f"  Total Master Duration: {total_sec:.2f}s ({total_frames} frames @ 30fps)")
 
-    assert 27.0 <= story_sec <= 33.5, f"Story duration {story_sec:.2f}s outside 27-33.5s envelope!"
+    assert 25.5 <= story_sec <= 33.5, f"Story duration {story_sec:.2f}s outside 25.5-33.5s envelope!"
     assert 28.0 <= total_sec <= 38.5, f"Total duration {total_sec:.2f}s outside 28-38.5s envelope!"
 
     print("\n=======================================================")

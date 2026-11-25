@@ -101,6 +101,47 @@ def build_subtitles_from_scenes(
 
     return subtitles
 
+
+_SPOKEN_NUM_WORDS = {
+    "5": "five", "10": "ten", "12": "twelve", "15": "fifteen", "20": "twenty",
+    "25": "twenty five", "30": "thirty", "35": "thirty five", "40": "forty",
+    "45": "forty five", "50": "fifty", "55": "fifty five", "60": "sixty",
+    "65": "sixty five", "70": "seventy", "75": "seventy five", "80": "eighty",
+    "90": "ninety", "100": "one hundred", "120": "one hundred twenty", "150": "one hundred fifty"
+}
+
+
+def normalize_spoken_broadcast_text(text: str) -> str:
+    """Normalizes currencies, shorthand (£30M -> thirty million pounds), and dashes for natural TTS cadence."""
+    import re
+    out = (text or "").replace("—", " ").replace("–", " ").replace("--", " ")
+    def _curr_repl(m):
+        sym, num_str, scale = m.group(1), m.group(2), (m.group(3) or "").lower()
+        unit = "pounds" if sym == "£" else ("euros" if sym == "€" else "dollars")
+        word_num = _SPOKEN_NUM_WORDS.get(num_str, num_str)
+        if scale.startswith("m"):
+            return f"{word_num} million {unit}"
+        if scale.startswith("k"):
+            return f"{word_num} thousand {unit}"
+        return f"{word_num} {unit}"
+    out = re.sub(r"([£€$])\s*(\d+)\s*([mMkK]|million|thousand)?\b", _curr_repl, out)
+    return re.sub(r"\s+", " ", out).strip()
+
+
+def _get_category_beats_guidance(category: str) -> str:
+    cat = (category or "transfer_rumour").lower()
+    mapping = {
+        "managerial_change": "Focus beats on S01 boardroom storm (conceal name), S02 coach reveal, S03 dressing-room/results cause, S04 board verdict & terms, S05 club statement/candidates, S06 rival reaction, S07 stay vs new appointment dilemma.",
+        "injury_crisis": "Focus beats on S01 locker-room shock (conceal name), S02 player injury reveal, S03 scan/recovery timeline, S04 missed key fixtures, S05 manager tactical headache, S06 replacement options, S07 can they survive without him dilemma.",
+        "confirmed_deal": "Focus beats on S01 secret framework done (conceal name), S02 official unveil reveal, S03 confirmed club agreement, S04 reported fee & contract length, S05 selling/buying manager tactical plan, S06 fan reaction, S07 instant starter or risky gamble dilemma.",
+        "contract_negotiation": "Focus beats on S01 club dressing-room pressure (conceal name), S02 star identity & expiry tension, S03 rival suitors circling, S04 contract/salary gap, S05 manager stance, S06 player's demands, S07 sign extension or leave on transfer dilemma.",
+    }
+    return mapping.get(
+        cat,
+        "Focus beats on S01 high-stakes club tension (conceal name), S02 dramatic player reveal, S03 suitor move, S04 financial valuation, S05 managerial resistance, S06 squad/player reality, S07 stay vs switch closing dilemma."
+    )
+
+
 class GeneralizedBroadcastPipeline:
     def __init__(self, dossier: StoryDossier, run_id: str = "run_v7_1"):
         self.dossier = dossier
@@ -122,131 +163,236 @@ class GeneralizedBroadcastPipeline:
         
         # 1. Try LLM generation if directive provided or for dynamic initial generation
         try:
+            import re
             from stages.groq_client import call_groq_chat
-            sys_prompt = """You are an elite British sports news television editor producing a high-impact 8-scene screenplay (7 story scenes + 1 ending card outro) for a 30-second television short (classic British sports desk style).
+            from stages.editorial_policy import OpeningSecrecyValidator, BANNED_CLICHES
+            from stages.fact_checker import FactChecker
 
-EDITORIAL & VOCAL GUIDELINES:
-CRITICAL RUNTIME MANDATE: The 7 story scenes (S01–S07) MUST be completed in approximately 26–28 seconds (~56–62 spoken words total). Each beat is a concise, punchy sentence (7–9 words).
-1. S01 (The Hook & Concealment): 7–9 WORDS. MUST conceal protagonist's identity (minimum 4.0s anonymity). Club tension/pressure.
-2. S02 (The Reveal): 7–9 WORDS. Explicitly name the protagonist with energetic pickup ("And Calvin Bassey faces..."). DO NOT USE EM-DASHES OR HYPHENS.
-3. S03 (The Suitor Move): 7–9 WORDS. Detail the pursuing club / suitor actively circling or bidding.
-4. S04 (The Figures): 7–9 WORDS. State the reported transfer fee or financial package.
-5. S05 (The Managerial Stand): 7–9 WORDS. Manager's firm resistance or board instructions.
-6. S06 (Player Stance & Status): 7–9 WORDS. Player contract perspective or complication.
-7. S07 (The Closing Dilemma): 8–10 WORDS. Must include an "OR" / "AND" choice between the two sides. Example: "So will Silva keep his defensive anchor, or will United force the move?" DO NOT USE EM-DASHES.
-8. outro: EXACTLY 10 WORDS (Scene 8, Ending Card): "This is football in thirty seconds. Follow for daily transfer updates."
-9. VOCAL CADENCE: Fast-paced 145 WPM cadence, punchy, authoritative delivery. ZERO whooshes, NO em-dashes.
+            category = getattr(d, "story_category", "transfer_rumour") or "transfer_rumour"
+            cat_guide = _get_category_beats_guidance(category)
+            blocked_names = (
+                FactChecker.get_obsolete_managers(d.current_club) +
+                FactChecker.get_obsolete_managers(d.pursuing_club)
+            )
+            article_ctx = (getattr(d, "raw_article_text", "") or "").strip()[:2200]
+
+            sys_prompt = f"""You are an elite British sports news television editor producing a high-impact 8-scene screenplay (7 story scenes + 1 ending card outro) for a 30-second broadcast short.
+
+EDITORIAL, GROUNDING & VOCAL MANDATES:
+1. STORY CATEGORY ({category.upper()}): {cat_guide}
+2. RUNTIME WORD BUDGET: 54–64 spoken words TOTAL across S01–S07 (7–9 words per beat). Fast 145 WPM studio punch.
+3. MANDATORY S01 SECRECY (MINIMUM 4.0s ANONYMITY):
+   - S01 MUST NOT name the protagonist in spoken_narration, on_screen.headline, on_screen.subheadline, or on_screen.kicker!
+4. SPOKEN NUMBER CLARITY FOR VOICE ENGINE:
+   - Inside "spoken_narration", write currencies & shorthand in clean spoken words ("thirty million pounds", NOT "£30M" or "30m"). Keep crisp symbols ("£30M") inside "on_screen" ONLY.
+   - NO em-dashes (—), NO hyphens as pauses, ZERO clickbait clichés ("the catch?", "bombshell", "changes everything", "you won't believe").
+5. FACTUAL ACCURACY: Use ONLY facts explicitly stated in the dossier & source article below. NEVER invent contract expiry years, fees, or quotes, and NEVER mention obsolete managers ({', '.join(blocked_names) if blocked_names else 'none'}).
+6. TELEMETRY CALLOUTS: On S03 or S04, when concrete fees, durations, or clauses exist in the article/dossier, set concise "data_callout" (e.g. "£30M + £5M ADD-ONS") and optionally structured "infographic" summary.
+7. outro: EXACTLY "This is football in thirty seconds. Follow for daily transfer updates."
 
 Output ONLY valid JSON matching this schema:
-{
+{{
   "scenes": [
-    {
+    {{
       "scene_id": "S01",
       "spoken_narration": "...",
-      "on_screen": {"kicker": "● TRANSFER REPORT", "headline": "...", "subheadline": "...", "status_badge": "DEVELOPING"}
-    },
-    {
+      "transition_hint": "clean_hard_cut",
+      "on_screen": {{"kicker": "TRANSFER WATCH", "headline": "UPPERCASE TITLE (NO PLAYER NAME)", "subheadline": "...", "status_badge": "DEVELOPING", "data_callout": null}}
+    }},
+    {{
       "scene_id": "S02",
-      "spoken_narration": "...",
-      "on_screen": {"kicker": "● PROPOSED PACKAGE", "headline": "...", "subheadline": "...", "status_badge": "REVEALED"}
-    },
-    {
+      "spoken_narration": "And ...",
+      "transition_hint": "camera_flash",
+      "on_screen": {{"kicker": "REVEAL", "headline": "...", "subheadline": "...", "status_badge": "REVEALED", "data_callout": null}}
+    }},
+    {{
       "scene_id": "S03",
       "spoken_narration": "...",
-      "on_screen": {"kicker": "● SUITOR INTEREST", "headline": "...", "subheadline": "...", "status_badge": "REPORTED"}
-    },
-    {
+      "transition_hint": "whip_pan",
+      "on_screen": {{"kicker": "THE MOVE", "headline": "...", "subheadline": "...", "status_badge": "REPORTED", "data_callout": null}}
+    }},
+    {{
       "scene_id": "S04",
       "spoken_narration": "...",
-      "on_screen": {"kicker": "● DEAL CLAUSE", "headline": "...", "subheadline": "...", "status_badge": "UNAGREED"}
-    },
-    {
+      "transition_hint": "document_snap",
+      "on_screen": {{"kicker": "THE FIGURES", "headline": "...", "subheadline": "...", "status_badge": "UNAGREED", "data_callout": "SHORT STAT OR FEE"}}
+    }},
+    {{
       "scene_id": "S05",
       "spoken_narration": "...",
-      "on_screen": {"kicker": "● MANAGERIAL STAND", "headline": "...", "subheadline": "...", "status_badge": "DEVELOPING"}
-    },
-    {
+      "transition_hint": "shutter_wipe",
+      "on_screen": {{"kicker": "CLUB STANCE", "headline": "...", "subheadline": "...", "status_badge": "DEVELOPING", "data_callout": null}}
+    }},
+    {{
       "scene_id": "S06",
       "spoken_narration": "...",
-      "on_screen": {"kicker": "● SITUATION UPDATE", "headline": "...", "subheadline": "...", "status_badge": "OFFICIAL"}
-    },
-    {
+      "transition_hint": "cross_dissolve",
+      "on_screen": {{"kicker": "THE REALITY", "headline": "...", "subheadline": "...", "status_badge": "OFFICIAL", "data_callout": null}}
+    }},
+    {{
       "scene_id": "S07",
-      "spoken_narration": "...",
-      "on_screen": {"kicker": "● THE VERDICT", "headline": "...", "subheadline": "...", "status_badge": "EDITORIAL"}
-    },
-    {
+      "spoken_narration": "... or ...?",
+      "transition_hint": "whip_pan",
+      "on_screen": {{"kicker": "THE VERDICT", "headline": "...", "subheadline": "...", "status_badge": "EDITORIAL", "data_callout": null}}
+    }},
+    {{
       "scene_id": "outro",
       "spoken_narration": "This is football in thirty seconds. Follow for daily transfer updates.",
-      "on_screen": {"headline": "THIS IS FOOTBALL IN 30 SECONDS", "kicker": "FOLLOW FOR MORE"}
-    }
+      "on_screen": {{"headline": "THIS IS FOOTBALL IN 30 SECONDS", "kicker": "FOLLOW FOR MORE"}}
+    }}
   ]
-}
-"""
+}}"""
             pursuing_mgr = getattr(d, "pursuing_manager", "") or "Unknown"
             curr_std = getattr(d, "current_stadium", "") or ""
             suitor_std = getattr(d, "pursuing_stadium", "") or ""
             fan_reactions = getattr(d, "fan_reactions", []) or []
 
             user_prompt = f"""STORY HEADLINE: {d.main_headline}
+CATEGORY: {category}
 PROTAGONIST: {d.protagonist_name}
 CURRENT CLUB: {d.current_club}{f" (Stadium: {curr_std})" if curr_std else ""}
-PURSUING CLUB / SUITOR: {d.pursuing_club} (Current Manager: {pursuing_mgr}{f", Stadium: {suitor_std}" if suitor_std else ""})
+PURSUING CLUB / RIVAL: {d.pursuing_club} (Current Manager: {pursuing_mgr}{f", Stadium: {suitor_std}" if suitor_std else ""})
 CURRENT MANAGER: {d.current_manager}
-REPORTED FEE: {d.reported_base_fee}
+REPORTED FEE: {d.reported_base_fee} (Bonuses: {d.reported_bonuses})
 COMPLICATION: {d.complication}
+SOURCES: {', '.join(d.reporting_sources or ['Football Desk'])}
 """
+            if article_ctx:
+                user_prompt += f"\nFULL VERIFIED SOURCE ARTICLE CONTEXT:\n{article_ctx}\n"
             if fan_reactions:
-                user_prompt += "\nVERIFIED FAN REACTIONS (Reddit/Fans - use authentic sentiment, do NOT invent quotes):\n"
+                user_prompt += "\nVERIFIED FAN REACTIONS (Reddit/Fans - capture genuine sentiment, do NOT fabricate quotes):\n"
                 for fr in fan_reactions[:4]:
                     user_prompt += f"- {fr}\n"
             if prior_script:
                 user_prompt += f"\nPREVIOUS SCRIPT DRAFT:\n{prior_script}\n"
             if user_directive:
                 user_prompt += f"\nUSER DIRECTIVE & EDITORIAL CRITIQUE:\n\"{user_directive}\"\n"
-                user_prompt += "Rebuild the entire 5-beat dual-script to directly address the user's critique above, incorporating their instructions seamlessly into the broadcast."
+                user_prompt += "Rebuild the entire 8-scene script to directly address the user's critique above seamlessly."
+
+            def _parse_json_payload(txt: Optional[str]) -> Optional[Dict[str, Any]]:
+                if not txt:
+                    return None
+                clean_t = re.sub(r'^```json\s*', '', txt.strip(), flags=re.MULTILINE)
+                clean_t = re.sub(r'```$', '', clean_t.strip(), flags=re.MULTILINE)
+                match_j = re.search(r'\{.*\}', clean_t, re.DOTALL)
+                if not match_j:
+                    return None
+                cand_j = re.sub(r',\s*([\]\}])', r'\1', match_j.group(0))
+                return json.loads(cand_j)
 
             raw = call_groq_chat(
                 system_prompt=sys_prompt,
                 user_prompt=user_prompt,
                 preferred_model=CONFIGURED_LLM_MODEL,
                 fallback_model=CONFIGURED_LLM_FALLBACK,
-                temperature=0.3,
-                timeout=12
+                temperature=0.25,
+                timeout=15
             )
-            if raw:
-                import re
-                clean_raw = re.sub(r'^```json\s*', '', raw.strip(), flags=re.MULTILINE)
-                clean_raw = re.sub(r'```$', '', clean_raw.strip(), flags=re.MULTILINE)
-                m = re.search(r'\{.*\}', clean_raw, re.DOTALL)
-                if m:
-                    m_text = m.group(0)
-                    # Clean trailing commas
-                    m_text_clean = re.sub(r',\s*([\]\}])', r'\1', m_text)
-                    try:
-                        parsed = json.loads(m_text_clean)
-                    except Exception:
-                        parsed = json.loads(m_text)
+            parsed = _parse_json_payload(raw)
 
-                    if parsed.get("scenes") and len(parsed["scenes"]) >= 5:
-                        # Normalize scene_ids to lower/canonical (e.g. OUTRO -> outro)
-                        for sc in parsed["scenes"]:
-                            if sc.get("scene_id", "").upper() == "OUTRO":
-                                sc["scene_id"] = "outro"
+            if parsed and parsed.get("scenes") and len(parsed["scenes"]) >= 5:
+                # Deterministic pre-audit (Secrecy, Banned Clichés, Obsolete Managers, Word Budget)
+                def _audit_scenes(sc_list: List[Dict[str, Any]]) -> List[str]:
+                    issues: List[str] = []
+                    name_tokens = [d.protagonist_name] + [p for p in d.protagonist_name.split() if len(p) > 2]
+                    s01_obj = next((s for s in sc_list if s.get("scene_id") == "S01"), None)
+                    if s01_obj:
+                        ok_sec, sec_v = OpeningSecrecyValidator.validate_opening_secrecy(
+                            {"narration": s01_obj.get("spoken_narration", ""), "on_screen": s01_obj.get("on_screen", {})},
+                            name_tokens
+                        )
+                        if not ok_sec:
+                            issues.extend(sec_v)
+                    story_words = 0
+                    for s in sc_list:
+                        sid_u = str(s.get("scene_id", "")).upper()
+                        narr = s.get("spoken_narration", "")
+                        if sid_u != "OUTRO":
+                            story_words += len(narr.split())
+                        low_n = narr.lower()
+                        for cl in BANNED_CLICHES:
+                            if cl in low_n:
+                                issues.append(f"Banned cliché '{cl}' in {s.get('scene_id')}")
+                        for obs in blocked_names:
+                            if obs and obs.lower() in low_n:
+                                issues.append(f"Obsolete manager '{obs}' in {s.get('scene_id')}")
+                    if story_words < 45 or story_words > 72:
+                        issues.append(f"Story spoken word budget {story_words} out of target 54-64 range")
+                    return issues
 
-                        screenplay_data = {
-                            "story_id": d.story_id,
-                            "master_headline": d.main_headline or f"{d.pursuing_club.upper()} PLOT {d.protagonist_name.upper()} MOVE",
-                            "kicker": d.headline_kicker,
-                            "ticker_text": d.ticker_text or f"{d.reporting_sources[0] if d.reporting_sources else 'TRANSFER DESK'}: {d.pursuing_club} PREPARE {d.reported_base_fee} PROPOSAL ✦ {d.current_club}: {d.current_manager} RESISTS EXIT ✦",
-                            "llm_model_used": CONFIGURED_LLM_MODEL,
-                            "scenes": parsed["scenes"]
+                audit_issues = _audit_scenes(parsed["scenes"])
+
+                # Pass 2: API Critic & Broadcast Punch-Up Pass (always polish if issues exist OR if full article context present)
+                if audit_issues or len(article_ctx) > 300:
+                    critic_prompt = (
+                        f"Audit & tighten this draft broadcast JSON for '30 Football Plus'.\n"
+                        f"FIX THESE SPECIFIC AUDIT ISSUES: {audit_issues or ['None - tighten punchiness, factual specificity from the source article, and S07 choice clarity']}\n"
+                        f"CONSTRAINTS: Keep S01 100% free of protagonist name '{d.protagonist_name}', keep total S01-S07 spoken words between 54-62 words, spell out currency/abbreviations in spoken_narration (never '£30M', say 'thirty million pounds'), zero em-dashes, zero clichés.\n"
+                        f"SOURCE FACTS:\nHeadline: {d.main_headline}\nArticle Excerpt: {article_ctx[:1400]}\n"
+                        f"DRAFT JSON:\n{json.dumps(parsed, ensure_ascii=False)}\n\nReturn ONLY improved valid JSON matching the exact same schema."
+                    )
+                    crit_raw = call_groq_chat(
+                        system_prompt="You are a ruthless senior BBC/Sky broadcast sub-editor. Output ONLY valid JSON.",
+                        user_prompt=critic_prompt,
+                        preferred_model=CONFIGURED_LLM_FALLBACK,
+                        fallback_model=CONFIGURED_LLM_MODEL,
+                        temperature=0.15,
+                        timeout=14,
+                    )
+                    crit_parsed = _parse_json_payload(crit_raw)
+                    if crit_parsed and crit_parsed.get("scenes") and len(crit_parsed["scenes"]) == len(parsed["scenes"]):
+                        crit_issues = _audit_scenes(crit_parsed["scenes"])
+                        if len(crit_issues) <= len(audit_issues):
+                            parsed = crit_parsed
+                            print(f"  [API Critic Pass 2] Refined script cleanly (issues {len(audit_issues)} -> {len(crit_issues)})")
+
+                for sc in parsed["scenes"]:
+                    if str(sc.get("scene_id", "")).upper() == "OUTRO":
+                        sc["scene_id"] = "outro"
+                    else:
+                        sc["spoken_narration"] = normalize_spoken_broadcast_text(sc.get("spoken_narration", ""))
+                    on_s = sc.get("on_screen") or {}
+                    if isinstance(on_s, dict) and on_s.get("kicker"):
+                        on_s["kicker"] = re.sub(r"^[●•○\s]+", "", str(on_s["kicker"])).strip()
+                    if not isinstance(on_s, dict) or not on_s.get("source_credit"):
+                        if isinstance(on_s, dict) and d.reporting_sources:
+                            on_s["source_credit"] = d.reporting_sources[0]
+
+                # Programmatically enforce S01 secrecy & infographic attachment on S04 if verified fee present
+                s01_sc = next((s for s in parsed["scenes"] if s.get("scene_id") == "S01"), None)
+                if s01_sc:
+                    for tok in ([d.protagonist_name] + [p for p in d.protagonist_name.split() if len(p) > 2]):
+                        s01_sc["spoken_narration"] = re.sub(rf"\b{re.escape(tok)}\b", "their key star", s01_sc.get("spoken_narration", ""), flags=re.I)
+                s04_sc = next((s for s in parsed["scenes"] if s.get("scene_id") == "S04"), None)
+                if s04_sc and d.reported_base_fee and "undisclosed" not in d.reported_base_fee.lower():
+                    s04_sc["visual"] = {
+                        "kind": "transfer_fee_graphic",
+                        "infographic_data": {
+                            "transfer_fee": {
+                                "guaranteed": d.reported_base_fee,
+                                "add_ons": d.reported_bonuses or "Performance Incentives",
+                                "total_package": f"{d.reported_base_fee} PACKAGE",
+                                "selling_club": d.current_club,
+                                "buying_club": d.pursuing_club,
+                                "structure": d.complication or "Reported Package"
+                            }
                         }
-                        out_file = self.ws.base_dir / "editorial" / "screenplay_dual_script.json"
-                        out_file.parent.mkdir(parents=True, exist_ok=True)
-                        out_file.write_text(json.dumps(screenplay_data, indent=2), encoding="utf-8")
-                        print(f"  [LLM Screenplay] Generated successfully: {out_file}")
-                        return screenplay_data
+                    }
+
+                screenplay_data = {
+                    "story_id": d.story_id,
+                    "story_category": category,
+                    "master_headline": d.main_headline or f"{d.pursuing_club.upper()} PLOT {d.protagonist_name.upper()} MOVE",
+                    "kicker": d.headline_kicker,
+                    "ticker_text": d.ticker_text or f"{d.reporting_sources[0] if d.reporting_sources else 'TRANSFER DESK'}: {d.pursuing_club} PREPARE {d.reported_base_fee} PROPOSAL ✦ {d.current_club}: {d.current_manager} RESISTS EXIT ✦",
+                    "llm_model_used": CONFIGURED_LLM_MODEL,
+                    "scenes": parsed["scenes"]
+                }
+                out_file = self.ws.base_dir / "editorial" / "screenplay_dual_script.json"
+                out_file.parent.mkdir(parents=True, exist_ok=True)
+                out_file.write_text(json.dumps(screenplay_data, indent=2), encoding="utf-8")
+                print(f"  [LLM Screenplay V2] Generated & audited successfully ({category}): {out_file}")
+                return screenplay_data
         except Exception as err:
             print(f"[Screenplay] LLM generation note ({err}), using canonical template...")
 
@@ -386,16 +532,43 @@ COMPLICATION: {d.complication}
                 remainder = dur_f % num_shots
 
                 rem_shots = []
-                for idx, img_path in enumerate(raw_shots):
+                for idx, shot_item in enumerate(raw_shots):
                     s_dur = base_shot_dur + (remainder if idx == num_shots - 1 else 0)
-                    rem_shots.append({
-                        "image_path": img_path,
-                        "durationInFrames": s_dur
-                    })
+                    if isinstance(shot_item, dict):
+                        shot_dict = {
+                            "image_path": shot_item["image_path"],
+                            "durationInFrames": s_dur,
+                            "focal_x": shot_item.get("focal_x", 50.0),
+                            "focal_y": shot_item.get("focal_y", 25.0),
+                            "framing_mode": shot_item.get("framing_mode", "full_bleed"),
+                            "pan_direction": shot_item.get("pan_direction", "center"),
+                        }
+                    else:
+                        shot_dict = {
+                            "image_path": shot_item,
+                            "durationInFrames": s_dur,
+                            "focal_x": 50.0,
+                            "focal_y": 25.0,
+                            "framing_mode": "full_bleed",
+                            "pan_direction": "center",
+                        }
+                    rem_shots.append(shot_dict)
 
                 # Validate shot duration reconciliation
                 sum_shot_f = sum(s["durationInFrames"] for s in rem_shots)
                 assert sum_shot_f == dur_f, f"Scene {sid} shot frames ({sum_shot_f}) != scene duration frames ({dur_f})"
+
+                first_mode = rem_shots[0].get("framing_mode", "full_bleed") if rem_shots else "full_bleed"
+                if sid == "S07" and len(rem_shots) >= 2:
+                    motion_cfg = {"type": "split_duel"}
+                elif first_mode == "pan_horizontal":
+                    motion_cfg = {"type": "slow_pan", "direction": rem_shots[0].get("pan_direction", "right")}
+                elif sid == "S02":
+                    motion_cfg = {"type": "pop_in"}
+                elif sid in ("S03", "S05"):
+                    motion_cfg = {"type": "slow_pan"}
+                else:
+                    motion_cfg = {"type": "subtle_push_in"}
 
                 scenes_props.append({
                     "scene_id": sid,
@@ -407,7 +580,9 @@ COMPLICATION: {d.complication}
                     "image_path": rem_shots[0]["image_path"] if rem_shots else None,
                     "shots": rem_shots,
                     "on_screen": sc_script["on_screen"],
-                    "motion": {"type": "subtle_push_in" if sid != "S03" else "static"}
+                    "visual": sc_script.get("visual"),
+                    "transition_hint": sc_script.get("transition_hint"),
+                    "motion": motion_cfg,
                 })
             else:
                 scenes_props.append({
@@ -422,6 +597,13 @@ COMPLICATION: {d.complication}
                     "on_screen": sc_script["on_screen"],
                     "motion": {"type": "static"}
                 })
+
+        # Decorate scenes with purposeful editorial transitions (camera_flash, whip_pan, document_snap, shutter_wipe, cross_dissolve)
+        try:
+            from stages.transition_engine import TransitionDirector
+        except ModuleNotFoundError:
+            from beta.stages.transition_engine import TransitionDirector
+        scenes_props = TransitionDirector.plan_transitions_for_scenes(scenes_props)
 
         # Speech-aligned subtitles via shared helper (reused across EN / ES-419 / PT-BR)
         subtitles = build_subtitles_from_scenes(scenes_props, audio_data["scenes"], chunk_size=4)

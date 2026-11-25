@@ -4,7 +4,6 @@ import { FootballShortProps } from "./types";
 import { TopHUD } from "./components/TopHUD";
 import { BackgroundMedia } from "./components/BackgroundMedia";
 import { LowerThird } from "./components/LowerThird";
-import { InfographicDirector } from "./components/infographics/InfographicDirector";
 import { SubtitleCard } from "./components/SubtitleCard";
 import { RollingTicker } from "./components/RollingTicker";
 import { RetroOverlay } from "./components/RetroOverlay";
@@ -60,11 +59,12 @@ export const FootballShort: React.FC<FootballShortProps> = ({
               />
             ) : (
               <>
-                {/* Full-Height Football Photography / Background Media */}
+                {/* Full-Height Football Photography / Focal-Aware & Split-Duel Placement */}
                 <BackgroundMedia
                   imagePath={scene.image_path}
                   shots={scene.shots}
                   motion={scene.motion}
+                  transitionIn={scene.transition_in}
                   durationInFrames={scene.durationInFrames}
                 />
 

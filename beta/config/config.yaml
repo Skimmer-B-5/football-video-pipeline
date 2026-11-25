@@ -46,8 +46,28 @@ feeds:
     type: "html"
     tier_weight: 0.90
   - name: "ESPN FC"
-    url: "https://site.api.espn.com/apis/site/v2/sports/soccer/eng.1/news"
+    url: "https://site.api.espn.com/apis/site/v2/sports/soccer/eng.1/news?limit=25"
     type: "espn_json"
+    tier_weight: 0.92
+  - name: "ESPN Champions League"
+    url: "https://site.api.espn.com/apis/site/v2/sports/soccer/uefa.champions/news?limit=20"
+    type: "espn_json"
+    tier_weight: 0.92
+  - name: "ESPN Spain & Italy"
+    url: "https://site.api.espn.com/apis/site/v2/sports/soccer/esp.1/news?limit=15"
+    type: "espn_json"
+    tier_weight: 0.88
+  - name: "ESPN Serie A"
+    url: "https://site.api.espn.com/apis/site/v2/sports/soccer/ita.1/news?limit=15"
+    type: "espn_json"
+    tier_weight: 0.88
+  - name: "ESPN Bundesliga"
+    url: "https://site.api.espn.com/apis/site/v2/sports/soccer/ger.1/news?limit=15"
+    type: "espn_json"
+    tier_weight: 0.88
+  - name: "Bing News Breaking Football"
+    url: "https://www.bing.com/news/search?q=football+(transfer+OR+sacked+OR+signing+OR+contract+OR+injured)+breaking&format=rss"
+    type: "bing_news"
     tier_weight: 0.90
   - name: "Fabrizio & Ornstein Wire"
     url: "https://news.google.com/rss/search?q=(%22Fabrizio+Romano%22+OR+%22David+Ornstein%22)+football+when:2d&hl=en-GB&gl=GB&ceid=GB:en"

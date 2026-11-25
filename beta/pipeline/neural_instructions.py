@@ -49,6 +49,11 @@ class StoryDossier:
     current_stadium: str = ""
     pursuing_stadium: str = ""
     fan_reactions: List[str] = field(default_factory=list)
+    raw_article_text: str = ""
+    story_category: str = "transfer_rumour"
+    hero_image_url: Optional[str] = None
+    candidate_images: List[str] = field(default_factory=list)
+    article_urls: List[str] = field(default_factory=list)
 
 
 # ==============================================================================

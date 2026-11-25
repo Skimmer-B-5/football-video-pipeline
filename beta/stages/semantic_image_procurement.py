@@ -90,6 +90,8 @@ class EnhancedSubjectDetector:
     """
 
     _FACE_EMBEDDING_CACHE: Dict[str, Any] = {}
+    _OBJECT_DETECTOR: Any = None
+    _OBJECT_DETECTOR_DEVICE: str = "cpu"
     _YUNET_PATH = PROJECT_ROOT.parent / "models" / "vision" / "face_detection_yunet_2023mar.onnx"
     _SFACE_PATH = PROJECT_ROOT.parent / "models" / "vision" / "face_recognition_sface_2021dec.onnx"
 
@@ -116,6 +118,153 @@ class EnhancedSubjectDetector:
         if gray_roi.size == 0:
             return 0.0
         return float(cv2.Laplacian(gray_roi, cv2.CV_64F).var())
+
+    @classmethod
+    def _ensure_object_detector(cls):
+        """Lazy-loads CUDA-accelerated FasterRCNN person + sports ball detector."""
+        if cls._OBJECT_DETECTOR is not None:
+            return cls._OBJECT_DETECTOR
+        try:
+            import torch
+            import torchvision
+            device = "cuda" if torch.cuda.is_available() else "cpu"
+            model = torchvision.models.detection.fasterrcnn_mobilenet_v3_large_fpn(weights="DEFAULT").eval()
+            model = model.to(device)
+            cls._OBJECT_DETECTOR = model
+            cls._OBJECT_DETECTOR_DEVICE = device
+            print(f"[SubjectDetector] Loaded FasterRCNN person/ball detector on {device}.")
+        except Exception as e:
+            print(f"[SubjectDetector] FasterRCNN init skipped ({e}); continuing with YuNet/CV.")
+            cls._OBJECT_DETECTOR = False
+        return cls._OBJECT_DETECTOR
+
+    @classmethod
+    def release_gpu_memory(cls):
+        """Moves detector off GPU and clears VRAM before Qwen3-TTS stage loads."""
+        try:
+            import gc
+            import torch
+            if cls._OBJECT_DETECTOR not in (None, False):
+                cls._OBJECT_DETECTOR.to("cpu")
+                cls._OBJECT_DETECTOR_DEVICE = "cpu"
+            gc.collect()
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
+        except Exception:
+            pass
+
+    def detect_scene_objects(self, cv_bgr: np.ndarray) -> Dict[str, List[Tuple[int, int, int, int, float]]]:
+        """Detects full-body humans (COCO 1) and footballs (COCO 37) with original-pixel coordinates."""
+        result: Dict[str, List[Tuple[int, int, int, int, float]]] = {"persons": [], "balls": []}
+        model = self._ensure_object_detector()
+        if not model:
+            return result
+        try:
+            import torch
+            ih, iw = cv_bgr.shape[:2]
+            max_side = max(iw, ih)
+            scale = min(1.0, 960.0 / float(max_side))
+            if scale < 0.99:
+                small_bgr = cv2.resize(cv_bgr, (int(iw * scale), int(ih * scale)), interpolation=cv2.INTER_AREA)
+            else:
+                small_bgr = cv_bgr
+            rgb = cv2.cvtColor(small_bgr, cv2.COLOR_BGR2RGB)
+            tensor_img = torch.from_numpy(rgb).permute(2, 0, 1).float().div(255.0).to(self._OBJECT_DETECTOR_DEVICE)
+            with torch.no_grad():
+                pred = model([tensor_img])[0]
+            labels = pred["labels"].cpu().tolist()
+            scores = pred["scores"].cpu().tolist()
+            boxes = pred["boxes"].cpu().tolist()
+            inv_s = 1.0 / scale
+            for lbl, sc, (x1, y1, x2, y2) in zip(labels, scores, boxes):
+                bx, by = max(0, int(x1 * inv_s)), max(0, int(y1 * inv_s))
+                bw, bh = max(1, int((x2 - x1) * inv_s)), max(1, int((y2 - y1) * inv_s))
+                if lbl == 1 and sc >= 0.55 and bw * bh >= iw * ih * 0.015:
+                    result["persons"].append((bx, by, bw, bh, round(float(sc), 3)))
+                elif lbl == 37 and sc >= 0.45:
+                    result["balls"].append((bx, by, bw, bh, round(float(sc), 3)))
+            result["persons"].sort(key=lambda b: b[2] * b[3], reverse=True)
+            result["balls"].sort(key=lambda b: b[4], reverse=True)
+        except Exception as e:
+            print(f"[SubjectDetector] Object detection note: {e}")
+        return result
+
+    @staticmethod
+    def match_face_to_person_box(
+        face_bbox: Optional[Tuple[int, int, int, int]],
+        persons: List[Tuple[int, int, int, int, float]]
+    ) -> Optional[Tuple[int, int, int, int]]:
+        """Matches a verified face bounding box to its enclosing full-body person detection."""
+        if not face_bbox or not persons:
+            return None
+        fx, fy, fw, fh = face_bbox
+        fcx, fcy = fx + fw / 2.0, fy + fh / 2.0
+        best_box = None
+        best_area = float("inf")
+        for (px, py, pw, ph, _) in persons:
+            if px - pw * 0.1 <= fcx <= px + pw * 1.1 and py - ph * 0.08 <= fcy <= py + ph * 0.55:
+                area = pw * ph
+                if area < best_area:
+                    best_area = area
+                    best_box = (px, py, pw, ph)
+        return best_box
+
+    def evaluate_content_awareness(
+        self,
+        cv_bgr: np.ndarray,
+        strategy: str = "match_action",
+        is_venue: bool = False,
+        objects: Optional[Dict[str, List[Tuple[int, int, int, int, float]]]] = None
+    ) -> Tuple[bool, str, Dict[str, Any]]:
+        """
+        True visual content awareness check:
+        1. Rejects synthetic screenshots, tweet cards, cartoons, and flat scoreboard overlays.
+        2. Measures green turf pitch coverage and FasterRCNN human/sports-ball presence.
+        3. Validates shot role vs actual pixel contents (action player vs venue vs manager).
+        """
+        ih, iw = cv_bgr.shape[:2]
+        # 1. Synthetic Graphic / Meme / Screenshot Rejection via quantized color dominance & flat-band check
+        small = cv2.resize(cv_bgr, (96, 96), interpolation=cv2.INTER_AREA)
+        quant = (small // 32).reshape(-1, 3)
+        bins = quant[:, 0] * 64 + quant[:, 1] * 8 + quant[:, 2]
+        counts = np.bincount(bins, minlength=512)
+        top3_share = float(np.sort(counts)[-3:].sum()) / float(len(bins))
+
+        # Horizontal line / UI chrome check
+        gray_s = cv2.cvtColor(small, cv2.COLOR_BGR2GRAY)
+        row_diff = np.abs(np.diff(gray_s.astype(np.float32), axis=0)).mean(axis=1)
+        flat_rows_ratio = float((row_diff < 1.5).sum()) / float(len(row_diff))
+
+        if top3_share > 0.78 and flat_rows_ratio > 0.45:
+            return False, f"Synthetic graphic / meme / text screenshot rejected (top3={top3_share:.2f}, flat_rows={flat_rows_ratio:.2f})", {"top3_share": round(top3_share, 3)}
+
+        # 2. HSV Green Pitch Turf Ratio
+        hsv = cv2.cvtColor(small, cv2.COLOR_BGR2HSV)
+        green_mask = (hsv[:, :, 0] >= 32) & (hsv[:, :, 0] <= 90) & (hsv[:, :, 1] >= 40) & (hsv[:, :, 2] >= 35)
+        pitch_ratio = float(green_mask.mean())
+
+        objs = objects if objects is not None else self.detect_scene_objects(cv_bgr)
+        persons = objs.get("persons", [])
+        balls = objs.get("balls", [])
+        max_person_h_ratio = max((p[3] / float(ih) for p in persons), default=0.0)
+        max_person_area_ratio = max(((p[2] * p[3]) / float(iw * ih) for p in persons), default=0.0)
+
+        metrics = {
+            "person_count": len(persons),
+            "ball_count": len(balls),
+            "pitch_ratio": round(pitch_ratio, 3),
+            "top3_color_share": round(top3_share, 3),
+            "max_person_h": round(max_person_h_ratio, 3),
+        }
+
+        if is_venue and max_person_area_ratio > 0.30 and max_person_h_ratio > 0.68:
+            return False, f"Venue shot dominated by foreground portrait (person area {max_person_area_ratio*100:.0f}%)", metrics
+
+        if strategy in ("match_action", "celebration") and self._OBJECT_DETECTOR not in (None, False):
+            if len(persons) == 0 or max_person_h_ratio < 0.22:
+                return False, f"Action shot lacks prominent player subject (persons={len(persons)}, max_h={max_person_h_ratio:.2f})", metrics
+
+        return True, f"Content aware pass (persons={len(persons)}, balls={len(balls)}, turf={pitch_ratio:.2f})", metrics
 
     def detect_yunet_faces(self, cv_bgr: np.ndarray) -> List[Dict[str, Any]]:
         """Detects sharp foreground faces via YuNet CNN with exact landmarks and raw face vector."""

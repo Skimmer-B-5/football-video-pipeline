@@ -101,6 +101,23 @@ def fetch_feed_items(feed_conf: Dict[str, Any]) -> List[Dict[str, Any]]:
 
             best_text = content_encoded if len(content_encoded) > len(description) else description
             cleaned_desc = clean_html(best_text)
+
+            # Extract hero image URL from RSS media tags or inline HTML <img>
+            hero_img = ""
+            for child in item:
+                tag_low = child.tag.lower()
+                if tag_low.endswith("thumbnail") or tag_low.endswith("content") or tag_low == "enclosure":
+                    cand_u = (child.attrib.get("url") or "").strip()
+                    if cand_u.startswith("http") and "logo" not in cand_u.lower():
+                        hero_img = cand_u
+                        break
+            if not hero_img and best_text:
+                im_m = re.search(r'<img[^>]+src=["\'](https?://[^"\']+)["\']', best_text, re.IGNORECASE)
+                if im_m and "logo" not in im_m.group(1).lower():
+                    hero_img = html.unescape(im_m.group(1).strip())
+            if "ichef.bbci.co.uk" in hero_img:
+                hero_img = re.sub(r'/standard/\d+/', '/standard/1024/', hero_img)
+
             item_hash = hashlib.sha256(f"{source_name}:{title}:{link}".encode("utf-8")).hexdigest()
 
             items.append({
@@ -109,7 +126,8 @@ def fetch_feed_items(feed_conf: Dict[str, Any]) -> List[Dict[str, Any]]:
                 "source": source_name,
                 "url": link,
                 "published_at": pub_date,
-                "raw_text": cleaned_desc
+                "raw_text": cleaned_desc,
+                "hero_image_url": hero_img or None,
             })
 
         # Handle Atom feed entries
@@ -215,6 +233,9 @@ def scrape_besoccer(limit: int = 15) -> List[Dict[str, Any]]:
                 desc_m = re.search(r'<meta\s+name=["\']description["\']\s+content=["\']([^"\']+)["\']', a_html)
                 body_text = html.unescape(desc_m.group(1).strip()) if desc_m else title
 
+            og_im = re.search(r'<meta[^>]+property=["\']og:image["\'][^>]+content=["\']([^"\']+)["\']', a_html, re.I)
+            hero_img = og_im.group(1).strip() if og_im else None
+
             art_hash = hashlib.sha256(f"BeSoccer:{title}:{full_url}".encode("utf-8")).hexdigest()
             items.append({
                 "hash": art_hash,
@@ -222,7 +243,8 @@ def scrape_besoccer(limit: int = 15) -> List[Dict[str, Any]]:
                 "source": "BeSoccer",
                 "url": full_url,
                 "published_at": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S"),
-                "raw_text": body_text
+                "raw_text": body_text,
+                "hero_image_url": hero_img,
             })
         except Exception as e:
             print(f"[Collector] Error fetching BeSoccer article '{full_url}': {e}")
@@ -288,7 +310,7 @@ def scrape_reddit_soccer(url: str = "https://www.reddit.com/r/soccer/hot.json?li
 
 
 def scrape_espn_json(url: str = "https://site.api.espn.com/apis/site/v2/sports/soccer/eng.1/news", limit: int = 20) -> List[Dict[str, Any]]:
-    """Fetch structured breaking football articles from ESPN public news JSON API."""
+    """Fetch structured breaking football articles + high-res official photos from ESPN public JSON API."""
     items: List[Dict[str, Any]] = []
     req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"})
     try:
@@ -299,6 +321,11 @@ def scrape_espn_json(url: str = "https://site.api.espn.com/apis/site/v2/sports/s
             desc = clean_html(art.get("description") or "")
             link = (art.get("links", {}).get("web", {}).get("href") or "").strip()
             pub_str = (art.get("published") or datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")).strip()
+            imgs = [im for im in (art.get("images") or []) if "dm_" not in (im.get("url") or "").lower()] or (art.get("images") or [])
+            hero_img = None
+            if imgs:
+                best_im = max(imgs, key=lambda x: (1 if "a.espncdn.com/photo/" in (x.get("url") or "") else 0, int(x.get("width") or 0) * int(x.get("height") or 0)))
+                hero_img = best_im.get("url")
             if not title or not link:
                 continue
             art_hash = hashlib.sha256(f"ESPN FC:{title}:{link}".encode("utf-8")).hexdigest()
@@ -309,14 +336,56 @@ def scrape_espn_json(url: str = "https://site.api.espn.com/apis/site/v2/sports/s
                 "url": link,
                 "published_at": pub_str,
                 "raw_text": desc or title,
+                "hero_image_url": hero_img,
             })
     except Exception as e:
         print(f"[Collector] Error polling ESPN JSON API: {e}")
     return items
 
 
+def scrape_bing_news_rss(url: str, limit: int = 20) -> List[Dict[str, Any]]:
+    """Fetches Bing News RSS and unpacks direct publisher URLs for downstream article/hero scraping."""
+    items: List[Dict[str, Any]] = []
+    try:
+        req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"})
+        with urllib.request.urlopen(req, timeout=12) as resp:
+            root = ET.fromstring(resp.read())
+        for it in root.findall(".//item")[:limit]:
+            title = html.unescape((it.findtext("title") or "").strip())
+            raw_link = (it.findtext("link") or "").strip()
+            pub_date = (it.findtext("pubDate") or "").strip()
+            desc = clean_html(it.findtext("description") or "")
+            if not title or not raw_link:
+                continue
+            direct_url = raw_link
+            try:
+                qs = urllib.parse.parse_qs(urllib.parse.urlparse(raw_link).query)
+                if "url" in qs:
+                    direct_url = qs["url"][0]
+            except Exception:
+                pass
+            source = urllib.parse.urlparse(direct_url).netloc.replace("www.", "").split(".")[0].capitalize() or "Bing News"
+            if " - " in title:
+                parts = title.rsplit(" - ", 1)
+                if len(parts[1]) <= 28:
+                    title, source = parts[0].strip(), parts[1].strip()
+            art_hash = hashlib.sha256(f"{source}:{title}:{direct_url}".encode("utf-8")).hexdigest()
+            items.append({
+                "hash": art_hash,
+                "title": title,
+                "source": source,
+                "url": direct_url,
+                "published_at": pub_date,
+                "raw_text": desc or title,
+                "hero_image_url": None,
+            })
+    except Exception as e:
+        print(f"[Collector] Bing News RSS note: {e}")
+    return items
+
+
 def store_articles(articles: List[Dict[str, Any]]) -> int:
-    """Store articles into SQLite, skipping duplicates."""
+    """Store articles into SQLite, skipping duplicates while backfilling hero images if newly discovered."""
     init_database()
     inserted_count = 0
     now = datetime.now(timezone.utc).isoformat()
@@ -325,13 +394,16 @@ def store_articles(articles: List[Dict[str, Any]]) -> int:
         for art in articles:
             try:
                 conn.execute("""
-                    INSERT INTO articles (hash, title, source, url, published_at, raw_text, scraped_at, status)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, 'NEW')
-                """, (art["hash"], art["title"], art["source"], art["url"], art["published_at"], art["raw_text"], now))
+                    INSERT INTO articles (hash, title, source, url, published_at, raw_text, hero_image_url, scraped_at, status)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'NEW')
+                """, (art["hash"], art["title"], art["source"], art["url"], art["published_at"], art["raw_text"], art.get("hero_image_url"), now))
                 inserted_count += 1
             except sqlite3.IntegrityError:
-                # Article already exists
-                pass
+                if art.get("hero_image_url"):
+                    conn.execute(
+                        "UPDATE articles SET hero_image_url = COALESCE(hero_image_url, ?) WHERE hash = ?",
+                        (art.get("hero_image_url"), art["hash"]),
+                    )
         conn.commit()
 
     return inserted_count
@@ -353,6 +425,9 @@ def run_collector() -> int:
             elif ftype == "espn_json":
                 print(f"[Collector] Polling ESPN API: {feed['name']}...")
                 items = scrape_espn_json(url=feed.get("url", "https://site.api.espn.com/apis/site/v2/sports/soccer/eng.1/news"), limit=20)
+            elif ftype == "bing_news":
+                print(f"[Collector] Polling Bing News RSS: {feed['name']}...")
+                items = scrape_bing_news_rss(url=feed.get("url", ""), limit=20)
             else:
                 print(f"[Collector] Polling feed: {feed['name']}...")
                 items = fetch_feed_items(feed)

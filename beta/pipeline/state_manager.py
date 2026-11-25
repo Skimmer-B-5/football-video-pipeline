@@ -46,6 +46,8 @@ def init_database():
                 url TEXT NOT NULL,
                 published_at TEXT,
                 raw_text TEXT,
+                hero_image_url TEXT,
+                category TEXT,
                 scraped_at TEXT,
                 cluster_id INTEGER,
                 reliability_tier TEXT,
@@ -53,6 +55,13 @@ def init_database():
                 status TEXT DEFAULT 'NEW'
             )
         """)
+
+        # Idempotent schema migrations for existing beta_news.db databases
+        for col_def in ("hero_image_url TEXT", "category TEXT"):
+            try:
+                cursor.execute(f"ALTER TABLE articles ADD COLUMN {col_def}")
+            except sqlite3.OperationalError:
+                pass
         
         # Pipeline jobs store
         cursor.execute("""

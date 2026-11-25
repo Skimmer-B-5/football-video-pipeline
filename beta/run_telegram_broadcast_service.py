@@ -119,6 +119,7 @@ def source_story_shots(
 
         dest_filename = f"{spec.shot_id}_{idx}.png"
         dest_file = run_dir / dest_filename
+        shot_audit: Dict[str, Any] = {}
 
         success = inspector.audit_and_produce_shot(
             spec,
@@ -126,19 +127,35 @@ def source_story_shots(
             ledger=ledger,
             protagonist_name=dossier.protagonist_name,
             story_id=dossier.story_id,
+            extra_candidate_urls=getattr(dossier, "candidate_images", []) or None,
+            out_audit=shot_audit,
         )
         if success and dest_file.exists():
             if spec.scene_id not in remotion_shots:
                 remotion_shots[spec.scene_id] = []
-            remotion_shots[spec.scene_id].append(f"/images/story_{run_id}/{dest_filename}")
-            print(f"  [{spec.shot_id}] Corroborated & Locked -> {dest_filename}")
+            remotion_shots[spec.scene_id].append({
+                "image_path": f"/images/story_{run_id}/{dest_filename}",
+                "focal_x": shot_audit.get("focal_x", 50.0),
+                "focal_y": shot_audit.get("focal_y", 25.0),
+                "framing_mode": shot_audit.get("framing_mode", "full_bleed"),
+                "pan_direction": shot_audit.get("pan_direction", "center"),
+            })
+            print(f"  [{spec.shot_id}] Corroborated & Locked ({shot_audit.get('framing_mode', 'full_bleed')}) -> {dest_filename}")
         else:
             print(f"  [{spec.shot_id}] Fallback: Generating verified broadcast crest card")
             inspector.sourcer.generate_broadcast_crest_fallback(spec.club_affiliation, dest_file)
             if spec.scene_id not in remotion_shots:
                 remotion_shots[spec.scene_id] = []
-            remotion_shots[spec.scene_id].append(f"/images/story_{run_id}/{dest_filename}")
+            remotion_shots[spec.scene_id].append({
+                "image_path": f"/images/story_{run_id}/{dest_filename}",
+                "focal_x": 50.0,
+                "focal_y": 42.0,
+                "framing_mode": "full_bleed",
+                "pan_direction": "center",
+            })
 
+    # Release FasterRCNN GPU VRAM cleanly before Stage 3 Qwen3-TTS loads
+    inspector.cropper.detector.release_gpu_memory()
     return remotion_shots
 
 

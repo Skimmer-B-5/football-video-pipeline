@@ -26,7 +26,9 @@ DISQUALIFIED_DOMAINS = {
     'pinterest.com', 'aliexpress.com', 'amazon.com', 'ebay.com', 'freepik.com', 'vectorstock.com',
     'clipart', 'iconfinder.com', 'flaticon.com', 'deviantart.com', 'lookfordiagnosis.com',
     'panoramastreetline.de', 'panoramastreetline', 'vecteezy.com', 'vecteezy', 'stockcake.com',
-    'envato.com', 'graphicriver.net', 'stockfood.com', 'stockfood', 'imago-images', 'rexfeatures'
+    'envato.com', 'graphicriver.net', 'stockfood.com', 'stockfood', 'imago-images', 'rexfeatures',
+    'nurphoto', 'afp__', '_afp_', '_npls', '__mockup__', 'splashnews', 'zuma-press', 'sipa-usa',
+    'lookaside.instagram.com', 'lookaside.fbsbx.com', 'fbsbx.com', 'dailymotion.com'
 }
 
 DISQUALIFIED_TITLE_TERMS = {
@@ -150,7 +152,7 @@ class EditorialImageSourcer:
                             "url": full_res_url,
                             "title": title,
                             "source": "Wikipedia Official Archive (Original)",
-                            "priority": 1
+                            "priority": 2
                         })
                         if len(candidates) >= max_results:
                             break
@@ -237,13 +239,137 @@ class EditorialImageSourcer:
             print(f"[ImageSourcer] Bing search note for '{clean_q}': {e}")
         return candidates
 
+    def fetch_espn_photo_bank(self, entity_name: str, club_name: str = "", max_results: int = 8) -> List[Dict[str, Any]]:
+        """Polls public ESPN soccer APIs across PL, UCL, La Liga, Serie A & Bundesliga for high-res photos."""
+        candidates: List[Dict[str, Any]] = []
+        if not hasattr(self, "_espn_cache"):
+            self._espn_cache = []
+            endpoints = [
+                "https://site.api.espn.com/apis/site/v2/sports/soccer/eng.1/news?limit=25",
+                "https://site.api.espn.com/apis/site/v2/sports/soccer/uefa.champions/news?limit=20",
+                "https://site.api.espn.com/apis/site/v2/sports/soccer/esp.1/news?limit=15",
+                "https://site.api.espn.com/apis/site/v2/sports/soccer/ita.1/news?limit=15",
+                "https://site.api.espn.com/apis/site/v2/sports/soccer/ger.1/news?limit=15",
+            ]
+            for ep in endpoints:
+                try:
+                    req = urllib.request.Request(ep, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"})
+                    with urllib.request.urlopen(req, timeout=8) as r:
+                        data = json.loads(r.read().decode("utf-8", errors="ignore"))
+                    for art in data.get("articles", []):
+                        hl = html.unescape((art.get("headline") or "").strip())
+                        desc = html.unescape((art.get("description") or "").strip())
+                        for im in (art.get("images") or []):
+                            iu = (im.get("url") or "").strip()
+                            if iu and iu.startswith("http") and "dm_" not in iu.lower():
+                                self._espn_cache.append({"url": iu, "title": f"{hl} {im.get('caption', '')} {desc[:120]}".strip()})
+                except Exception:
+                    continue
+
+        ent_tokens = [t.lower() for t in (entity_name or "").split() if len(t) > 2]
+        club_tokens = [t.lower() for t in (club_name or "").split() if len(t) > 3]
+        for row in self._espn_cache:
+            u = row["url"]
+            if u in self.used_urls or any(b in u.lower() for b in DISQUALIFIED_DOMAINS):
+                continue
+            t_low = row["title"].lower()
+            ent_hit = ent_tokens and (all(tok in t_low for tok in ent_tokens) or ent_tokens[-1] in t_low)
+            club_hit = club_tokens and any(ct in t_low for ct in club_tokens)
+            if ent_hit or club_hit:
+                candidates.append({
+                    "url": u,
+                    "title": row["title"],
+                    "source": "ESPN Public Media Archive",
+                    "priority": 1 if ent_hit else 3,
+                })
+                if len(candidates) >= max_results:
+                    break
+        return candidates
+
+    def search_news_article_images(self, query: str, avoid_terms: List[str] = None, max_results: int = 8) -> List[Dict[str, Any]]:
+        """Extracts genuine og:image / JSON-LD photos directly from current sports journalism articles."""
+        candidates: List[Dict[str, Any]] = []
+        avoid = [a.lower() for a in (avoid_terms or [])]
+        try:
+            import xml.etree.ElementTree as ET
+            try:
+                from stages.url_scraper import scrape_article_from_url
+            except ModuleNotFoundError:
+                from beta.stages.url_scraper import scrape_article_from_url
+
+            rss_url = f"https://www.bing.com/news/search?q={urllib.parse.quote(query + ' football')}&format=rss"
+            req = urllib.request.Request(rss_url, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"})
+            with urllib.request.urlopen(req, timeout=8) as r:
+                root = ET.fromstring(r.read())
+            for it in root.findall(".//item")[:6]:
+                raw_link = (it.findtext("link") or "").strip()
+                item_title = html.unescape((it.findtext("title") or "").strip())
+                direct_url = raw_link
+                try:
+                    qs = urllib.parse.parse_qs(urllib.parse.urlparse(raw_link).query)
+                    if "url" in qs:
+                        direct_url = qs["url"][0]
+                except Exception:
+                    pass
+                if not direct_url or any(av in item_title.lower() for av in avoid):
+                    continue
+                try:
+                    art = scrape_article_from_url(direct_url, timeout=6)
+                    for img_u in (art.get("candidate_images") or [])[:2]:
+                        if img_u in self.used_urls or any(b in img_u.lower() for b in DISQUALIFIED_DOMAINS):
+                            continue
+                        candidates.append({
+                            "url": img_u,
+                            "title": art.get("title") or item_title,
+                            "page_url": direct_url,
+                            "source": f"Editorial Article ({art.get('source', 'Press')})",
+                            "priority": 1,
+                        })
+                        if len(candidates) >= max_results:
+                            return candidates
+                except Exception:
+                    continue
+        except Exception as e:
+            print(f"[ImageSourcer] Article hero search note for '{query}': {e}")
+        return candidates
+
+    def search_social_editorial_candidates(self, entity_name: str, club_name: str = "", avoid_terms: List[str] = None, max_results: int = 12) -> List[Dict[str, Any]]:
+        """Sources public sports & social-syndicated imagery (ESPN, BBC, Sky, PL, Fabrizio/Reddit press coverage)."""
+        results: List[Dict[str, Any]] = []
+        queries = [
+            f"{entity_name} {club_name} ESPN FC match".strip(),
+            f"{entity_name} {club_name} Sky Sports BBC action".strip(),
+            f"{entity_name} {club_name} premier league instagram photo".strip(),
+            f"{entity_name} {club_name} reddit Fabrizio Romano".strip(),
+        ]
+        seen_u: Set[str] = set()
+        for q in queries:
+            for cand in self.search_bing_full_res(q, avoid_terms=avoid_terms, max_results=6):
+                u = cand.get("url", "")
+                if u and u not in seen_u:
+                    seen_u.add(u)
+                    cand["priority"] = 2
+                    results.append(cand)
+                    if len(results) >= max_results:
+                        return results
+        return results
+
     def download_image_bytes(self, url: str) -> Optional[bytes]:
-        """Downloads full-resolution image bytes with strict size & validation checks."""
+        """Downloads full-resolution image bytes and validates MIME Content-Type & magic image header."""
         req = urllib.request.Request(url, headers=HEADERS)
         try:
             with urllib.request.urlopen(req, timeout=7) as resp:
+                ctype = (resp.headers.get("Content-Type") or "").lower()
+                if ctype and ("html" in ctype or "text/" in ctype or "json" in ctype):
+                    return None
                 data = resp.read()
-            if len(data) < 30000: # Reject tiny files < 30KB
+            if len(data) < 30000:  # Reject tiny files < 30KB
+                return None
+            # Verify genuine raster image magic bytes (JPEG, PNG, WebP) so login walls never sneak through
+            is_jpeg = data[:3] == b"\xff\xd8\xff"
+            is_png = data[:8] == b"\x89PNG\r\n\x1a\n"
+            is_webp = data[:4] == b"RIFF" and data[8:12] == b"WEBP"
+            if not (is_jpeg or is_png or is_webp):
                 return None
             return data
         except Exception:

@@ -243,6 +243,14 @@ Output JSON schema:
                     return fallback_val
             return text_val or fallback_val
 
+        def _normalize_entity(raw_ent: str, fallback_ent: str) -> str:
+            ent = _sanitize_obsolete(raw_ent, fallback_ent)
+            low = ent.lower()
+            for canon in [dossier.protagonist_name, dossier.current_manager, suitor_mgr, curr_std, suitor_std]:
+                if canon and canon.lower() in low:
+                    return canon
+            return ent
+
         for sc in screenplay_scenes:
             sid = sc.get("scene_id", "")
             # Requirement: 1 scene is ending card -> don't bother
@@ -266,7 +274,7 @@ Output JSON schema:
                 choice_data = self.describe_choice_scene(sid, narration, dossier)
 
                 # Part 1 Shot (Selling club / player)
-                p1_entity = _sanitize_obsolete(choice_data["part1_entity"], dossier.current_manager)
+                p1_entity = _normalize_entity(choice_data["part1_entity"], dossier.current_manager)
                 p1_query = _sanitize_obsolete(choice_data["part1_query"].replace('"', ''), f"{p1_entity} {dossier.current_club} match action")
                 p1_desc = _sanitize_obsolete(choice_data["part1_description"], f"{p1_entity} in dynamic action for {dossier.current_club}.")
                 specs.append(EditorialShotSpec(
@@ -288,7 +296,7 @@ Output JSON schema:
                 shot_counter += 1
 
                 # Part 2 Shot (Suitor coach / stadium - NEVER obsolete coaches)
-                p2_entity = _sanitize_obsolete(choice_data["part2_entity"], suitor_mgr)
+                p2_entity = _normalize_entity(choice_data["part2_entity"], suitor_mgr)
                 p2_query = _sanitize_obsolete(choice_data["part2_query"].replace('"', ''), f"{suitor_mgr} {dossier.pursuing_club} touchline")
                 p2_desc = _sanitize_obsolete(choice_data["part2_description"], f"{suitor_mgr} directing tactical instructions for {dossier.pursuing_club}.")
                 is_p2_mgr = (suitor_mgr.lower() in p2_entity.lower() or "coach" in p2_entity.lower() or "manager" in p2_entity.lower())
@@ -315,7 +323,7 @@ Output JSON schema:
                 print(f"  [{sid}] Asking {self.preferred_model} for 1-sentence image description...")
                 single_data = self.describe_single_scene(sid, narration, dossier)
                 default_ent = curr_std if sid == "S01" else dossier.protagonist_name
-                entity = _sanitize_obsolete(single_data["primary_entity"], default_ent)
+                entity = _normalize_entity(single_data["primary_entity"], default_ent)
                 q = _sanitize_obsolete(single_data["search_query"].replace('"', ''), f"{entity} {dossier.current_club} match action")
                 desc = _sanitize_obsolete(single_data["image_description"], f"{entity} during high-intensity match action.")
 

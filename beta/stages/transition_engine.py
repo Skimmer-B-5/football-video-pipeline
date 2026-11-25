@@ -1,99 +1,110 @@
 """
-beta/stages/transition_engine.py - Purposeful Editorial Transition Director.
+beta/stages/transition_engine.py - Purposeful Editorial Transition Director (V2.5).
 
 Enforces:
-1. Editorial Motivation: Transitions reflect narrative relationships (not random decorative wipes).
-   - Camera Flash Cut: Rapid 2-frame white flash + shutter SFX for major news/transfer reveals.
-   - Document Snap: Crisp slide-in with contract stamp SFX for explainer clause/tactical graphics.
-   - Whip Pan: Directional lateral push for club-to-club or perspective shifts.
-   - Record Stop Cut: Sudden audio brake & freeze for unexpected plot twists or contradictions.
-   - Clean Hard Cut: Pure broadcast cut for dialogue momentum.
-2. Timing & Sync: Transitions strictly bounded under 0.25s so they never cover faces or text.
+1. Narrative Motivation: Transitions match editorial story beats:
+   - cross_fade_in: Clean dark-navy studio fade-in on S01 opening.
+   - camera_flash: Crisp 6-frame exposure peak flash + scale punch on protagonist reveal (S02).
+   - whip_pan: Cubic-bezier directional horizontal push for club-to-club / duel switches (S03, S07).
+   - document_snap: Vertical card snap-in for reported fee/contract & boardroom stance beats (S04, S05).
+   - shutter_wipe: Angled geometric clip-path sweep for tactical shifts.
+   - cross_dissolve: Smooth broadcast crossfade for status continuity beats.
+2. Timing Discipline: Bounded cleanly under 0.28s (<= 8 frames @ 30fps) using GPU transforms only.
 """
 
-from typing import Dict, List, Any, Optional
+from typing import Dict, List, Any
 
 TRANSITION_CATALOG = {
+    "cross_fade_in": {
+        "id": "cross_fade_in",
+        "duration_sec": 0.20,
+        "type": "cross_fade_in",
+        "sfx_cue": None,
+        "description": "Clean opening studio reveal fade-in."
+    },
     "camera_flash": {
         "id": "camera_flash",
-        "duration_sec": 0.08,
-        "type": "flash_white",
+        "duration_sec": 0.20,
+        "type": "camera_flash",
         "sfx_cue": "camera_shutter",
-        "description": "Rapid 2-frame white exposure flash for major transfer breaking reveals."
+        "description": "Brief exposure peak glint + crisp scale punch for protagonist identity reveal."
     },
     "document_snap": {
         "id": "document_snap",
-        "duration_sec": 0.12,
-        "type": "snap_up",
+        "duration_sec": 0.24,
+        "type": "document_snap",
         "sfx_cue": "contract_stamp",
-        "description": "Crisp upward snap into explainer contract & tactical cards."
+        "description": "Crisp upward snap for financial packages, clauses, and managerial stances."
     },
     "whip_pan": {
         "id": "whip_pan",
-        "duration_sec": 0.15,
-        "type": "lateral_push",
+        "duration_sec": 0.26,
+        "type": "whip_pan",
         "sfx_cue": "paper_slide",
-        "description": "Directional motion-matched lateral pan for club-to-club switches."
+        "description": "Directional cubic-bezier lateral sweep for club switches and split verdicts."
+    },
+    "shutter_wipe": {
+        "id": "shutter_wipe",
+        "duration_sec": 0.26,
+        "type": "shutter_wipe",
+        "sfx_cue": None,
+        "description": "Angled geometric broadcast clip-path wipe."
+    },
+    "cross_dissolve": {
+        "id": "cross_dissolve",
+        "duration_sec": 0.24,
+        "type": "cross_dissolve",
+        "sfx_cue": None,
+        "description": "Smooth editorial opacity cross-dissolve."
     },
     "record_stop_cut": {
         "id": "record_stop_cut",
-        "duration_sec": 0.10,
-        "type": "freeze_cut",
+        "duration_sec": 0.16,
+        "type": "camera_flash",
         "sfx_cue": "record_stop",
-        "description": "Hard freeze & brake for contradictory terms or plot twists."
+        "description": "Crisp impact accent for sudden plot twists or contradictions."
     },
     "clean_hard_cut": {
         "id": "clean_hard_cut",
-        "duration_sec": 0.0,
-        "type": "cut",
+        "duration_sec": 0.14,
+        "type": "cross_dissolve",
         "sfx_cue": None,
-        "description": "Clean, instantaneous broadcast cut for editorial pace."
+        "description": "Ultra-brisk broadcast transition preserving tempo."
     }
 }
 
+
 class TransitionDirector:
-    """Selects purposeful transitions based on semantic relationships between scenes."""
+    """Selects purposeful transitions based on scene narrative roles & screenplay hints."""
 
     @staticmethod
     def plan_transitions_for_scenes(scenes: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-        """
-        Determines the transition into each scene based on narrative beat and visual kind.
-        """
         decorated = []
         for idx, sc in enumerate(scenes):
             sc_copy = dict(sc)
-            v_kind = sc.get("visual", {}).get("kind", "")
-            role = sc.get("role", "")
-            narr = sc.get("narration", "").lower()
+            sid = str(sc.get("scene_id", "")).upper()
+            hint = (sc.get("transition_hint") or "").strip().lower()
+            v_kind = (sc.get("visual") or {}).get("kind", "")
+            narr = (sc.get("narration") or "").lower()
 
-            if idx == 0:
-                # Opening: Immediate punch-in, no transition delay
-                trans = TRANSITION_CATALOG["clean_hard_cut"]
-            elif "explainer" in v_kind:
-                # Entering a contract or tactical explainer graphic
-                trans = TRANSITION_CATALOG["document_snap"]
-            elif "twist" in narr or "catch" in narr or "contradict" in narr or "refuse" in narr:
-                trans = TRANSITION_CATALOG["record_stop_cut"]
-            elif idx == 1 and ("accelerat" in narr or "formal" in narr or "bid" in narr):
+            if sid == "OUTRO":
+                trans = TRANSITION_CATALOG["cross_dissolve"]
+            elif hint and hint in TRANSITION_CATALOG:
+                trans = TRANSITION_CATALOG[hint]
+            elif idx == 0:
+                trans = TRANSITION_CATALOG["cross_fade_in"]
+            elif sid == "S02":
                 trans = TRANSITION_CATALOG["camera_flash"]
-            elif "lateral" in sc.get("motion", {}).get("type", "") or "club" in role:
+            elif sid in ("S03", "S07") or sc.get("motion", {}).get("type") == "split_duel":
                 trans = TRANSITION_CATALOG["whip_pan"]
+            elif "explainer" in v_kind or "fee" in v_kind or sid in ("S04",):
+                trans = TRANSITION_CATALOG["document_snap"]
+            elif sid == "S05" or "refuse" in narr or "reject" in narr or "order" in narr:
+                trans = TRANSITION_CATALOG["shutter_wipe"]
             else:
-                trans = TRANSITION_CATALOG["clean_hard_cut"]
+                trans = TRANSITION_CATALOG["cross_dissolve"]
 
             sc_copy["transition_in"] = trans
             decorated.append(sc_copy)
 
         return decorated
-
-if __name__ == "__main__":
-    test_scenes = [
-        {"role": "hook", "narration": "Endrick to Milan? There's one detail that changes everything."},
-        {"role": "situation", "narration": "Reports confirm formal negotiations have opened."},
-        {"role": "clause", "visual": {"kind": "explainer_contract_card"}, "narration": "Madrid demand an 80 million buyback clause."},
-        {"role": "tactical", "visual": {"kind": "explainer_tactical_card"}, "narration": "Milan offer immediate starting minutes."},
-        {"role": "verdict", "narration": "Would you sell him or keep him? Tell us below."}
-    ]
-    planned = TransitionDirector.plan_transitions_for_scenes(test_scenes)
-    for i, s in enumerate(planned):
-        print(f"Scene {i+1}: Transition In -> {s['transition_in']['id']}")

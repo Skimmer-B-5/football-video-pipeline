@@ -127,9 +127,20 @@ export interface SceneMotion {
   intensity?: string;
 }
 
+export interface SceneTransitionIn {
+  id: string;
+  duration_sec: number;
+  type: string; // 'cross_fade_in' | 'camera_flash' | 'whip_pan' | 'document_snap' | 'shutter_wipe' | 'cross_dissolve'
+  sfx_cue?: string | null;
+}
+
 export interface SceneShot {
   image_path: string;
   durationInFrames: number;
+  focal_x?: number;
+  focal_y?: number;
+  framing_mode?: "full_bleed" | "broadcast_card" | "pan_horizontal";
+  pan_direction?: "left" | "right" | "center";
 }
 
 export interface SceneProps {
@@ -143,6 +154,7 @@ export interface SceneProps {
   on_screen: SceneOnScreen;
   visual?: SceneVisual;
   motion?: SceneMotion;
+  transition_in?: SceneTransitionIn;
 }
 
 export interface SubtitleCue {

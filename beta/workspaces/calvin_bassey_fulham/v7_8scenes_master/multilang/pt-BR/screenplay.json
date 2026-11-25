@@ -1,74 +1,75 @@
 {
-  "master_headline": "NOTÍCIAS DE TRANSFERÊNCIA DO MAN UTD: ZAGUEIRO DO FULHAM CALVIN BASSEY EM NEGOCIAÇÕES POR NOVO CONTRATO EM MEIO A VÍNCULOS COM MAN UTD",
-  "ticker_text": "SKY SPORTS: FULHAM ABRE NEGOCIAÇÕES COM CALVIN BASSEY EM MEIO A INTERESSE DO MAN UTD ✦ MARCO SILVA DETERMINADO A MANTER ZAGUEIRO",
+  "master_headline": "MAN UTD NOTÍCIAS DE TRANSFERÊNCIAS: ZAGUEIRO DO FULHAM CALVIN BASSEY EM NEGOCIAÇÕES POR NOVA PROPOSTA COM INTERESSE DO MAN UTD",
+  "ticker_text": "SKY SPORTS: FULHAM ABRE NEGOCIAÇÕES COM CALVIN BASSEY COM INTERESSE DO MAN UTD ✦ MARCO SILVA DETERMINADO A MANTER ZAGUEIRO",
   "scenes": [
     {
       "scene_id": "S01",
-      "spoken_narration": "Fulham sob pressão, zagueiro chave sai.",
+      "spoken_narration": "Tensão aumenta, futuro do zagueiro incerto.",
       "on_screen": {
-        "kicker": "RELATÓRIO DE TRANSFERÊNCIA",
-        "headline": "Fulham sob pressão, zagueiro chave sai",
-        "subheadline": "Clube busca clareza em meio a especulações",
+        "kicker": "VIGILÂNCIA",
+        "headline": "FUTURO DO ZAGUEIRO EM BALANÇO",
+        "subheadline": "Tensão no clube aumenta com negociações",
         "status_badge": "EM DESENVOLVIMENTO"
       }
     },
     {
       "scene_id": "S02",
-      "spoken_narration": "Calvin Bassey recebe proposta tentadora do United.",
+      "spoken_narration": "Calvin Bassey surge em negociações com Fulham.",
       "on_screen": {
-        "kicker": "PROPOSTA",
-        "headline": "Calvin Bassey recebe proposta tentadora do United",
-        "subheadline": "Red Devils buscam reforço defensivo",
+        "kicker": "REVELAÇÃO",
+        "headline": "CALVIN BASSEY REVELADO",
+        "subheadline": "Zagueiro do Fulham entra em negociações",
         "status_badge": "REVELADO"
       }
     },
     {
       "scene_id": "S03",
-      "spoken_narration": "United mira Bassey, oferta de £30 mi.",
+      "spoken_narration": "Manchester United demonstra interesse no zagueiro.",
       "on_screen": {
-        "kicker": "INTERESSE",
-        "headline": "United mira Bassey, oferta de £30 mi",
-        "subheadline": "Equipe de Pochettino quer zagueiro",
+        "kicker": "A MUDANÇA",
+        "headline": "MANCHESTER UNITED FAZ MOVIMENTO",
+        "subheadline": "Clube demonstra interesse no zagueiro do Fulham",
         "status_badge": "REPORTADO"
       }
     },
     {
       "scene_id": "S04",
-      "spoken_narration": "Taxa reportada: £30 mi mais bônus de desempenho.",
+      "spoken_narration": "Taxa: £30 milhões mais bônus de £5 milhões.",
       "on_screen": {
-        "kicker": "CLÁUSULA",
-        "headline": "Taxa reportada: £30 mi mais bônus de desempenho",
-        "subheadline": "Adicionais podem elevar custo total",
-        "status_badge": "NÃO ACORDADO"
+        "kicker": "OS NÚMEROS",
+        "headline": "OS NÚMEROS",
+        "subheadline": "Taxa de £30M, bônus de £5M",
+        "status_badge": "NÃO ACORDADO",
+        "data_callout": "£30M + £5M ADD-ONS"
       }
     },
     {
       "scene_id": "S05",
-      "spoken_narration": "Marco Silva exige extensão antes de vender.",
+      "spoken_narration": "Silva pressiona diretoria a fechar extensão.",
       "on_screen": {
-        "kicker": "POSIÇÃO DO TREINADOR",
-        "headline": "Marco Silva exige extensão antes de vender",
-        "subheadline": "Silva pressiona por contrato de longo prazo",
+        "kicker": "POSIÇÃO DO CLUBE",
+        "headline": "POSIÇÃO DO CLUBE",
+        "subheadline": "Silva pressiona diretoria a fechar extensão",
         "status_badge": "EM DESENVOLVIMENTO"
       }
     },
     {
       "scene_id": "S06",
-      "spoken_narration": "Bassey busca novo contrato, pressão do United aumenta.",
+      "spoken_narration": "Torcedores divididos online: elogiam ou condenam acordo.",
       "on_screen": {
-        "kicker": "ATUALIZAÇÃO",
-        "headline": "Bassey busca novo contrato, pressão do United aumenta",
-        "subheadline": "Futuro do jogador em jogo",
+        "kicker": "A REALIDADE",
+        "headline": "A REALIDADE",
+        "subheadline": "Torcedores divididos, debatem acordo ou desastre",
         "status_badge": "OFICIAL"
       }
     },
     {
       "scene_id": "S07",
-      "spoken_narration": "Silva fechará extensão ou United forçará venda?",
+      "spoken_narration": "Bassey ficará no Fulham ou irá ao United?",
       "on_screen": {
-        "kicker": "VEREDITO",
-        "headline": "Silva fechará extensão ou United forçará venda?",
-        "subheadline": "Decisão pode definir temporada do Fulham",
+        "kicker": "O VEREDITO",
+        "headline": "O VEREDITO",
+        "subheadline": "Decisão: ficar no Fulham ou mudar para United",
         "status_badge": "EDITORIAL"
       }
     },
