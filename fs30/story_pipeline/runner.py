@@ -36,10 +36,19 @@ from fs30.story_pipeline.audio_engine import master_story_audio
 REMOTION_DIR = PROJECT_ROOT / "beta" / "remotion"
 SFX_DIR = PROJECT_ROOT / "assets" / "sfx"
 
-CALM_DOC_INSTRUCT = (
-    "Speak in an unhurried, articulate British documentary voice with dry intellectual wit, "
-    "clean measured pauses, warm conversational authority, and no rushed shouting."
-)
+MODELS_DIR = PROJECT_ROOT / "models"
+CUMBERBATCH_PROMPT_PATH = MODELS_DIR / "cumberbatch_prompt.pt"
+CUMBERBATCH_REF_WAV = MODELS_DIR / "cumberbatch_clean_ref.wav"
+CUMBERBATCH_REF_TXT = MODELS_DIR / "cumberbatch_clean_ref.txt"
+
+
+def _apply_pronunciation_hints(text: str, hints: Dict[str, str]) -> str:
+    """Applies phonetic spellings for foreign surnames before TTS only (preserving UI subtitles)."""
+    spoken = text or ""
+    for src, phon in (hints or {}).items():
+        if src and phon and src in spoken:
+            spoken = re.sub(rf"\b{re.escape(src)}\b", phon, spoken)
+    return spoken
 
 
 def _release_qwen3_tts():
@@ -47,7 +56,17 @@ def _release_qwen3_tts():
         from beta.stages import qwen_tts_synthesizer
         if getattr(qwen_tts_synthesizer, "_MODEL_INSTANCE", None) is not None:
             qwen_tts_synthesizer._MODEL_INSTANCE = None
-        gc.collect()
+    except Exception:
+        pass
+    try:
+        if hasattr(_get_cumberbatch_clone, "_model"):
+            delattr(_get_cumberbatch_clone, "_model")
+        if hasattr(_get_cumberbatch_clone, "_prompt"):
+            delattr(_get_cumberbatch_clone, "_prompt")
+    except Exception:
+        pass
+    gc.collect()
+    try:
         import torch
         if torch.cuda.is_available():
             torch.cuda.empty_cache()
@@ -56,47 +75,68 @@ def _release_qwen3_tts():
         pass
 
 
-def _trim_silence_and_master_clip(raw_wav: Path, out_wav: Path, pad_lead: float = 0.16, pad_tail: float = 0.24) -> Tuple[float, float, float]:
-    """Trims trailing whisper tails cleanly via RMS energy envelope and pads smooth air gaps."""
+def _get_cumberbatch_clone():
+    """Singleton loader for Qwen3-TTS Base + Benedict Cumberbatch ICL prompt."""
+    if hasattr(_get_cumberbatch_clone, "_model") and hasattr(_get_cumberbatch_clone, "_prompt"):
+        return _get_cumberbatch_clone._model, _get_cumberbatch_clone._prompt
+    import torch
+    from qwen_tts import Qwen3TTSModel
+
+    device = "cuda:0" if torch.cuda.is_available() else "cpu"
+    dtype = torch.bfloat16 if torch.cuda.is_available() else torch.float32
+    model_dir = MODELS_DIR / "qwen3_tts_base"
+    print(f"[Runner] Loading Cumberbatch BBC Voice Clone from {model_dir.name}...")
+    model = Qwen3TTSModel.from_pretrained(str(model_dir), device_map=device, dtype=dtype)
+    if CUMBERBATCH_PROMPT_PATH.exists():
+        prompt = torch.load(str(CUMBERBATCH_PROMPT_PATH), weights_only=False)
+    else:
+        ref_txt = CUMBERBATCH_REF_TXT.read_text(encoding="utf-8").strip() if CUMBERBATCH_REF_TXT.exists() else ""
+        prompt = model.create_voice_clone_prompt(
+            ref_audio=str(CUMBERBATCH_REF_WAV),
+            ref_text=ref_txt,
+            x_vector_only_mode=False,
+        )
+        torch.save(prompt, str(CUMBERBATCH_PROMPT_PATH))
+    _get_cumberbatch_clone._model = model
+    _get_cumberbatch_clone._prompt = prompt
+    return model, prompt
+
+
+def _trim_silence_and_master_clip(
+    raw_wav: Path,
+    out_wav: Path,
+    pad_lead: float = 0.05,
+    pad_tail: float = 0.14,
+    atempo: float = 1.07,
+) -> Tuple[float, float, float]:
+    """Trims dead air outside-in (preserving natural mid-sentence dry pauses), sharpens British wit cadence & EQ."""
     data, sr = sf.read(str(raw_wav))
     mono = np.mean(data, axis=1) if data.ndim > 1 else data
-    win = max(1, int(0.04 * sr))
+    win = max(1, int(0.03 * sr))
     n_f = len(mono) // win
     raw_dur = len(mono) / float(sr) if sr > 0 else 0.0
     if n_f > 0:
         env = np.array([np.mean(np.abs(mono[i * win : (i + 1) * win])) for i in range(n_f)])
-        active = env > 0.015
-        start_f = next((max(0, i - 1) for i, a in enumerate(active) if a), 0)
-        end_f = n_f
-        sil_run = 0
-        # Only stop on sustained trailing dead silence (>= 1.24s) so natural documentary comma/period pauses stay intact
-        trailing_sil_frames = int(1.24 / 0.04)
-        for i in range(start_f, n_f):
-            if not active[i]:
-                sil_run += 1
-                if (i - start_f) * 0.04 >= 1.5 and sil_run >= trailing_sil_frames:
-                    end_f = i - sil_run + 3
-                    break
-            else:
-                sil_run = 0
-        # Trim dead silent frames off the very tail if speech ended early
-        while end_f > start_f + 8 and not active[end_f - 1]:
-            end_f -= 1
-        end_f = min(n_f, end_f + 3)
+        active_idxs = np.where(env > 0.011)[0]
+        if len(active_idxs) > 0:
+            start_f = max(0, int(active_idxs[0]) - 1)
+            end_f = min(n_f, int(active_idxs[-1]) + 4)
+        else:
+            start_f, end_f = 0, n_f
         trimmed = data[start_f * win : min(len(data), end_f * win)]
     else:
         trimmed = data
-    print(f"    [AudioTrim] {raw_wav.name}: {raw_dur:.2f}s -> {len(trimmed)/float(sr):.2f}s")
+    print(f"    [AudioTrim] {raw_wav.name}: {raw_dur:.2f}s -> {len(trimmed)/float(sr):.2f}s (atempo={atempo:.2f}x)")
 
     tmp_trim = raw_wav.with_name(raw_wav.stem + "_trim.wav")
     sf.write(str(tmp_trim), trimmed, sr)
-    speech_dur = len(trimmed) / float(sr)
 
     cmd = [
         "ffmpeg", "-y", "-i", str(tmp_trim),
         "-af",
-        f"highpass=f=80,lowpass=f=12500,equalizer=f=2700:t=q:w=1.2:g=1.8,"
-        f"loudnorm=I=-14.5:TP=-1.0:LRA=7,"
+        f"atempo={atempo:.3f},highpass=f=85,lowpass=f=12500,"
+        f"equalizer=f=185:t=q:w=1.0:g=-1.5,equalizer=f=2900:t=q:w=1.2:g=2.2,"
+        f"loudnorm=I=-14.2:TP=-1.0:LRA=6,"
         f"adelay={int(pad_lead*1000)}|{int(pad_lead*1000)},"
         f"apad=pad_dur={pad_tail:.2f},aformat=sample_rates=48000:channel_layouts=stereo",
         "-c:a", "pcm_s16le",
@@ -108,6 +148,7 @@ def _trim_silence_and_master_clip(raw_wav: Path, out_wav: Path, pad_lead: float 
 
     out_data, out_sr = sf.read(str(out_wav))
     total_clip_dur = len(out_data) / float(out_sr)
+    speech_dur = max(0.3, total_clip_dur - pad_lead - pad_tail)
     return total_clip_dur, pad_lead, pad_lead + speech_dur
 
 
@@ -198,74 +239,174 @@ def _align_whisper_with_canonical_text(
     return cues
 
 
+def _slice_block_with_whisper(
+    block_wav: Path,
+    block_items: List[Tuple[str, str]],
+    wmodel: Any,
+    voice_dir: Path,
+) -> None:
+    """Slices a multi-beat cohesive Cumberbatch block WAV into per-beat raw WAVs preserving tails & pauses."""
+    data, sr = sf.read(str(block_wav))
+    mono = np.mean(data, axis=1) if data.ndim > 1 else data
+    total_sec = len(mono) / float(sr)
+
+    bounds: List[Tuple[float, float]] = []
+    try:
+        res = wmodel.transcribe(str(block_wav), language="en", word_timestamps=True, fp16=False)
+        spoken = []
+        for seg in res.get("segments", []):
+            for wd in seg.get("words", []):
+                tok = re.sub(r"[^a-z0-9]", "", (wd.get("word") or "").lower())
+                if tok:
+                    spoken.append((tok, float(wd["start"]), float(wd["end"])))
+
+        expected_w = sum(len(sp_txt.split()) for _, sp_txt in block_items)
+        if len(spoken) >= expected_w * 0.65:
+            cursor = 0
+            for idx, (_, sp_txt) in enumerate(block_items):
+                c_toks = [re.sub(r"[^a-z0-9]", "", w.lower()) for w in sp_txt.split() if re.sub(r"[^a-z0-9]", "", w.lower())]
+                n_w = max(1, len(c_toks))
+                est_end = min(len(spoken) - (len(block_items) - 1 - idx), cursor + n_w)
+                if idx < len(block_items) - 1 and c_toks:
+                    nxt_first = re.sub(r"[^a-z0-9]", "", block_items[idx + 1][1].split()[0].lower())
+                    best_k, best_sc = est_end, -1
+                    for k in range(max(cursor + 1, est_end - 3), min(len(spoken), est_end + 4)):
+                        sc = (2 if spoken[k][0] == nxt_first else 0) + (2 if spoken[k - 1][0] == c_toks[-1] else 0)
+                        if sc > best_sc:
+                            best_sc, best_k = sc, k
+                    est_end = best_k
+                if idx == len(block_items) - 1:
+                    est_end = len(spoken)
+                s_t = max(0.0, spoken[cursor][1] - 0.05) if idx == 0 else bounds[-1][1]
+                if idx == len(block_items) - 1:
+                    e_t = total_sec
+                else:
+                    w_end = spoken[est_end - 1][2]
+                    w_nxt = spoken[min(len(spoken) - 1, est_end)][1]
+                    gap = max(0.0, w_nxt - w_end)
+                    e_t = w_end + min(0.11, gap * 0.55) if gap > 0.02 else w_end + 0.04
+                e_t = max(s_t + 0.7, min(total_sec, e_t))
+                bounds.append((s_t, e_t))
+                cursor = min(len(spoken) - 1, est_end)
+    except Exception as e:
+        print(f"[Runner] Whisper cohesive block slice note: {e}")
+
+    if len(bounds) != len(block_items):
+        wts = [max(1, len(txt.split())) for _, txt in block_items]
+        tot_w = float(sum(wts))
+        cur_t = 0.0
+        bounds = []
+        for idx, wt in enumerate(wts):
+            if idx == len(wts) - 1:
+                bounds.append((cur_t, total_sec))
+            else:
+                nxt_t = cur_t + (wt / tot_w) * total_sec
+                bounds.append((cur_t, nxt_t))
+                cur_t = nxt_t
+
+    for (tag, _), (st, et) in zip(block_items, bounds):
+        seg = data[int(st * sr) : int(et * sr)]
+        sf.write(str(voice_dir / f"raw_{tag}.wav"), seg, sr)
+
+
 def synthesize_documentary_voice_and_mix(
     pkg: StoryPackage,
     run_dir: Path,
     fps: float = 30.0,
 ) -> Dict[str, Any]:
-    """Synthesizes Qwen3-TTS Ryan documentary voice, extracts subtitles, and mixes audio to -14 LUFS."""
-    from beta.stages.qwen_tts_synthesizer import synthesize_qwen3
-
+    """Synthesizes cohesive Benedict Cumberbatch clone narration, slices & aligns captions, and masters -14 LUFS with ZERO whoosh SFX."""
     voice_dir = run_dir / "audio"
     voice_dir.mkdir(parents=True, exist_ok=True)
     concat_inputs: List[Path] = []
     beat_timings: List[Dict[str, Any]] = []
     all_cues: List[Dict[str, Any]] = []
 
-    cum_sec = 0.0
-    sfx_cues: List[Dict[str, Any]] = []
+    hints = getattr(pkg, "pronunciation_hints", None) or {}
+    story_items = [(f"beat_{b.beat_number}", b.voiceover_text, _apply_pronunciation_hints(b.voiceover_text, hints)) for b in pkg.beats]
+    mid = max(2, len(story_items) // 2)
+    blocks = [
+        ("part1", story_items[:mid]),
+        ("part2", story_items[mid:]),
+    ]
 
+    model, cb_prompt = _get_cumberbatch_clone()
     try:
-        items = [(f"beat_{b.beat_number}", b.voiceover_text, b) for b in pkg.beats]
-        items.append(("outro", pkg.outro_narration, None))
-
-        for tag, text, beat_obj in items:
-            raw_wav = voice_dir / f"raw_{tag}.wav"
-            clean_wav = voice_dir / f"clean_{tag}.wav"
-            synthesize_qwen3(
-                text=text,
-                output_path=raw_wav,
-                speaker="Ryan",
-                instruct=CALM_DOC_INSTRUCT,
+        for blk_tag, blk_rows in blocks:
+            blk_text = " ".join(sp for _, _, sp in blk_rows)
+            blk_wav = voice_dir / f"raw_block_{blk_tag}.wav"
+            w_cnt = len(blk_text.split())
+            wavs, out_sr = model.generate_voice_clone(
+                text=blk_text,
                 language="English",
+                voice_clone_prompt=cb_prompt,
+                non_streaming_mode=True,
+                temperature=0.52,
+                repetition_penalty=1.18,
+                max_new_tokens=max(420, int(w_cnt * 13.5)),
             )
-            pad_tail = 0.35 if beat_obj is not None else 0.55
-            dur_sec, sp_start, sp_end = _trim_silence_and_master_clip(raw_wav, clean_wav, pad_lead=0.16, pad_tail=pad_tail)
-            # Enforce exact 30fps integer frame boundaries so audio and visual cuts never drift!
-            dur_frames = max(30, int(round(dur_sec * fps)))
-            exact_dur_sec = dur_frames / fps
+            sf.write(str(blk_wav), wavs[0], out_sr)
 
-            concat_inputs.append(clean_wav)
-            beat_timings.append({
-                "tag": tag,
-                "start_sec": cum_sec,
-                "duration_sec": exact_dur_sec,
-                "duration_frames": dur_frames,
-                "speech_start": sp_start,
-                "speech_end": sp_end,
-                "text": text,
-                "wav": str(clean_wav),
-            })
-
-            # Place restrained tactile SFX cues aligned with visual transitions/stamps
-            if beat_obj is not None:
-                if beat_obj.beat_number == 1:
-                    sfx_cues.append({"path": str(SFX_DIR / "sfx_paper_slide.wav"), "time_sec": cum_sec + 0.12, "volume": 0.16})
-                elif beat_obj.layout_style == "newspaper_highlighter":
-                    sfx_cues.append({"path": str(SFX_DIR / "sfx_paper_crinkle.wav"), "time_sec": cum_sec + 0.25, "volume": 0.18})
-                elif beat_obj.layout_style == "archival_pinboard":
-                    sfx_cues.append({"path": str(SFX_DIR / "sfx_camera_shutter.wav"), "time_sec": cum_sec + 0.20, "volume": 0.18})
-                elif beat_obj.layout_style == "puppet_confrontation_25d":
-                    sfx_cues.append({"path": str(SFX_DIR / "sfx_paper_slide.wav"), "time_sec": cum_sec + 0.22, "volume": 0.18})
-                if beat_obj.stamp_text:
-                    stamp_t = cum_sec + max(1.1, exact_dur_sec * 0.56)
-                    sfx_cues.append({"path": str(SFX_DIR / "sfx_stamp_thud.wav"), "time_sec": stamp_t, "volume": 0.22})
-
-            cum_sec += exact_dur_sec
+        # Outro in same cohesive Cumberbatch voice
+        outro_wav_raw = voice_dir / "raw_outro.wav"
+        owavs, o_sr = model.generate_voice_clone(
+            text=pkg.outro_narration,
+            language="English",
+            voice_clone_prompt=cb_prompt,
+            non_streaming_mode=True,
+            temperature=0.48,
+            repetition_penalty=1.18,
+            max_new_tokens=260,
+        )
+        sf.write(str(outro_wav_raw), owavs[0], o_sr)
     finally:
         _release_qwen3_tts()
 
-    # Align subtitles (using Whisper CPU now that Qwen3-TTS GPU memory is free!)
+    # Load CPU Whisper once for BOTH cohesive block slicing and canonical caption alignment
+    import whisper
+    if not hasattr(_align_whisper_with_canonical_text, "_model"):
+        print("[Runner] Loading Whisper base (CPU) for slicing & caption alignment...")
+        _align_whisper_with_canonical_text._model = whisper.load_model("base", device="cpu")
+    wmodel = _align_whisper_with_canonical_text._model
+
+    for blk_tag, blk_rows in blocks:
+        _slice_block_with_whisper(
+            voice_dir / f"raw_block_{blk_tag}.wav",
+            [(tag, sp) for tag, _, sp in blk_rows],
+            wmodel,
+            voice_dir,
+        )
+
+    cum_sec = 0.0
+    items = [(f"beat_{b.beat_number}", b.voiceover_text, b) for b in pkg.beats]
+    items.append(("outro", pkg.outro_narration, None))
+
+    for tag, canon_text, beat_obj in items:
+        raw_wav = voice_dir / f"raw_{tag}.wav"
+        clean_wav = voice_dir / f"clean_{tag}.wav"
+        pad_tail = 0.16 if beat_obj is not None else 0.35
+        dur_sec, sp_start, sp_end = _trim_silence_and_master_clip(
+            raw_wav, clean_wav, pad_lead=0.05, pad_tail=pad_tail, atempo=1.08 if beat_obj is not None else 1.05
+        )
+        dur_frames = max(24, int(round(dur_sec * fps)))
+        exact_dur_sec = dur_frames / fps
+
+        concat_inputs.append(clean_wav)
+        beat_timings.append({
+            "tag": tag,
+            "start_sec": cum_sec,
+            "duration_sec": exact_dur_sec,
+            "duration_frames": dur_frames,
+            "speech_start": sp_start,
+            "speech_end": sp_end,
+            "text": canon_text,
+            "wav": str(clean_wav),
+        })
+        cum_sec += exact_dur_sec
+
+    # Strict ZERO AI whoosh policy — rely on crisp vocal cuts + groovy upright bass score!
+    sfx_cues: List[Dict[str, Any]] = []
+
+    # Align subtitles strictly to canonical spelling
     for bt in beat_timings:
         cues = _align_whisper_with_canonical_text(
             Path(bt["wav"]),
@@ -279,7 +420,7 @@ def synthesize_documentary_voice_and_mix(
             c["id"] = len(all_cues) + 1
             all_cues.append(c)
 
-    # Concatenate clean voice segments via ffmpeg filter_complex concat
+    # Concatenate clean voice segments
     vo_full = voice_dir / "full_voiceover.wav"
     cmd_cat = ["ffmpeg", "-y"]
     for p in concat_inputs:
@@ -335,6 +476,7 @@ def render_documentary_video(
             "durationInFrames": t_row["duration_frames"],
             "visual_kicker": b.visual_kicker,
             "visual_headline": b.visual_headline,
+            "kinetic_word": b.kinetic_word,
             "sub_caption": b.sub_caption,
             "bg_path": ba.get("bg_path"),
             "banner_path": ba.get("banner_path"),
@@ -343,6 +485,7 @@ def render_documentary_video(
             "mounted": ba.get("mounted"),
             "editorial": ba.get("editorial"),
             "newspaper_path": ba.get("newspaper_path"),
+            "quote_card_path": ba.get("quote_card_path"),
             "highlight_rects": ba.get("highlight_rects"),
             "stamp_path": ba.get("stamp_path"),
             "timeline_items": [ti.model_dump() for ti in b.timeline_items] if b.timeline_items else None,

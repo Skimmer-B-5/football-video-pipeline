@@ -223,6 +223,8 @@ export interface DocumentaryBeatProps {
     | "vox_25d_cutout"
     | "newspaper_highlighter"
     | "archival_pinboard"
+    | "full_bleed_callout"
+    | "kinetic_quote_card"
     | "puppet_confrontation_25d"
     | "tactile_timeline_card"
     | "clean_editorial_epilogue"
@@ -232,6 +234,7 @@ export interface DocumentaryBeatProps {
   durationInFrames: number;
   visual_kicker: string;
   visual_headline: string;
+  kinetic_word?: string;
   sub_caption?: string;
   bg_path?: string;
   banner_path?: string;
@@ -240,6 +243,7 @@ export interface DocumentaryBeatProps {
   mounted?: DocImageAsset;
   editorial?: DocImageAsset;
   newspaper_path?: string;
+  quote_card_path?: string;
   highlight_rects?: DocHighlightRect[];
   stamp_path?: string;
   timeline_items?: DocTimelineEntry[];

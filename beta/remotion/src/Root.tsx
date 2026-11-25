@@ -92,6 +92,36 @@ const fontStyles = `
   font-weight: 700;
   font-style: italic;
 }
+@font-face {
+  font-family: 'Anton';
+  src: url('${staticFile("fonts/doc_expressive/Anton-Regular.ttf")}') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'Playfair Display';
+  src: url('${staticFile("fonts/doc_expressive/PlayfairDisplay-Bold.ttf")}') format('truetype');
+  font-weight: 700;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'Special Elite';
+  src: url('${staticFile("fonts/doc_expressive/SpecialElite-Regular.ttf")}') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'Space Mono';
+  src: url('${staticFile("fonts/doc_expressive/SpaceMono-Bold.ttf")}') format('truetype');
+  font-weight: 700;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'Syne';
+  src: url('${staticFile("fonts/doc_expressive/Syne-ExtraBold.ttf")}') format('truetype');
+  font-weight: 800;
+  font-style: normal;
+}
 `;
 
 import {

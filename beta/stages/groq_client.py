@@ -69,6 +69,8 @@ def call_groq_chat(
     system_prompt: Optional[str] = None,
     user_prompt: Optional[str] = None,
     model: Optional[str] = None,
+    json_mode: bool = False,
+    allowed_models: Optional[List[str]] = None,
 ) -> Optional[str]:
     """
     Execute chat completion on Groq with multi-key redundancy and automatic model failover.
@@ -86,12 +88,15 @@ def call_groq_chat(
             messages.append({"role": "user", "content": user_prompt})
 
     keys = get_groq_keys()
-    models_to_try = [preferred_model]
-    if fallback_model and fallback_model not in models_to_try:
-        models_to_try.append(fallback_model)
-    for m in ("openai/gpt-oss-120b", "openai/gpt-oss-20b", "qwen/qwen3.8-27b"):
-        if m not in models_to_try:
-            models_to_try.append(m)
+    if allowed_models:
+        models_to_try = list(dict.fromkeys(allowed_models))
+    else:
+        models_to_try = [preferred_model]
+        if fallback_model and fallback_model not in models_to_try:
+            models_to_try.append(fallback_model)
+        for m in ("openai/gpt-oss-120b", "openai/gpt-oss-20b", "qwen/qwen3.8-27b"):
+            if m not in models_to_try:
+                models_to_try.append(m)
 
     for current_model in models_to_try:
         for key in keys:
@@ -106,6 +111,8 @@ def call_groq_chat(
                         "max_tokens": max_tokens,
                         "temperature": temperature
                     }
+                    if json_mode and attempt == 0:
+                        payload["response_format"] = {"type": "json_object"}
 
                     req = urllib.request.Request(
                         GROQ_ENDPOINT,
@@ -128,8 +135,8 @@ def call_groq_chat(
                 except urllib.error.HTTPError as he:
                     error_body = he.read().decode("utf-8", errors="ignore")
                     print(f"[GroqClient] Model '{current_model}' with key ...{key[-6:]} returned HTTP {he.code}: {error_body[:100]}")
-                    if he.code == 429 and attempt == 0:
-                        time.sleep(0.9)
+                    if he.code == 429 and attempt == 0 and "Request too large" not in error_body:
+                        time.sleep(3.5)
                         continue
                     break
                 except Exception as e:

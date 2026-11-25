@@ -28,13 +28,17 @@ def get_font(family: str = "headline", size: int = 40) -> ImageFont.ImageFont:
     key = (family, size)
     if key not in _FONT_CACHE:
         font_map = {
-            "headline": FONTS_DIR / "BarlowCondensed-ExtraBold.ttf",
-            "headline_bold": FONTS_DIR / "BarlowCondensed-Bold.ttf",
-            "serif": FONTS_DIR / "SourceSerif4-Bold.ttf",
+            "headline": FONTS_DIR / "Anton-Regular.ttf",
+            "headline_bold": FONTS_DIR / "SpaceMono-Bold.ttf",
+            "serif": FONTS_DIR / "PlayfairDisplay-Bold.ttf",
             "serif_italic": FONTS_DIR / "SourceSerif4-Italic.ttf",
-            "meta": FONTS_DIR / "IBMPlexSans.ttf",
+            "meta": FONTS_DIR / "SpecialElite-Regular.ttf",
+            "syne": FONTS_DIR / "Syne-ExtraBold.ttf",
+            "barlow": FONTS_DIR / "BarlowCondensed-ExtraBold.ttf",
         }
         p = font_map.get(family, font_map["headline"])
+        if not p.exists():
+            p = FONTS_DIR / "BarlowCondensed-ExtraBold.ttf"
         if p.exists():
             _FONT_CACHE[key] = ImageFont.truetype(str(p), size)
         else:

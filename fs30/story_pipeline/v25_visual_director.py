@@ -35,6 +35,7 @@ from fs30.story_pipeline.paper_widgets import (
     get_font,
     wrap_text_to_width,
     create_torn_headline_banner,
+    create_torn_quote_card,
     REUSABLE_STOCK_DIR,
     ARCHIVAL_RED,
     CHARCOAL,
@@ -91,56 +92,55 @@ def create_newspaper_highlighter_card(
     headline: str,
     quote_excerpt: str,
     highlight_phrase: str,
-    width: int = 920,
+    width: int = 960,
 ) -> Tuple[Image.Image, List[Dict[str, float]]]:
     """
-    Renders a realistic cream aged-newsprint card via Source Serif 4 & Barlow Condensed,
+    Renders a realistic cream aged-newsprint card via Playfair Display & Anton,
     returning both the transparent PNG and normalized % bounding boxes for Remotion's
     animated translucent yellow highlighter wipe.
     """
     newsprint_path = REUSABLE_STOCK_DIR / "textures" / "texture_variant_b_newspaper_newsprint.jpg"
     if newsprint_path.exists():
         with Image.open(newsprint_path) as tx:
-            base = ImageOps.fit(tx.convert("RGB"), (width, 520), Image.Resampling.LANCZOS)
-            # Soften newsprint into light readable cream sheet
+            base = ImageOps.fit(tx.convert("RGB"), (width, 560), Image.Resampling.LANCZOS)
             arr = np.clip(np.array(base, dtype=np.float32) * 0.25 + 195.0, 0, 248).astype(np.uint8)
             sheet = Image.fromarray(arr).convert("RGBA")
     else:
-        sheet = Image.new("RGBA", (width, 520), (242, 236, 222, 255))
+        sheet = Image.new("RGBA", (width, 560), (242, 236, 222, 255))
 
     draw = ImageDraw.Draw(sheet)
-    pad_x = 54
+    pad_x = 52
     max_w = width - pad_x * 2
 
     # Masthead rule + publication name
-    f_pub = get_font("serif", 28)
-    f_date = get_font("meta", 22)
-    draw.text((pad_x, 34), publication.upper(), font=f_pub, fill=CHARCOAL)
+    f_pub = get_font("serif", 30)
+    f_date = get_font("meta", 23)
+    draw.text((pad_x, 32), publication.upper(), font=f_pub, fill=CHARCOAL)
     d_bb = f_date.getbbox(date_text.upper())
-    draw.text((width - pad_x - (d_bb[2] - d_bb[0]), 38), date_text.upper(), font=f_date, fill=(95, 92, 86, 255))
-    draw.line([(pad_x, 76), (width - pad_x, 76)], fill=(32, 34, 38, 255), width=4)
-    draw.line([(pad_x, 84), (width - pad_x, 84)], fill=(140, 134, 124, 255), width=1)
+    draw.text((width - pad_x - (d_bb[2] - d_bb[0]), 36), date_text.upper(), font=f_date, fill=(95, 92, 86, 255))
+    draw.line([(pad_x, 78), (width - pad_x, 78)], fill=(32, 34, 38, 255), width=4)
+    draw.line([(pad_x, 86), (width - pad_x, 86)], fill=(140, 134, 124, 255), width=1)
 
     # Newspaper headline
-    f_hl = get_font("headline", 54)
+    f_hl = get_font("headline", 56)
     hl_lines = wrap_text_to_width(headline.upper(), f_hl, max_w)[:2]
     y_cur = 104
     for line in hl_lines:
         draw.text((pad_x, y_cur), line, font=f_hl, fill=CHARCOAL)
-        y_cur += 58
+        y_cur += 62
 
     y_cur += 14
     draw.line([(pad_x, y_cur), (width - pad_x, y_cur)], fill=(165, 158, 148, 255), width=2)
     y_cur += 22
 
-    # Body excerpt in Source Serif 4 with per-line highlight box computation
-    f_body = get_font("serif", 32)
+    # Body excerpt in Playfair Display with per-line highlight box computation
+    f_body = get_font("serif", 34)
     body_lines = wrap_text_to_width(quote_excerpt, f_body, max_w)[:4]
     phrase_low = (highlight_phrase or "").strip().lower()
     phrase_tokens = [w.strip(".,;:!?\"'") for w in phrase_low.split() if len(w.strip(".,;:!?\"'")) > 2]
 
     raw_rects: List[Tuple[int, int, int, int]] = []
-    line_h = 46
+    line_h = 48
     for line in body_lines:
         draw.text((pad_x, y_cur), line, font=f_body, fill=(28, 30, 36, 255))
         line_low = line.lower()
@@ -172,7 +172,7 @@ def create_newspaper_highlighter_card(
         l0_bb = f_body.getbbox(body_lines[0])
         raw_rects.append((pad_x - 4, y_cur - len(body_lines) * line_h - 2, min(max_w, (l0_bb[2] - l0_bb[0]) + 8), 42))
 
-    final_h = max(320, min(520, y_cur + 38))
+    final_h = max(340, min(560, y_cur + 42))
     sheet = sheet.crop((0, 0, width, final_h))
 
     # Subtle deckle paper edge mask + soft white border
@@ -308,7 +308,14 @@ class V25DocumentaryVisualDirector:
             if t not in generic_toks
         ]
 
-        # Deduplicate and rank by event-query relevance FIRST, then tier priority
+        # Deduplicate and rank by event-query relevance FIRST, then block watermarked / quote graphic junk
+        bad_graphic_toks = (
+            "dreamstime", "shutterstock", "alamy", "istockphoto", "gettyimages", "123rf",
+            "depositphotos", "vecteezy", "freepik", "pngtree", "pinterest", "wallpaper",
+            "adobestock", "stock.adobe", "ftcdn", "sportskeeda", "cricket", "chinnaswamy",
+            "ipl-", "/ipl/", "youtube", "ytimg", "thumbnail", "redditmedia",
+            "quote", "infographic", "to go", "to-go", "fifa-2", "ea-sports", "fifa2", "efootball",
+        )
         deduped: List[Dict[str, Any]] = []
         seen_u = set()
         for c in candidates:
@@ -321,15 +328,44 @@ class V25DocumentaryVisualDirector:
             title_low = (c.get("title") or "").lower()
             if any(t in title_low for t in DISQUALIFIED_TITLE_TERMS):
                 continue
+            blob_check = f"{title_low} {low}"
+            if any(bg in blob_check for bg in bad_graphic_toks):
+                continue
+            if is_venue and not any(tk in q_low for tk in ("trophy", "shield", "winner", "celebrat")):
+                if any(tk in blob_check for tk in ("community-shield", "community_shield", "winners", "trophy-lift")):
+                    continue
             if avoid_terms and any(av in title_low or av in low for av in avoid_terms):
                 continue
             seen_u.add(u)
             blob = f"{title_low} {low} {(c.get('page_url') or '').lower()}"
-            ev_hits = sum(1 for tok in event_tokens if tok in blob)
+            ev_hits = sum(2 if tok in title_low else 1 for tok in event_tokens if tok in blob)
+            # Strong club affinity bonus when query specifies a club (prevents showing wrong kit!)
+            if "barcelona" in q_low and "liverpool" in blob and "barcelona" not in blob:
+                ev_hits -= 4
+            if "ajax" in q_low and "barcelona" in blob and "ajax" not in blob:
+                ev_hits -= 3
             c["_ev_score"] = ev_hits
             deduped.append(c)
         deduped.sort(key=lambda c: (-int(c.get("_ev_score", 0)), int(c.get("priority", 3))))
         return deduped
+
+    def _check_synthetic_card(self, cv_bgr: np.ndarray, is_venue: bool = False) -> Optional[str]:
+        """Detects flat studio thumbnails, text logo banners, and solid-gradient cards."""
+        ih, iw = cv_bgr.shape[:2]
+        small_g = cv2.cvtColor(cv2.resize(cv_bgr, (240, 135)), cv2.COLOR_BGR2GRAY)
+        hist16 = cv2.calcHist([small_g], [0], None, [16], [0, 256]).flatten()
+        top3_ratio = float(np.sort(hist16)[-3:].sum()) / float(max(1, small_g.size))
+        if top3_ratio > 0.72:
+            return f"synthetic graphic / flat-tone card (top3={top3_ratio:.2f})"
+        flat_rows = float(np.mean(np.std(small_g, axis=1) < 9.0))
+        if flat_rows > 0.34:
+            return f"synthetic graphic / flat horizontal bands (rows={flat_rows:.2f})"
+        if not is_venue and iw >= ih:
+            l_smooth = float(np.std(cv2.GaussianBlur(small_g[:, :92], (15, 15), 0)))
+            r_smooth = float(np.std(cv2.GaussianBlur(small_g[:, -92:], (15, 15), 0)))
+            if (l_smooth > 30.0 and r_smooth < 22.0) or (r_smooth > 30.0 and l_smooth < 22.0):
+                return f"split graphic thumbnail backdrop (L={l_smooth:.1f}, R={r_smooth:.1f})"
+        return None
 
     def _download_unique_valid(self, url: str) -> Optional[Tuple[np.ndarray, str, int, float]]:
         img_bytes = self.sourcer.download_image_bytes(url)
@@ -445,6 +481,10 @@ class V25DocumentaryVisualDirector:
                 continue
             cv_bgr, sha, dh, blur = dl
             ih, iw = cv_bgr.shape[:2]
+            synth_reason = self._check_synthetic_card(cv_bgr, is_venue=False)
+            if synth_reason:
+                print(f"    Cand {idx} reject: {synth_reason}")
+                continue
 
             objs = self.detector.detect_scene_objects(cv_bgr)
             c_ok, c_reason, _ = self.detector.evaluate_content_awareness(
@@ -488,6 +528,9 @@ class V25DocumentaryVisualDirector:
             # Tight proportional crop around verified person; expand downward/sideways when box is face-only
             x1, y1, x2, y2 = 0, 0, iw, ih
             matched_fh = matched_fbox[3] if (matched_fbox is not None) else (faces[0]["bbox"][3] if faces else 0)
+            if canon_entity and matched_fbox is not None and matched_fh < 44:
+                print(f"    Cand {idx} reject: matched face too small for crisp cutout ({matched_fh}px)")
+                continue
             if target_box is not None:
                 bx, by, bw, bh = target_box
                 if not is_face_only and bw / float(max(1, bh)) > 0.72 and bh < ih * 0.45:
@@ -576,6 +619,19 @@ class V25DocumentaryVisualDirector:
             bbox = refined.getbbox()
             if bbox:
                 refined = refined.crop(bbox)
+            if refined.width < 320 or refined.height < 430:
+                print(f"    Cand {idx} reject: cutout too small/blurry ({refined.width}x{refined.height})")
+                continue
+
+            # Reject dark silhouette / underexposed back-of-shoulder torso crops
+            ref_np = np.array(refined)
+            top_half = ref_np[: max(1, ref_np.shape[0] // 2)]
+            opaque_top = top_half[top_half[:, :, 3] > 120]
+            if len(opaque_top) > 100:
+                top_luma = float(np.mean(0.299 * opaque_top[:, 0] + 0.587 * opaque_top[:, 1] + 0.114 * opaque_top[:, 2]))
+                if top_luma < 46.0:
+                    print(f"    Cand {idx} reject: upper subject too dark/underexposed (luma={top_luma:.1f})")
+                    continue
 
             # Reject flat photo-border vertical slices AND severed floating heads (no shoulders/torso)
             trim_a = np.array(refined.split()[-1]) > 60
@@ -664,6 +720,10 @@ class V25DocumentaryVisualDirector:
                 continue
             cv_bgr, sha, dh, blur = dl
             ih, iw = cv_bgr.shape[:2]
+            synth_reason = self._check_synthetic_card(cv_bgr, is_venue=is_venue)
+            if synth_reason:
+                print(f"    Cand {idx} reject: {synth_reason}")
+                continue
 
             objs = self.detector.detect_scene_objects(cv_bgr)
             c_ok, c_reason, _ = self.detector.evaluate_content_awareness(
@@ -759,8 +819,8 @@ class V25DocumentaryVisualDirector:
                     fy = min(0.85, max(0.15, (pb[1] + pb[3] * 0.35) / float(ih)))
 
                 ar = iw / float(ih)
-                tw = 900
-                th = int(min(780, max(520, round(tw / max(1.15, min(1.75, ar)))))) if ar >= 1.0 else 740
+                tw = 1010
+                th = int(min(980, max(580, round(tw / max(1.10, min(1.75, ar)))))) if ar >= 1.0 else 940
                 mounted = mount_archival_photo(
                     pil_img, target_w=tw, target_h=th,
                     border_width=14, shadow_radius=12, shadow_alpha=155, focus_point=(fx, fy),
@@ -792,6 +852,34 @@ class V25DocumentaryVisualDirector:
                 )
                 if not ok_crop or out_bgr is None:
                     return None
+                if slot_tag == "clean_editorial" and crop_audit.get("framing_mode") != "full_bleed":
+                    # Avoid blurry top/bottom bars on wide celebration shots — mount crisply over stadium backdrop!
+                    ar = iw / float(max(1, ih))
+                    tw = 1024
+                    th = int(min(980, max(580, round(tw / max(1.10, min(1.75, ar)))))) if ar >= 1.0 else 940
+                    fx = float(crop_audit.get("focal_x", 50.0)) / 100.0
+                    fy = float(crop_audit.get("focal_y", 35.0)) / 100.0
+                    mounted = mount_archival_photo(
+                        pil_img, target_w=tw, target_h=th,
+                        border_width=14, shadow_radius=12, shadow_alpha=155, focus_point=(fx, fy),
+                    )
+                    out_file = self.staged_dir / f"{out_prefix}_spread.png"
+                    mounted.save(out_file, "PNG")
+                    pub_path = self._stage_to_public(out_file)
+                    self._register_used(cand["url"], sha, dh, {
+                        "beat": beat_idx, "slot": slot_tag, "url": cand["url"],
+                        "source": cand.get("source"), "sha256": sha, "blur": round(blur, 1),
+                        "framing_mode": "mounted_spread",
+                    })
+                    print(f"  [APPROVED Editorial Spread] {out_prefix}_spread.png ({mounted.width}x{mounted.height})")
+                    return {
+                        "path": pub_path,
+                        "width": mounted.width,
+                        "height": mounted.height,
+                        "focal_x": crop_audit.get("focal_x", 50.0),
+                        "focal_y": crop_audit.get("focal_y", 35.0),
+                        "framing_mode": "mounted_spread",
+                    }
                 out_file = self.staged_dir / f"{out_prefix}.jpg"
                 cv2.imwrite(str(out_file), out_bgr, [cv2.IMWRITE_JPEG_QUALITY, 94])
                 pub_path = self._stage_to_public(out_file)
@@ -833,15 +921,15 @@ class V25DocumentaryVisualDirector:
                 print(f"\n[DocVisual] Preparing Beat {idx} ({b.layout_style}) — Primary: '{b.primary_entity}'")
                 b_info: Dict[str, Any] = {}
 
-                # 1. Torn Headline Banner via authentic paper_widgets variants A-E (used selectively, skipped on epilogue)
+                # 1. Torn Headline Banner via authentic paper_widgets variants A-E (skipped on full-bleed epilogue)
                 if b.layout_style != "clean_editorial_epilogue" and b.visual_headline:
                     banner_img = create_torn_headline_banner(
                         headline=b.visual_headline,
                         kicker=b.visual_kicker,
-                        width=920,
-                        height=195,
+                        width=960,
+                        height=190,
                         headline_size=56,
-                        kicker_size=28,
+                        kicker_size=26,
                         variant=b.banner_variant,
                     )
                     b_file = self.staged_dir / f"beat{idx}_banner.png"
@@ -868,7 +956,7 @@ class V25DocumentaryVisualDirector:
                         headline=nc.headline,
                         quote_excerpt=nc.quote_excerpt,
                         highlight_phrase=nc.highlight_phrase,
-                        width=920,
+                        width=960,
                     )
                     nc_file = self.staged_dir / f"beat{idx}_newspaper.png"
                     card_img.save(nc_file, "PNG")
@@ -876,12 +964,45 @@ class V25DocumentaryVisualDirector:
                     b_info["newspaper_width"] = card_img.width
                     b_info["newspaper_height"] = card_img.height
                     b_info["highlight_rects"] = rects
-                    # Optional cutout inset beside/under newsprint
                     cut = self._build_verified_cutout(
                         idx, "news_inset_cutout", b.primary_entity, b.search_query, b.fallback_query, f"beat{idx}_cutout"
                     )
                     if cut:
                         b_info["cutout"] = cut
+
+                elif b.layout_style == "kinetic_quote_card":
+                    qc = b.quote_card
+                    q_txt = qc.quote if qc else (b.sub_caption or b.voiceover_text)
+                    a_txt = qc.attribution if qc else b.visual_kicker
+                    qc_img = create_torn_quote_card(
+                        quote=q_txt,
+                        attribution=a_txt,
+                        width=940,
+                        height=330,
+                        quote_size=38,
+                        attr_size=26,
+                    )
+                    qc_file = self.staged_dir / f"beat{idx}_quote.png"
+                    qc_img.save(qc_file, "PNG")
+                    b_info["quote_card_path"] = self._stage_to_public(qc_file)
+                    cut = self._build_verified_cutout(
+                        idx, "quote_cutout", b.primary_entity, b.search_query, b.fallback_query, f"beat{idx}_cutout"
+                    )
+                    if cut:
+                        b_info["cutout"] = cut
+
+                elif b.layout_style == "full_bleed_callout":
+                    ed = self._build_photo_asset(
+                        idx, "full_bleed_callout", b.primary_entity, b.search_query, b.fallback_query, f"beat{idx}_callout", mode="clean_editorial"
+                    )
+                    if ed:
+                        b_info["editorial"] = ed
+                    else:
+                        mounted = self._build_photo_asset(
+                            idx, "fallback_mount", b.primary_entity, b.search_query, b.fallback_query, f"beat{idx}_mounted", mode="mounted_photo"
+                        )
+                        if mounted:
+                            b_info["mounted"] = mounted
 
                 elif b.layout_style == "archival_pinboard":
                     mounted = self._build_photo_asset(
@@ -920,8 +1041,10 @@ class V25DocumentaryVisualDirector:
                     ed = self._build_photo_asset(
                         idx, "clean_editorial", b.primary_entity, b.search_query, b.fallback_query, f"beat{idx}_editorial", mode="clean_editorial"
                     )
-                    if ed:
+                    if ed and ed.get("framing_mode") == "full_bleed":
                         b_info["editorial"] = ed
+                    elif ed:
+                        b_info["mounted"] = ed
 
                 else:  # "vox_25d_cutout" | "tactile_timeline_card"
                     if b.use_cutout:

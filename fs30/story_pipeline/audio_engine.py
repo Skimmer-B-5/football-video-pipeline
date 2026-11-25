@@ -39,19 +39,22 @@ def master_story_audio(
     if not voice_track_path.exists():
         raise FileNotFoundError(f"Voice track not found: {voice_track_path}")
 
+    banned_sfx = ("whoosh", "swoosh", "paper_slide", "paper_crinkle")
     valid_sfx = [
         c for c in (sfx_cues or [])
-        if c.get("path") and Path(c["path"]).exists()
+        if c.get("path")
+        and Path(c["path"]).exists()
+        and not any(bad in Path(c["path"]).name.lower() for bad in banned_sfx)
     ][:10]
 
-    # Build FFmpeg filtergraph cleanly
+    # Build FFmpeg filtergraph cleanly (tight sidechain ducking so music punches back in between deadpan lines)
     filters = [
         f"[1:a]aloop=loop=-1:size=2e+09,atrim=0:{total_duration:.2f},"
-        f"highpass=f=60,equalizer=f=220:t=q:w=1.0:g=1.6,"
-        f"equalizer=f=1200:t=q:w=1.2:g=1.2,equalizer=f=2600:t=q:w=1.5:g=-3.0,"
-        f"volume=-17dB,afade=t=in:ss=0:d=0.8,afade=t=out:st={max(0.0, total_duration - 1.5):.2f}:d=1.5[music_raw]",
+        f"highpass=f=60,equalizer=f=220:t=q:w=1.0:g=1.4,"
+        f"equalizer=f=1200:t=q:w=1.2:g=1.0,equalizer=f=2600:t=q:w=1.5:g=-3.0,"
+        f"volume=-16.5dB,afade=t=in:ss=0:d=0.4,afade=t=out:st={max(0.0, total_duration - 1.2):.2f}:d=1.2[music_raw]",
         "[0:a]volume=1.0[vo]",
-        "[music_raw][vo]sidechaincompress=threshold=0.035:ratio=3.5:attack=50:release=350[ducked_music]",
+        "[music_raw][vo]sidechaincompress=threshold=0.03:ratio=4.0:attack=25:release=220[ducked_music]",
         f"[ducked_music]volume=enable='gte(t,{outro_start_time:.2f})':volume=2.0dB[music_final]",
     ]
 
