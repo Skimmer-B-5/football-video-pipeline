@@ -115,6 +115,12 @@ run_*_rebuild.py
 !fs30/story_pipeline/assets/**
 !final_masters_vault/**
 
+# Runtime beta state & face caches
+beta/data/face_cache/
+beta/data/fact_cache/
+beta/data/used_images_global.json
+beta/remotion/node_modules/
+
 # Operating System files
 Thumbs.db
 Desktop.ini

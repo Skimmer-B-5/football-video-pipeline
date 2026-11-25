@@ -43,9 +43,9 @@ export const RetroOverlay: React.FC<RetroOverlayProps> = ({
               position: "absolute",
               inset: 0,
               background:
-                "linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.38) 50%)",
+                "linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.18) 50%)",
               backgroundSize: "100% 4px",
-              opacity: 0.85 * flicker,
+              opacity: 0.65 * flicker,
               mixBlendMode: "multiply",
               pointerEvents: "none",
             }}

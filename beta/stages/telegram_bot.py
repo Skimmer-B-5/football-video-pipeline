@@ -444,7 +444,7 @@ class TelegramBotClient:
         return (
             "🧠 <b>QWEN & 1990s BROADCAST STUDIO COMMAND GUIDE</b>\n\n"
             "<i>Control your video pipeline studio directly from your phone:</i>\n\n"
-            "📺 <b>/broadcast [story]</b> (or <b>/retro</b>) — <i>Generate a 1990s television broadcast short (V7.1.6.7 master pipeline) voiced by Jeff Stelling with 16-shot CRT presentation!</i>\n"
+            "📺 <b>/broadcast [story]</b> (or <b>/retro</b>) — <i>Generate a 1990s television broadcast short (V7.1.6.7 8-scene master pipeline) voiced by Original British Sports Presenter with CRT presentation!</i>\n"
             "⚡ <b>/new</b> — <i>Scan live feeds, rank virality, and serve top trending stories.</i>\n"
             "🔍 <b>/search [query]</b> — <i>Search the internet for specific news (e.g. <code>/search bruno contract</code>) and pick a story!</i>\n"
             "💬 <b>/chat [question]</b> — <i>Directly debate tactics or ask Qwen anything (e.g. /chat who is the biggest fraud in football?).</i>\n"

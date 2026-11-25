@@ -53,13 +53,16 @@ TRANSFER_TRIGGERS = {
     "transfer", "transfers", "bid", "bids", "bidding", "sign", "signs", "signing", "signed",
     "contract", "clause", "release clause", "buyback", "hijack", "deal", "talks", "agreed",
     "agree", "medical", "fee", "loan", "swap", "exit", "target", "targets", "pursuit",
-    "eye", "eyes", "eyeing", "plot", "plots", "swoop", "replace", "replacement", "renewal"
+    "eye", "eyes", "eyeing", "plot", "plots", "swoop", "replace", "replacement", "renewal",
+    "sacked", "sack", "appointed", "appoints", "manager", "head coach", "coach",
+    "acl", "ruled out", "surgery", "sidelined", "suspended", "suspension", "ban", "banned",
+    "official", "breaking", "confirmed", "extension", "free agent", "crisis", "statement"
 }
 
 FLUFF_REJECT_PATTERNS = [
     r'\bfpl\b', r'fantasy\s+premier', r'gameweek', r'women[\'s]*\s+world\s+cup',
     r'match\s+report', r'highlights', r'player\s+ratings', r'predicted\s+lineup',
-    r'how\s+to\s+watch', r'stream\s+live', r'press\s+conference', r'injury\s+update',
+    r'how\s+to\s+watch', r'stream\s+live', r'press\s+conference',
     r'verdict:\s+how\s+every', r'mascot', r'power\s+rankings', r'fears\s+mount',
     r'what\s+next\s+for', r'world\s+record\s+bid', r'five\s+kane\s+replacement'
 ]
@@ -67,7 +70,8 @@ FLUFF_REJECT_PATTERNS = [
 TIER1_OUTLETS = {
     "The Times", "Sky Sports", "The Athletic", "BBC Sport", "The Guardian",
     "Telegraph", "Fabrizio Romano", "David Ornstein", "Cadena SER", "Gianluca Di Marzio",
-    "L'Equipe", "Bild", "Florian Plettenberg", "Bavarian Football Works"
+    "L'Equipe", "Bild", "Florian Plettenberg", "Bavarian Football Works",
+    "ESPN", "ESPN FC", "Reddit r/soccer"
 }
 
 def clean_tokens(text: str) -> Set[str]:
@@ -289,8 +293,13 @@ def cluster_and_rank() -> List[Dict[str, Any]]:
 
             conn.commit()
 
-        # Sort clusters by score descending
+        # Sort clusters by deterministic base score descending
         ranked_clusters.sort(key=lambda x: x["ranking_score"], reverse=True)
+        ranked_clusters = rerank_with_llm(ranked_clusters, top_k=10)
+        score_by_id = {c["cluster_id"]: c["ranking_score"] for c in ranked_clusters}
+        for entry in ranking_ledger:
+            if entry["cluster_id"] in score_by_id:
+                entry["score"] = score_by_id[entry["cluster_id"]]
         ranking_ledger.sort(key=lambda x: x["score"], reverse=True)
 
         EVIDENCE_DIR.mkdir(parents=True, exist_ok=True)
@@ -303,6 +312,64 @@ def cluster_and_rank() -> List[Dict[str, Any]]:
             print(f"  {idx}. [{item['reliability_tier'].upper()}] (Score: {item['ranking_score']}) {item['headline']} ({item['source']})")
 
         return ranked_clusters
+
+
+def rerank_with_llm(ranked_clusters: List[Dict[str, Any]], top_k: int = 10) -> List[Dict[str, Any]]:
+    """Uses Groq LLM to apply a 0-25 short-form virality bonus across top news clusters."""
+    if not ranked_clusters:
+        return ranked_clusters
+    try:
+        try:
+            from stages.groq_client import call_groq_chat
+        except ModuleNotFoundError:
+            from beta.stages.groq_client import call_groq_chat
+    except Exception:
+        return ranked_clusters
+
+    candidates = ranked_clusters[:top_k]
+    payload = [
+        {
+            "cluster_id": c["cluster_id"],
+            "headline": c["headline"],
+            "source": c["source"],
+            "source_count": c["source_count"],
+            "tier": c["reliability_tier"],
+            "base_score": c["ranking_score"],
+        }
+        for c in candidates
+    ]
+    sys_prompt = (
+        "You are an executive producer for '30 Football Plus', a viral 30-second football news YouTube Shorts channel. "
+        "Rate each candidate story from 0 to 25 BONUS points for 30-second viral audience engagement "
+        "(prioritizing shock transfer bombshells, megaclubs like Man Utd/Arsenal/Liverpool/Real Madrid/Barcelona, "
+        "manager sackings/appointments, and concrete fee/contract tension; penalize vague minor rumors).\n"
+        "Output ONLY valid JSON: {\"scores\": [{\"cluster_id\": 1, \"bonus\": 18, \"reason\": \"short reason\"}]}"
+    )
+    try:
+        raw = call_groq_chat(
+            system_prompt=sys_prompt,
+            user_prompt=json.dumps({"candidates": payload}, indent=2),
+            temperature=0.1,
+            timeout=12,
+        )
+        if not raw:
+            return ranked_clusters
+        m = re.search(r"\{.*\}", raw.strip(), re.DOTALL)
+        if not m:
+            return ranked_clusters
+        parsed = json.loads(m.group(0))
+        bonus_map = {int(s["cluster_id"]): (max(0.0, min(25.0, float(s.get("bonus", 0)))), s.get("reason", "")) for s in parsed.get("scores", []) if "cluster_id" in s}
+        for c in ranked_clusters:
+            if c["cluster_id"] in bonus_map:
+                bonus, reason = bonus_map[c["cluster_id"]]
+                c["llm_virality_bonus"] = bonus
+                c["llm_rationale"] = reason
+                c["ranking_score"] = round(c["ranking_score"] + bonus, 2)
+        ranked_clusters.sort(key=lambda x: x["ranking_score"], reverse=True)
+    except Exception as e:
+        print(f"[Ranker] LLM virality rerank skipped cleanly: {e}")
+
+    return ranked_clusters
 
 if __name__ == "__main__":
     top = cluster_and_rank()

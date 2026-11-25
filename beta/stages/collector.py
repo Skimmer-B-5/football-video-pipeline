@@ -13,6 +13,7 @@ Respects robots.txt on fallback HTML scraping.
 import sys
 import os
 import re
+import json
 import html
 import yaml
 import hashlib
@@ -66,7 +67,7 @@ def fetch_feed_items(feed_conf: Dict[str, Any]) -> List[Dict[str, Any]]:
     items = []
     
     headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36 Football30Sec/2.0"
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
     }
 
     try:
@@ -228,6 +229,92 @@ def scrape_besoccer(limit: int = 15) -> List[Dict[str, Any]]:
 
     return items
 
+def scrape_reddit_soccer(url: str = "https://www.reddit.com/r/soccer/hot.json?limit=25", limit: int = 20) -> List[Dict[str, Any]]:
+    """Fetch breaking football posts from Reddit r/soccer (direct JSON with Google News site:reddit RSS fallback)."""
+    items: List[Dict[str, Any]] = []
+    req = urllib.request.Request(
+        url,
+        headers={
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+            "Accept": "application/json",
+        },
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=12) as resp:
+            payload = json.loads(resp.read().decode("utf-8", errors="ignore"))
+        children = payload.get("data", {}).get("children", [])
+        for child in children:
+            if len(items) >= limit:
+                break
+            post = child.get("data", {})
+            if not post or post.get("stickied"):
+                continue
+            title = html.unescape((post.get("title") or "").strip())
+            if len(title) < 18:
+                continue
+            score = int(post.get("score") or 0)
+            num_comments = int(post.get("num_comments") or 0)
+            if score < 30 and not any(k in title.lower() for k in ("romano", "ornstein", "official", "breaking", "sacked", "agreed", "signing", "transfer")):
+                continue
+            permalink = post.get("permalink") or ""
+            post_url = post.get("url") or f"https://www.reddit.com{permalink}"
+            created_utc = float(post.get("created_utc") or datetime.now(timezone.utc).timestamp())
+            pub_str = datetime.fromtimestamp(created_utc, tz=timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
+            selftext = clean_html(post.get("selftext") or "")
+            body = f"Reddit engagement: {score} upvotes, {num_comments} comments. {selftext[:500]}".strip()
+            art_hash = hashlib.sha256(f"Reddit:{title}:{permalink}".encode("utf-8")).hexdigest()
+            items.append({
+                "hash": art_hash,
+                "title": title,
+                "source": "Reddit r/soccer",
+                "url": post_url,
+                "published_at": pub_str,
+                "raw_text": body or title,
+            })
+        if items:
+            return items
+    except Exception as e:
+        print(f"[Collector] Direct Reddit JSON note ({e}); using Google News r/soccer RSS fallback...")
+
+    fallback_rss = {
+        "name": "Reddit r/soccer",
+        "url": "https://news.google.com/rss/search?q=reddit+r%2Fsoccer+football&hl=en-GB&gl=GB&ceid=GB:en",
+    }
+    for it in fetch_feed_items(fallback_rss)[:limit]:
+        it["source"] = "Reddit r/soccer"
+        it["title"] = re.sub(r'\s*[:\-]\s*r/soccer\s*$', '', it["title"], flags=re.IGNORECASE).strip()
+        items.append(it)
+    return items
+
+
+def scrape_espn_json(url: str = "https://site.api.espn.com/apis/site/v2/sports/soccer/eng.1/news", limit: int = 20) -> List[Dict[str, Any]]:
+    """Fetch structured breaking football articles from ESPN public news JSON API."""
+    items: List[Dict[str, Any]] = []
+    req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"})
+    try:
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            payload = json.loads(resp.read().decode("utf-8", errors="ignore"))
+        for art in payload.get("articles", [])[:limit]:
+            title = html.unescape((art.get("headline") or "").strip())
+            desc = clean_html(art.get("description") or "")
+            link = (art.get("links", {}).get("web", {}).get("href") or "").strip()
+            pub_str = (art.get("published") or datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")).strip()
+            if not title or not link:
+                continue
+            art_hash = hashlib.sha256(f"ESPN FC:{title}:{link}".encode("utf-8")).hexdigest()
+            items.append({
+                "hash": art_hash,
+                "title": title,
+                "source": "ESPN FC",
+                "url": link,
+                "published_at": pub_str,
+                "raw_text": desc or title,
+            })
+    except Exception as e:
+        print(f"[Collector] Error polling ESPN JSON API: {e}")
+    return items
+
+
 def store_articles(articles: List[Dict[str, Any]]) -> int:
     """Store articles into SQLite, skipping duplicates."""
     init_database()
@@ -257,8 +344,15 @@ def run_collector() -> int:
 
         all_items = []
         for feed in config.get("feeds", []):
-            if feed.get("type") == "html" or feed.get("name") == "BeSoccer":
+            ftype = feed.get("type")
+            if ftype == "html" or feed.get("name") == "BeSoccer":
                 items = scrape_besoccer(limit=15)
+            elif ftype == "reddit":
+                print(f"[Collector] Polling Reddit feed: {feed['name']}...")
+                items = scrape_reddit_soccer(url=feed.get("url", "https://www.reddit.com/r/soccer/hot.json?limit=25"), limit=20)
+            elif ftype == "espn_json":
+                print(f"[Collector] Polling ESPN API: {feed['name']}...")
+                items = scrape_espn_json(url=feed.get("url", "https://site.api.espn.com/apis/site/v2/sports/soccer/eng.1/news"), limit=20)
             else:
                 print(f"[Collector] Polling feed: {feed['name']}...")
                 items = fetch_feed_items(feed)

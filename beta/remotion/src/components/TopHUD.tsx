@@ -30,8 +30,9 @@ export const TopHUD: React.FC<TopHUDProps> = ({ kicker, logoSrc }) => {
   const kickerTranslateX = (1 - kickerProgress) * 320;
   const kickerOpacity = Math.min(kickerProgress * 1.6, 1);
 
-  // Display wording: TRANSFER WATCH (not TRANSFER REPORT)
-  const displayKicker = kicker && !kicker.includes("REPORT") ? kicker : "● TRANSFER WATCH";
+  // Display wording: TRANSFER WATCH (not TRANSFER REPORT), strip any leading bullet to avoid double dot with HUD indicator
+  const rawKicker = (kicker || "TRANSFER WATCH").replace(/^[●•○\s]+/, "").trim();
+  const displayKicker = rawKicker && !rawKicker.includes("REPORT") ? rawKicker : "TRANSFER WATCH";
 
   return (
     <div

@@ -50,6 +50,57 @@ def get_audio_duration(path: Path) -> float:
     res = subprocess.run(cmd, capture_output=True, text=True, check=True)
     return float(res.stdout.strip())
 
+
+def build_subtitles_from_scenes(
+    scenes_props: List[Dict[str, Any]],
+    audio_scenes: List[Dict[str, Any]],
+    chunk_size: int = 4
+) -> List[Dict[str, Any]]:
+    """Builds speech-aligned subtitle cues from compiled scene props and audio manifests."""
+    audio_map = {a["scene_id"]: a for a in audio_scenes}
+    subtitles: List[Dict[str, Any]] = []
+    current_f = 0
+    cue_id = 1
+
+    for sc_prop in scenes_props:
+        sid = sc_prop.get("scene_id", "")
+        sc_audio = audio_map.get(sid, {})
+        dur_f = int(sc_prop.get("durationInFrames", sc_audio.get("duration_frames", 0)))
+
+        if sid != "outro" and sc_prop.get("role") != "outro":
+            onset_f = int(sc_audio.get("speech_onset_frame", 3))
+            offset_f = int(sc_audio.get("speech_offset_frame", max(onset_f + 15, dur_f - 4)))
+            offset_f = min(dur_f, max(onset_f + 1, offset_f))
+            speech_window_f = max(15, offset_f - onset_f)
+
+            text = (sc_prop.get("narration") or sc_prop.get("spoken_narration") or "").strip()
+            words = text.split()
+            chunks = [" ".join(words[i:i + chunk_size]) for i in range(0, len(words), chunk_size)] if words else []
+            total_chars = sum(len(c) for c in chunks) or 1
+            chunk_cursor_f = current_f + onset_f
+
+            for c_idx, chunk in enumerate(chunks):
+                chunk_dur_f = max(8, int(round((len(chunk) / float(total_chars)) * speech_window_f)))
+                if c_idx == len(chunks) - 1:
+                    end_f = current_f + offset_f
+                else:
+                    end_f = min(current_f + offset_f, chunk_cursor_f + chunk_dur_f)
+                if end_f <= chunk_cursor_f:
+                    end_f = min(current_f + dur_f, chunk_cursor_f + 8)
+
+                subtitles.append({
+                    "id": cue_id,
+                    "start_frame": chunk_cursor_f,
+                    "end_frame": end_f,
+                    "text": chunk.upper()
+                })
+                cue_id += 1
+                chunk_cursor_f = end_f
+
+        current_f += dur_f
+
+    return subtitles
+
 class GeneralizedBroadcastPipeline:
     def __init__(self, dossier: StoryDossier, run_id: str = "run_v7_1"):
         self.dossier = dossier
@@ -132,14 +183,23 @@ Output ONLY valid JSON matching this schema:
   ]
 }
 """
+            pursuing_mgr = getattr(d, "pursuing_manager", "") or "Unknown"
+            curr_std = getattr(d, "current_stadium", "") or ""
+            suitor_std = getattr(d, "pursuing_stadium", "") or ""
+            fan_reactions = getattr(d, "fan_reactions", []) or []
+
             user_prompt = f"""STORY HEADLINE: {d.main_headline}
 PROTAGONIST: {d.protagonist_name}
-CURRENT CLUB: {d.current_club}
-PURSUING CLUB / SUITOR: {d.pursuing_club}
-MANAGER: {d.current_manager}
+CURRENT CLUB: {d.current_club}{f" (Stadium: {curr_std})" if curr_std else ""}
+PURSUING CLUB / SUITOR: {d.pursuing_club} (Current Manager: {pursuing_mgr}{f", Stadium: {suitor_std}" if suitor_std else ""})
+CURRENT MANAGER: {d.current_manager}
 REPORTED FEE: {d.reported_base_fee}
 COMPLICATION: {d.complication}
 """
+            if fan_reactions:
+                user_prompt += "\nVERIFIED FAN REACTIONS (Reddit/Fans - use authentic sentiment, do NOT invent quotes):\n"
+                for fr in fan_reactions[:4]:
+                    user_prompt += f"- {fr}\n"
             if prior_script:
                 user_prompt += f"\nPREVIOUS SCRIPT DRAFT:\n{prior_script}\n"
             if user_directive:
@@ -312,11 +372,8 @@ COMPLICATION: {d.complication}
         shot_images: Dict[str, List[str]]
     ) -> Path:
         """Compiles Remotion props JSON with speech-aligned subtitles and exact frame reconciliation."""
-        print(f"\n[Stage 3] Compiling Remotion Props (16-Shot Editorial Timeline)")
+        print(f"\n[Stage 3] Compiling Remotion Props (8-Scene Editorial Timeline)")
         scenes_props = []
-        subtitles = []
-        current_f = 0
-        cue_id = 1
 
         for sc_script, sc_audio in zip(screenplay_data["scenes"], audio_data["scenes"]):
             sid = sc_script["scene_id"]
@@ -352,35 +409,6 @@ COMPLICATION: {d.complication}
                     "on_screen": sc_script["on_screen"],
                     "motion": {"type": "subtle_push_in" if sid != "S03" else "static"}
                 })
-
-                # Point 6: Speech-Aligned Subtitles
-                # Extract acoustic speech onset and offset frames from audio analysis
-                onset_f = sc_audio.get("speech_onset_frame", 3)
-                offset_f = sc_audio.get("speech_offset_frame", dur_f - 4)
-                speech_window_f = max(15, offset_f - onset_f)
-
-                words = sc_script["spoken_narration"].split()
-                chunk_size = 4
-                chunks = [" ".join(words[i:i + chunk_size]) for i in range(0, len(words), chunk_size)]
-
-                total_chars = sum(len(c) for c in chunks) or 1
-                chunk_cursor_f = current_f + onset_f
-
-                for c_idx, chunk in enumerate(chunks):
-                    chunk_dur_f = max(8, int(round((len(chunk) / float(total_chars)) * speech_window_f)))
-                    if c_idx == len(chunks) - 1:
-                        end_f = current_f + offset_f
-                    else:
-                        end_f = min(current_f + offset_f, chunk_cursor_f + chunk_dur_f)
-
-                    subtitles.append({
-                        "id": cue_id,
-                        "start_frame": chunk_cursor_f,
-                        "end_frame": end_f,
-                        "text": chunk.upper()
-                    })
-                    cue_id += 1
-                    chunk_cursor_f = end_f
             else:
                 scenes_props.append({
                     "scene_id": "outro",
@@ -395,7 +423,8 @@ COMPLICATION: {d.complication}
                     "motion": {"type": "static"}
                 })
 
-            current_f += dur_f
+        # Speech-aligned subtitles via shared helper (reused across EN / ES-419 / PT-BR)
+        subtitles = build_subtitles_from_scenes(scenes_props, audio_data["scenes"], chunk_size=4)
 
         # Validate master timeline duration reconciliation
         total_scene_f = sum(sc["durationInFrames"] for sc in scenes_props)
@@ -472,8 +501,8 @@ COMPLICATION: {d.complication}
         subprocess.run(cmd, cwd=str(remotion_dir), check=True)
         print(f"  Raw video rendered in {time.time()-t0:.2f}s")
 
-        # 1990s Analog CRT Filter Chain (Chromatic aberration, Trinitron color grading, film grain)
-        retro_filter = "chromashift=cbh=2.2:crh=-2.2,colorbalance=rs=0.05:gs=0.02:bs=-0.03,unsharp=5:5:0.4:5:5:0.0,noise=alls=2.2:allf=t+u"
+        # 1990s Broadcast Color Warmth & Subtle Tape Grain ONLY (No chromashift/unsharp so foreground UI typography stays razor-sharp)
+        retro_filter = "colorbalance=rs=0.03:gs=0.01:bs=-0.02,noise=alls=1.2:allf=t+u"
         mux_cmd = [
             "ffmpeg", "-y",
             "-i", str(raw_video),
@@ -510,11 +539,15 @@ COMPLICATION: {d.complication}
         dest_video = artifact_dir / f"{self.dossier.story_id}_broadcast_master.mp4"
         shutil.copy2(str(final_video), str(dest_video))
 
+        actual_voice_name = audio_data.get("voice_name", "Original British Sports Presenter (Ryan)")
+        actual_voice_mode = audio_data.get("voice_mode", "CUSTOM_VOICE")
+
         qa_report = {
             "version": "v7.1.6.7_generalized",
             "story_id": self.dossier.story_id,
             "run_id": self.run_id,
-            "voice_personality": "Jeff Stelling (Sky Sports Soccer Saturday)",
+            "voice_personality": actual_voice_name,
+            "voice_mode": actual_voice_mode,
             "total_duration_sec": round(get_audio_duration(final_video), 2),
             "total_frames": audio_data["total_frames"],
             "resolution": "1080x1920",
@@ -532,10 +565,10 @@ COMPLICATION: {d.complication}
             if token and chat_id:
                 client = TelegramBotClient(token=token, default_chat_id=chat_id)
                 caption = (
-                    f"🎬 <b>GENERALIZED 1990s BROADCAST PILOT: {self.dossier.story_id.upper()}</b>\n\n"
+                    f"🎬 <b>GENERALIZED 1990s BROADCAST MASTER: {self.dossier.story_id.upper()}</b>\n\n"
                     f"• <b>Protagonist</b>: {self.dossier.protagonist_name} ({self.dossier.current_club} ➔ {self.dossier.pursuing_club})\n"
-                    f"• <b>Voice & Cadence</b>: Jeff Stelling Qwen 3 Base clone (vocal stops & conjunction starts, zero whooshes)\n"
-                    f"• <b>Master Treatment</b>: 1990s Trinitron CRT analog grading (-14 LUFS stereo)\n"
+                    f"• <b>Voice & Cadence</b>: {actual_voice_name} [{actual_voice_mode}] (clean vocal stops, zero whooshes)\n"
+                    f"• <b>Master Treatment</b>: 1990s Trinitron CRT footage layer + crisp foreground UI (-14 LUFS stereo)\n"
                     f"• <b>Runtime</b>: {qa_report['total_duration_sec']}s ({qa_report['total_frames']} frames @ 30fps)"
                 )
                 client.send_video(str(final_video), caption=caption, chat_id=chat_id)

@@ -23,6 +23,11 @@ try:
 except ModuleNotFoundError:
     from beta.stages.fact_checker import FactChecker
 
+try:
+    from stages.reddit_harvester import harvest_reddit_outrage
+except ModuleNotFoundError:
+    from beta.stages.reddit_harvester import harvest_reddit_outrage
+
 KNOWN_PLAYERS = [
     "Endrick", "Bellingham", "Mbappe", "Vinicius", "Rodri", "Haaland", "Yamal",
     "Bastoni", "Gyokeres", "Gyökeres", "Davies", "Salah", "Alexander-Arnold",
@@ -94,6 +99,20 @@ Return ONLY valid JSON with these exact keys:
         print(f"[StoryAdapter] LLM entity extraction note: {e}")
     return {}
 
+def _finalize_dossier(dossier: StoryDossier, headline: str, protagonist: str) -> StoryDossier:
+    """Enriches dossier with verified Reddit fan sentiment and canonical club/manager facts."""
+    try:
+        dossier.fan_reactions = harvest_reddit_outrage(
+            headline=headline,
+            club_or_player=protagonist,
+            max_quotes=4
+        )
+    except Exception as e:
+        print(f"[Adapter] Reddit harvest skipped: {e}")
+        dossier.fan_reactions = []
+    return FactChecker.audit_and_enrich_dossier(dossier)
+
+
 def scraped_story_to_dossier(story: Dict[str, Any]) -> StoryDossier:
     """Extracts entities and facts from a scraped news story into a StoryDossier."""
     headline = story.get("headline", "Breaking Transfer Report")
@@ -129,11 +148,11 @@ def scraped_story_to_dossier(story: Dict[str, Any]) -> StoryDossier:
             reported_buyback="terms unresolved",
             complication=complication,
             reporting_sources=[source],
-            headline_kicker="● BREAKING TRANSFER REPORT",
+            headline_kicker="TRANSFER WATCH",
             main_headline=headline.upper(),
             ticker_text=f"{source.upper()}: {headline.upper()} ✦ 1990s TV BROADCAST DESK ✦"
         )
-        return FactChecker.audit_and_enrich_dossier(dossier)
+        return _finalize_dossier(dossier, headline, protagonist)
 
     # Fallback to rule-based parser
     detected_clubs = []
@@ -174,8 +193,8 @@ def scraped_story_to_dossier(story: Dict[str, Any]) -> StoryDossier:
         reported_buyback="not agreed",
         complication="contractual complications and rival pressure",
         reporting_sources=[source],
-        headline_kicker="● BREAKING TRANSFER REPORT",
+        headline_kicker="TRANSFER WATCH",
         main_headline=headline.upper(),
         ticker_text=f"{source.upper()}: {headline.upper()} ✦ 1990s TV BROADCAST DESK ✦"
     )
-    return FactChecker.audit_and_enrich_dossier(dossier)
+    return _finalize_dossier(dossier, headline, protagonist)

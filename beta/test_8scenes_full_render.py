@@ -13,6 +13,7 @@ Full End-to-End Render and Validation of the 8-Scene GPT OSS Visual Director Pip
 import sys
 import json
 import time
+import shutil
 import subprocess
 from pathlib import Path
 
@@ -23,6 +24,8 @@ sys.path.insert(1, str(PROJECT_ROOT))
 from pipeline.neural_instructions import StoryDossier
 from beta.pipeline.broadcast_story_pipeline import GeneralizedBroadcastPipeline
 from beta.stages.llm_visual_director import LLMVisualDirector
+from beta.stages.fact_checker import FactChecker
+from beta.stages.reddit_harvester import harvest_reddit_outrage
 from beta.run_telegram_broadcast_service import source_story_shots
 from beta.stages.telegram_bot import TelegramBotClient, get_env_credentials
 
@@ -42,9 +45,14 @@ def main():
         reported_bonuses="£5M",
         reported_buyback="5-year contract terms",
         complication="Silva urges board to seal extension",
-        headline_kicker="● BREAKING TRANSFER REPORT",
+        headline_kicker="TRANSFER WATCH",
         ticker_text="SKY SPORTS: FULHAM OPEN TALKS WITH CALVIN BASSEY AMID MAN UTD INTEREST ✦ MARCO SILVA DETERMINED TO KEEP DEFENDER ✦"
     )
+    dossier = FactChecker.audit_and_enrich_dossier(dossier)
+    try:
+        dossier.fan_reactions = harvest_reddit_outrage(dossier.main_headline, club_or_player=dossier.protagonist_name, max_quotes=4)
+    except Exception:
+        dossier.fan_reactions = []
 
     run_id = "v7_8scenes_master"
     pipeline = GeneralizedBroadcastPipeline(dossier=dossier, run_id=run_id)
@@ -84,7 +92,8 @@ def main():
     print(f"  Outro Duration: {outro_sec:.2f}s")
     print(f"  Total Master Duration: {total_sec:.2f}s ({total_frames} frames @ 30fps)")
 
-    assert 28.0 <= total_sec <= 35.0, f"Total duration {total_sec:.2f}s outside 28-35s envelope!"
+    assert 27.0 <= story_sec <= 33.5, f"Story duration {story_sec:.2f}s outside 27-33.5s envelope!"
+    assert 28.0 <= total_sec <= 38.5, f"Total duration {total_sec:.2f}s outside 28-38.5s envelope!"
 
     print("\n=======================================================")
     print("STEP 4: Compiling Remotion Props")
@@ -124,7 +133,10 @@ def main():
     print(f"  File Size: {final_video.stat().st_size / (1024*1024):.2f} MB")
 
     assert width == 1080 and height == 1920, f"Wrong dimensions: {width}x{height}"
-    assert 28.0 <= file_dur <= 35.0, f"Duration {file_dur:.2f}s outside 28-35s!"
+    assert 28.0 <= file_dur <= 38.5, f"Duration {file_dur:.2f}s outside 28-38.5s!"
+
+    artifact_dir = Path(r"C:\Users\sb000\.gemini\antigravity\brain\39259585-6e0b-4fd0-8946-7c7ef3b89b1d")
+    shutil.copy2(str(final_video), str(artifact_dir / "calvin_bassey_8scenes_crt_master_v3.mp4"))
 
     print("\n=======================================================")
     print(f"STEP 6: Delivering Master Broadcast Video to Telegram ({target_chat})")

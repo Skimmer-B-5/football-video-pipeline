@@ -27,12 +27,15 @@ try:
     from stages.groq_client import call_groq_chat
     from stages.tts_synthesizer import synthesize_with_edge_tts
     from stages.fact_checker import FactChecker
+    from stages.production_voice_engine import detect_speech_boundaries
 except ModuleNotFoundError:
     from beta.stages.groq_client import call_groq_chat
     from beta.stages.tts_synthesizer import synthesize_with_edge_tts
     from beta.stages.fact_checker import FactChecker
+    from beta.stages.production_voice_engine import detect_speech_boundaries
 
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
+BETA_ROOT = Path(__file__).resolve().parent.parent
+PROJECT_ROOT = BETA_ROOT.parent
 
 # Supported Voice Profiles
 VOICE_PROFILES = {
@@ -81,15 +84,73 @@ SPAIN_SPANISH_PROHIBITED = [
 class MultilingualEngine:
     """Translates and localizes master English football stories into PT-BR and ES-419."""
 
+    _ES_CASTILIAN_REPLACEMENTS = [
+        (r"\bvosotros\b", "ustedes"),
+        (r"\bvosotras\b", "ustedes"),
+        (r"\bvuestro\b", "su"),
+        (r"\bvuestra\b", "su"),
+        (r"\bvuestros\b", "sus"),
+        (r"\bvuestras\b", "sus"),
+        (r"\bsois\b", "son"),
+        (r"\btenéis\b", "tienen"),
+        (r"\bhacéis\b", "hacen"),
+        (r"\bdecís\b", "dicen"),
+        (r"\bpodéis\b", "pueden"),
+        (r"\bestáis\b", "están"),
+        (r"\bhabláis\b", "hablan"),
+        (r"\bveáis\b", "vean"),
+        (r"\bsabéis\b", "saben"),
+        (r"\bos\b", "les"),
+    ]
+
+    @classmethod
+    def sanitize_localized_text(cls, text: str, target_lang: str) -> str:
+        """Normalizes unicode spacing and removes prohibited Castilian forms for es-419."""
+        if not isinstance(text, str):
+            return ""
+        clean = re.sub(r"[\u202f\xa0\u200b\ufeff]+", " ", text)
+        clean = re.sub(r"\s+", " ", clean).strip()
+        if target_lang == "es-419":
+            for pattern, repl in cls._ES_CASTILIAN_REPLACEMENTS:
+                clean = re.sub(pattern, repl, clean, flags=re.IGNORECASE)
+        return clean
+
+    @classmethod
+    def _sanitize_screenplay_payload(cls, payload: Dict[str, Any], target_lang: str) -> Dict[str, Any]:
+        """Sanitizes every text field in translated screenplay and validates SPAIN_SPANISH_PROHIBITED."""
+        if "master_headline" in payload:
+            payload["master_headline"] = cls.sanitize_localized_text(payload["master_headline"], target_lang)
+        if "ticker_text" in payload:
+            payload["ticker_text"] = cls.sanitize_localized_text(payload["ticker_text"], target_lang)
+
+        for sc in payload.get("scenes", []):
+            sc["spoken_narration"] = cls.sanitize_localized_text(sc.get("spoken_narration", ""), target_lang)
+            on_sc = sc.get("on_screen", {})
+            if isinstance(on_sc, dict):
+                for k in ("kicker", "headline", "subheadline", "status_badge"):
+                    if k in on_sc and isinstance(on_sc[k], str):
+                        on_sc[k] = cls.sanitize_localized_text(on_sc[k], target_lang)
+                # Strip duplicate bullet prefixes; TopHUD renders the beacon dot automatically
+                if "kicker" in on_sc and isinstance(on_sc["kicker"], str):
+                    on_sc["kicker"] = re.sub(r"^[●•○\s]+", "", on_sc["kicker"]).strip()
+
+            if target_lang == "es-419":
+                for pat in SPAIN_SPANISH_PROHIBITED:
+                    if re.search(pat, sc["spoken_narration"], flags=re.IGNORECASE):
+                        raise ValueError(f"Prohibited Spain Spanish token matched pattern '{pat}' in {sc['scene_id']}")
+        return payload
+
     @classmethod
     def translate_screenplay_llm(cls, screenplay: Dict[str, Any], target_lang: str) -> Dict[str, Any]:
         """
-        Translates all 8 scenes of a screenplay into target language with strict
-        sports terminology, 6-8 words per scene budget, and fact preservation.
+        Translates all 8 scenes of a screenplay plus headline/ticker into target language
+        with strict sports terminology, 6-8 words per scene budget, and regional hygiene.
         """
         lang_name = "Brazilian Portuguese (pt-BR)" if target_lang == "pt-BR" else "Latin American Spanish (es-419)"
         scenes = screenplay.get("scenes", [])
-        
+        master_headline = screenplay.get("master_headline", "")
+        ticker_text = screenplay.get("ticker_text", "")
+
         system_prompt = f"""You are an elite sports news television translator specializing in {lang_name}.
 You translate high-impact 30-second television scripts for 'THIS IS FOOTBALL IN 30 SECONDS'.
 
@@ -97,33 +158,39 @@ CRITICAL CONSTRAINTS FOR {lang_name.upper()}:
 1. WORD BUDGET: STRICTLY 6–8 WORDS PER SCENE. Romance languages naturally take longer to speak. Keep sentences extremely concise, punchy, and fast!
 2. SPORTS VOCABULARY:
    - For pt-BR: Use authentic Brazilian terms (zagueiro, proposta, titularidade, diretoria, permanência, multa rescisória).
-   - For es-419: Use neutral Latin American terms (defensor, oferta, titularidad, directiva, traspaso). Strictly NO Spain Spanish (NO vosotros, NO sois).
-3. INVARIANT RETENTION: Keep club names (Fulham, Manchester United), player names, and numbers/fees (£30M, £5M) accurate.
+   - For es-419: Use neutral Latin American terms (defensor, oferta, titularidad, directiva, traspaso). Strictly NO Spain Spanish (NO vosotros, NO vuestro, NO sois, NO os).
+3. INVARIANT RETENTION: Keep club names, player names, manager names, and numbers/fees (£30M, £5M) accurate.
 4. SCENE 8 (OUTRO):
    - For pt-BR: "Isto é o futebol em trinta segundos. Siga para atualizações diárias."
    - For es-419: "Esto es fútbol en treinta segundos. Síguenos para actualizaciones diarias."
 
 Output ONLY valid JSON matching this schema:
 {{
+  "master_headline": "LOCALIZED UPPERCASE HEADLINE",
+  "ticker_text": "LOCALIZED TICKER SEGMENT 1 ✦ LOCALIZED TICKER SEGMENT 2 ✦",
   "scenes": [
     {{
       "scene_id": "S01",
       "spoken_narration": "6-8 word punchy translation",
       "on_screen": {{
-        "kicker": "● KICKER LOCALIZED",
+        "kicker": "KICKER LOCALIZED",
         "headline": "SHORT HEADLINE",
         "subheadline": "SHORT SUBHEADLINE",
         "status_badge": "BADGE LOCALIZED"
       }}
-    }},
-    ...
+    }}
   ]
 }}"""
 
-        user_content = json.dumps({"scenes": scenes}, indent=2)
+        user_payload = {
+            "master_headline": master_headline,
+            "ticker_text": ticker_text,
+            "scenes": scenes,
+        }
+        user_content = json.dumps(user_payload, indent=2)
         raw = call_groq_chat(
             system_prompt=system_prompt,
-            user_prompt=f"Translate these 8 scenes into {lang_name}:\n{user_content}",
+            user_prompt=f"Translate this headline, ticker, and 8 scenes into {lang_name}:\n{user_content}",
             temperature=0.2,
             timeout=15
         )
@@ -136,12 +203,12 @@ Output ONLY valid JSON matching this schema:
                 if m:
                     parsed = json.loads(m.group(0))
                     if parsed.get("scenes") and len(parsed["scenes"]) == len(scenes):
-                        return parsed
+                        return cls._sanitize_screenplay_payload(parsed, target_lang)
             except Exception as e:
-                print(f"[MultilangEngine] Translation parse error: {e}")
+                print(f"[MultilangEngine] Translation parse/validation error: {e}")
 
         # Fallback rule-based translation if LLM call fails
-        return cls._rule_based_fallback(scenes, target_lang)
+        return cls._sanitize_screenplay_payload(cls._rule_based_fallback(scenes, target_lang), target_lang)
 
     @classmethod
     def _rule_based_fallback(cls, scenes: List[Dict[str, Any]], target_lang: str) -> Dict[str, Any]:
@@ -220,12 +287,18 @@ Output ONLY valid JSON matching this schema:
                     pad_sec=0.10
                 )
                 total_sec += dur
+                dur_frames = int(round(dur * 30.0))
+                onset_sec, offset_sec = detect_speech_boundaries(out_wav, threshold=0.015)
+                onset_f = max(0, min(max(0, dur_frames - 1), int(round(onset_sec * 30.0))))
+                offset_f = max(min(dur_frames, onset_f + 15), min(dur_frames, int(round(offset_sec * 30.0))))
                 manifest.append({
                     "scene_id": sid,
                     "wav_path": str(out_wav),
                     "duration_sec": round(dur, 3),
-                    "duration_frames": int(round(dur * 30.0)),
+                    "duration_frames": dur_frames,
                     "speech_duration_sec": round(spk_dur, 3),
+                    "speech_onset_frame": onset_f,
+                    "speech_offset_frame": offset_f,
                     "narration": text
                 })
 
@@ -244,7 +317,7 @@ Output ONLY valid JSON matching this schema:
             "-i", str(concat_txt), "-c:a", "pcm_s16le", str(master_clean_vo)
         ], check=True, capture_output=True)
 
-        music_bed = PROJECT_ROOT / "beta" / "data" / "music" / "transfer_pulse.wav"
+        music_bed = BETA_ROOT / "data" / "music" / "transfer_pulse.wav"
         final_mix = output_dir / "master_audio_final.wav"
         if music_bed.exists():
             mix_cmd = [
@@ -259,10 +332,20 @@ Output ONLY valid JSON matching this schema:
             ]
             subprocess.run(mix_cmd, check=True, capture_output=True)
         else:
-            final_mix = master_clean_vo
+            norm_cmd = [
+                "ffmpeg", "-y",
+                "-i", str(master_clean_vo),
+                "-af", "loudnorm=I=-14:TP=-1.0:LRA=7",
+                "-c:a", "pcm_s16le",
+                str(final_mix)
+            ]
+            subprocess.run(norm_cmd, check=True, capture_output=True)
 
         story_sec = sum(m["duration_sec"] for m in manifest if m["scene_id"] != "outro")
         outro_sec = next((m["duration_sec"] for m in manifest if m["scene_id"] == "outro"), 5.0)
+        story_frames = sum(m["duration_frames"] for m in manifest if m["scene_id"] != "outro")
+        outro_frames = next((m["duration_frames"] for m in manifest if m["scene_id"] == "outro"), 150)
+        total_frames = story_frames + outro_frames
 
         return {
             "language": target_lang,
@@ -270,7 +353,9 @@ Output ONLY valid JSON matching this schema:
             "total_sec": round(total_sec, 2),
             "story_sec": round(story_sec, 2),
             "outro_sec": round(outro_sec, 2),
-            "total_frames": int(round(total_sec * 30.0)),
+            "story_frames": story_frames,
+            "outro_frames": outro_frames,
+            "total_frames": total_frames,
             "master_audio_path": str(final_mix),
             "scenes": manifest
         }

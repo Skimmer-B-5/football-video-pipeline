@@ -45,7 +45,7 @@ export const SubtitleCard: React.FC<SubtitleCardProps> = ({ subtitles }) => {
           style={{
             color: tokens.colors.textWhite,
             fontWeight: tokens.typography.weights.semiBold,
-            fontSize: tokens.typography.sizes.subtitleCard,
+            fontSize: activeCue.text.length > 34 ? 38 : tokens.typography.sizes.subtitleCard,
             lineHeight: tokens.typography.lineHeights.subtitle,
             letterSpacing: tokens.typography.letterSpacing.tight,
             textTransform: "none", // Sentence case, never forced uppercase

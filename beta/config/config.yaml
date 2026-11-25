@@ -45,6 +45,20 @@ feeds:
     url: "https://www.besoccer.com/news"
     type: "html"
     tier_weight: 0.90
+  - name: "ESPN FC"
+    url: "https://site.api.espn.com/apis/site/v2/sports/soccer/eng.1/news"
+    type: "espn_json"
+    tier_weight: 0.90
+  - name: "Fabrizio & Ornstein Wire"
+    url: "https://news.google.com/rss/search?q=(%22Fabrizio+Romano%22+OR+%22David+Ornstein%22)+football+when:2d&hl=en-GB&gl=GB&ceid=GB:en"
+    tier_weight: 0.98
+  - name: "FourFourTwo"
+    url: "https://www.fourfourtwo.com/feeds.xml"
+    tier_weight: 0.85
+  - name: "Reddit r/soccer"
+    url: "https://www.reddit.com/r/soccer/hot.json?limit=25"
+    type: "reddit"
+    tier_weight: 0.88
 
 # Official / League Source Domains
 official_domains:
@@ -61,7 +75,7 @@ official_domains:
 # Reliability & Clustering Thresholds
 ranking:
   recency_halflife_hours: 12.0
-  cluster_similarity_threshold: 0.65
+  cluster_similarity_threshold: 0.50
   confirmed_sources_count: 3
   credible_sources_count: 2
 

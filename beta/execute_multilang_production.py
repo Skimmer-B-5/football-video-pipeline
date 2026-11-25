@@ -21,7 +21,10 @@ sys.path.insert(0, str(PROJECT_ROOT / "beta"))
 sys.path.insert(1, str(PROJECT_ROOT))
 
 from beta.pipeline.neural_instructions import StoryDossier
-from beta.pipeline.broadcast_story_pipeline import GeneralizedBroadcastPipeline
+from beta.pipeline.broadcast_story_pipeline import (
+    GeneralizedBroadcastPipeline,
+    build_subtitles_from_scenes,
+)
 from beta.stages.multilang_engine import MultilingualEngine, VOICE_PROFILES
 from beta.stages.fact_checker import FactChecker
 
@@ -87,26 +90,32 @@ def run_multilang_pipeline():
         )
         print(f"[{lang_code}] Story duration: {audio_data['story_sec']:.2f}s, Outro: {audio_data['outro_sec']:.2f}s, Total: {audio_data['total_sec']:.2f}s ({audio_data['total_frames']} frames)")
 
-        # 3. Construct Remotion Props with Shared Images and Localized Text
+        # 3. Construct Remotion Props with Shared Images and Localized Text/Subtitles
         lang_props = dict(en_props)
         lang_props["totalDurationInFrames"] = audio_data["total_frames"]
         lang_props["totalDurationSec"] = audio_data["total_sec"]
-        lang_props["storyDurationInFrames"] = int(round(audio_data["story_sec"] * 30.0))
+        lang_props["storyDurationInFrames"] = audio_data.get("story_frames", int(round(audio_data["story_sec"] * 30.0)))
         lang_props["storyDurationSec"] = audio_data["story_sec"]
-        lang_props["outroDurationInFrames"] = int(round(audio_data["outro_sec"] * 30.0))
+        lang_props["outroDurationInFrames"] = audio_data.get("outro_frames", int(round(audio_data["outro_sec"] * 30.0)))
         lang_props["outroDurationSec"] = audio_data["outro_sec"]
         lang_props["enableRetroEffects"] = True
 
         v_prof = VOICE_PROFILES[lang_code]
         lang_props["kicker"] = v_prof["live_kicker"]
-        if lang_code == "pt-BR":
-            lang_props["tickerText"] = "MERCADO DA BOLA: FULHAM ABRE CONVERSAS POR BASSEY ✦ MANCHESTER UNITED MONITORA COM POCHETTINO ✦"
-            lang_props["headline"] = "MERCADO DA BOLA: CALVIN BASSEY NA MIRA DO MANCHESTER UNITED"
-        else:
-            lang_props["tickerText"] = "RADAR DE FICHAJES: FULHAM NEGOCIA CON BASSEY ✦ MANCHESTER UNITED ATENTO CON POCHETTINO ✦"
-            lang_props["headline"] = "MERCADO DE FICHAJES: CALVIN BASSEY EN LA MIRA DEL MANCHESTER UNITED"
+        default_pt_ticker = "MERCADO DA BOLA: FULHAM ABRE CONVERSAS POR BASSEY ✦ MANCHESTER UNITED MONITORA COM POCHETTINO ✦"
+        default_pt_headline = "MERCADO DA BOLA: CALVIN BASSEY NA MIRA DO MANCHESTER UNITED"
+        default_es_ticker = "RADAR DE FICHAJES: FULHAM NEGOCIA CON BASSEY ✦ MANCHESTER UNITED ATENTO CON POCHETTINO ✦"
+        default_es_headline = "MERCADO DE FICHAJES: CALVIN BASSEY EN LA MIRA DEL MANCHESTER UNITED"
 
-        # Update scene durations and texts from audio manifest
+        if lang_code == "pt-BR":
+            lang_props["tickerText"] = translated_script.get("ticker_text") or default_pt_ticker
+            lang_props["headline"] = translated_script.get("master_headline") or default_pt_headline
+        else:
+            lang_props["tickerText"] = translated_script.get("ticker_text") or default_es_ticker
+            lang_props["headline"] = translated_script.get("master_headline") or default_es_headline
+
+        # Update scene durations and texts from audio manifest (deepcopy list items so EN props stay untouched)
+        lang_props["scenes"] = json.loads(json.dumps(en_props["scenes"]))
         audio_scene_map = {m["scene_id"]: m for m in audio_data["scenes"]}
         trans_scene_map = {s["scene_id"]: s for s in translated_script["scenes"]}
 
@@ -132,19 +141,28 @@ def run_multilang_pipeline():
                 for s_idx, sh in enumerate(sc_prop["shots"]):
                     sh["durationInFrames"] = per_shot + (rem if s_idx == n_shots - 1 else 0)
 
+        # Regenerate speech-aligned localized subtitles (chunk_size=3 avoids awkward 3-line Romance wrapping)
+        lang_props["subtitles"] = build_subtitles_from_scenes(lang_props["scenes"], audio_data["scenes"], chunk_size=3)
+
+        # Assert exact frame reconciliation before rendering
+        reconciled_total_f = sum(sc["durationInFrames"] for sc in lang_props["scenes"])
+        lang_props["totalDurationInFrames"] = reconciled_total_f
+
         props_file = lang_dir / f"remotion_props_{lang_code}.json"
         props_file.write_text(json.dumps(lang_props, indent=2, ensure_ascii=False), encoding="utf-8")
-        print(f"[{lang_code}] Props file compiled: {props_file}")
+        print(f"[{lang_code}] Props file compiled with {len(lang_props['subtitles'])} localized subtitle cues: {props_file}")
 
         # 4. Render Master Video via Remotion & Trinitron CRT
         print(f"[{lang_code}] Rendering broadcast master video via Remotion and Trinitron CRT filter...")
         final_video = pipeline.render_and_master(
             props_file=props_file,
             audio_mix_path=Path(audio_data["master_audio_path"]),
-            total_frames=audio_data["total_frames"]
+            total_frames=reconciled_total_f
         )
         target_lang_video = lang_dir / f"calvin_bassey_{lang_code.replace('-', '_')}_master.mp4"
         shutil.copy(final_video, target_lang_video)
+        artifact_dir = Path(r"C:\Users\sb000\.gemini\antigravity\brain\39259585-6e0b-4fd0-8946-7c7ef3b89b1d")
+        shutil.copy2(target_lang_video, artifact_dir / target_lang_video.name)
         print(f"[{lang_code}] Render complete: {target_lang_video}")
 
         results[lang_code] = {

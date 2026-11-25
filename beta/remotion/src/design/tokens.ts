@@ -72,9 +72,9 @@ export const tokens = {
       scrollSpeedPxPerFrame: 4.5,
     },
 
-    // Retro CRT & Tube Overlay (Top-most visual post-processing layer)
+    // Retro CRT & Tube Overlay (Strictly behind foreground UI & subtitles)
     crtOverlay: {
-      zIndex: 75,
+      zIndex: 25,
     },
   },
 

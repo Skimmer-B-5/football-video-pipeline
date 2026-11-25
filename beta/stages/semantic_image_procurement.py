@@ -82,12 +82,16 @@ class SceneVisualSpec:
 class EnhancedSubjectDetector:
     """
     Stage C / Focal Detection:
-    Locates subject with verified boundaries, size, and sharpness.
-    Distinguishes FRONTAL_FACE, PROFILE_FACE, UPPER_BODY, PERSON_BOUNDING_BOX,
+    Combines OpenCV YuNet CNN face detector + SFace 128-D identity verifier with Haar fallbacks.
+    Distinguishes YUNET_FACE, FRONTAL_FACE, PROFILE_FACE, UPPER_BODY, PERSON_BOUNDING_BOX,
     ACTION_REGION, and NO_VALID_SUBJECT_DETECTED.
     Rejects out-of-focus background spectators.
     Never fabricates face centers for non-face detections.
     """
+
+    _FACE_EMBEDDING_CACHE: Dict[str, Any] = {}
+    _YUNET_PATH = PROJECT_ROOT.parent / "models" / "vision" / "face_detection_yunet_2023mar.onnx"
+    _SFACE_PATH = PROJECT_ROOT.parent / "models" / "vision" / "face_recognition_sface_2021dec.onnx"
 
     def __init__(self):
         casc_dir = cv2.data.haarcascades
@@ -97,16 +101,170 @@ class EnhancedSubjectDetector:
         self.upper_body = cv2.CascadeClassifier(casc_dir + "haarcascade_upperbody.xml")
         self.full_body = cv2.CascadeClassifier(casc_dir + "haarcascade_fullbody.xml")
 
+        self.yunet = None
+        self.sface = None
+        try:
+            if self._YUNET_PATH.exists() and hasattr(cv2, "FaceDetectorYN"):
+                self.yunet = cv2.FaceDetectorYN.create(str(self._YUNET_PATH), "", (320, 320), 0.55, 0.3, 5000)
+            if self._SFACE_PATH.exists() and hasattr(cv2, "FaceRecognizerSF"):
+                self.sface = cv2.FaceRecognizerSF.create(str(self._SFACE_PATH), "")
+        except Exception as e:
+            print(f"[SubjectDetector] Note initializing YuNet/SFace: {e}")
+
     def _eval_face_sharpness(self, gray_roi: np.ndarray) -> float:
         """Computes Laplacian blur variance inside face region."""
         if gray_roi.size == 0:
             return 0.0
         return float(cv2.Laplacian(gray_roi, cv2.CV_64F).var())
 
+    def detect_yunet_faces(self, cv_bgr: np.ndarray) -> List[Dict[str, Any]]:
+        """Detects sharp foreground faces via YuNet CNN with exact landmarks and raw face vector."""
+        if self.yunet is None:
+            return []
+        ih, iw = cv_bgr.shape[:2]
+        gray = cv2.cvtColor(cv_bgr, cv2.COLOR_BGR2GRAY)
+        try:
+            self.yunet.setInputSize((iw, ih))
+            _, raw_faces = self.yunet.detect(cv_bgr)
+        except Exception:
+            return []
+        if raw_faces is None:
+            return []
+
+        results = []
+        for row in raw_faces:
+            fx, fy, fw, fh = int(row[0]), int(row[1]), int(row[2]), int(row[3])
+            score = float(row[-1])
+            fx0 = max(0, fx)
+            fy0 = max(0, fy)
+            fx1 = min(iw, fx + fw)
+            fy1 = min(ih, fy + fh)
+            w_clamped = fx1 - fx0
+            h_clamped = fy1 - fy0
+            if w_clamped < 35 or h_clamped < 35:
+                continue
+            if (w_clamped * h_clamped) < (iw * ih * 0.005):
+                continue
+            roi = gray[fy0:fy1, fx0:fx1]
+            sharpness = self._eval_face_sharpness(roi)
+            if sharpness < 15.0:
+                continue
+            results.append({
+                "method": "YUNET_FACE",
+                "bbox": (fx0, fy0, w_clamped, h_clamped),
+                "face_center": (float(fx + fw / 2.0), float(fy + fh / 2.0)),
+                "subject_center": (float(fx + fw / 2.0), float(fy + fh / 2.0)),
+                "area": w_clamped * h_clamped,
+                "sharpness": sharpness,
+                "is_face": True,
+                "confidence": score,
+                "raw_yunet": row
+            })
+        results.sort(key=lambda x: (x["area"], x["confidence"]), reverse=True)
+        return results
+
+    def get_reference_face_embedding(self, entity_name: str) -> Optional[np.ndarray]:
+        """Fetches official Wikipedia portrait and extracts 128-D SFace embedding (cached)."""
+        if not entity_name or self.yunet is None or self.sface is None:
+            return None
+        key = entity_name.strip().lower()
+        if key in self._FACE_EMBEDDING_CACHE:
+            return self._FACE_EMBEDDING_CACHE[key]
+
+        cache_dir = DATA_DIR / "face_cache"
+        cache_dir.mkdir(parents=True, exist_ok=True)
+        safe_slug = re.sub(r'[^a-z0-9_]+', '_', key)
+        npy_path = cache_dir / f"{safe_slug}.npy"
+        if npy_path.exists():
+            try:
+                emb = np.load(str(npy_path))
+                self._FACE_EMBEDDING_CACHE[key] = emb
+                return emb
+            except Exception:
+                pass
+
+        try:
+            slug = urllib.parse.quote(entity_name.strip().replace(" ", "_"))
+            url = f"https://en.wikipedia.org/api/rest_v1/page/summary/{slug}"
+            req = urllib.request.Request(url, headers={"User-Agent": "FootballNewsDesk/2.0 (broadcast@footballin30sec.com)"})
+            with urllib.request.urlopen(req, timeout=8) as r:
+                wdata = json.loads(r.read().decode("utf-8"))
+            thumb = wdata.get("thumbnail", {}).get("source") or wdata.get("originalimage", {}).get("source")
+            if not thumb:
+                self._FACE_EMBEDDING_CACHE[key] = None
+                return None
+            req2 = urllib.request.Request(thumb, headers={"User-Agent": "FootballNewsDesk/2.0 (broadcast@footballin30sec.com)"})
+            with urllib.request.urlopen(req2, timeout=8) as r2:
+                arr = np.frombuffer(r2.read(), np.uint8)
+            ref_img = cv2.imdecode(arr, cv2.IMREAD_COLOR)
+            if ref_img is None:
+                self._FACE_EMBEDDING_CACHE[key] = None
+                return None
+            ih, iw = ref_img.shape[:2]
+            self.yunet.setInputSize((iw, ih))
+            _, rf = self.yunet.detect(ref_img)
+            if rf is not None and len(rf) > 0:
+                best_rf = sorted(rf, key=lambda r_row: r_row[2] * r_row[3], reverse=True)[0]
+                aligned = self.sface.alignCrop(ref_img, best_rf)
+                feat = self.sface.feature(aligned)
+                np.save(str(npy_path), feat)
+                self._FACE_EMBEDDING_CACHE[key] = feat
+                return feat
+        except Exception as e:
+            print(f"[SubjectDetector] Wiki ref portrait lookup note for '{entity_name}': {e}")
+
+        self._FACE_EMBEDDING_CACHE[key] = None
+        return None
+
+    def verify_face_identity_with_box(
+        self,
+        cv_bgr: np.ndarray,
+        expected_entity: str,
+        threshold: float = 0.28
+    ) -> Tuple[Optional[bool], float, str, Optional[Tuple[int, int, int, int]]]:
+        """
+        Matches candidate pixels against official Wikipedia SFace reference embedding.
+        Returns (matched: Optional[bool], max_similarity: float, reason: str, matched_bbox: Optional[Tuple[int,int,int,int]]).
+        """
+        ref_feat = self.get_reference_face_embedding(expected_entity)
+        if ref_feat is None or self.sface is None:
+            return None, 0.0, "No reference face embedding available", None
+
+        faces = self.detect_yunet_faces(cv_bgr)
+        if not faces:
+            return None, 0.0, "No clear foreground face detected for SFace comparison", None
+
+        best_sim = -1.0
+        best_bbox = None
+        for f in faces:
+            try:
+                aligned = self.sface.alignCrop(cv_bgr, f["raw_yunet"])
+                feat = self.sface.feature(aligned)
+                sim = float(self.sface.match(ref_feat, feat, cv2.FaceRecognizerSF_FR_COSINE))
+                if sim > best_sim:
+                    best_sim = sim
+                    best_bbox = f["bbox"]
+            except Exception:
+                continue
+
+        if best_sim < -0.5:
+            return None, 0.0, "SFace comparison skipped", None
+        matched = best_sim >= threshold
+        return matched, round(best_sim, 4), f"SFace cosine similarity vs '{expected_entity}' = {best_sim:.3f} (threshold {threshold})", best_bbox
+
+    def verify_face_identity(self, cv_bgr: np.ndarray, expected_entity: str, threshold: float = 0.28) -> Tuple[Optional[bool], float, str]:
+        """Compatibility wrapper returning (matched, max_similarity, reason)."""
+        matched, sim, reason, _ = self.verify_face_identity_with_box(cv_bgr, expected_entity, threshold=threshold)
+        return matched, sim, reason
+
     def detect(self, cv_bgr: np.ndarray) -> Dict[str, Any]:
         ih, iw = cv_bgr.shape[:2]
         gray = cv2.cvtColor(cv_bgr, cv2.COLOR_BGR2GRAY)
-        min_dim = min(ih, iw)
+
+        # 0. YuNet CNN Face Detector (High accuracy on tilted/floodlit sports photos)
+        yunet_faces = self.detect_yunet_faces(cv_bgr)
+        if yunet_faces:
+            return yunet_faces[0]
 
         # 1. Frontal face cascades (reject background spectators < 45px or blur_var < 20.0)
         face_candidates = []

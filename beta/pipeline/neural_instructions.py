@@ -45,6 +45,10 @@ class StoryDossier:
     headline_kicker: str = "● TRANSFER WATCH"
     main_headline: str = ""
     ticker_text: str = ""
+    pursuing_manager: str = ""
+    current_stadium: str = ""
+    pursuing_stadium: str = ""
+    fan_reactions: List[str] = field(default_factory=list)
 
 
 # ==============================================================================

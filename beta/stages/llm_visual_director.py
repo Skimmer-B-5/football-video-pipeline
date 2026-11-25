@@ -16,9 +16,14 @@ from pathlib import Path
 from typing import List, Dict, Any, Optional
 from dataclasses import dataclass
 
-from beta.stages.groq_client import call_groq_chat
-from beta.pipeline.neural_instructions import StoryDossier, CONFIGURED_LLM_MODEL, CONFIGURED_LLM_FALLBACK
-from beta.stages.fact_checker import FactChecker
+try:
+    from stages.groq_client import call_groq_chat
+    from pipeline.neural_instructions import StoryDossier, CONFIGURED_LLM_MODEL, CONFIGURED_LLM_FALLBACK
+    from stages.fact_checker import FactChecker
+except ModuleNotFoundError:
+    from beta.stages.groq_client import call_groq_chat
+    from beta.pipeline.neural_instructions import StoryDossier, CONFIGURED_LLM_MODEL, CONFIGURED_LLM_FALLBACK
+    from beta.stages.fact_checker import FactChecker
 
 @dataclass
 class EditorialShotSpec:
@@ -211,13 +216,32 @@ Output JSON schema:
         """
         Translates the 8-scene screenplay into shot specifications:
         - Skips Scene 8 (Ending Card Outro).
-        - For scenes S01..S06: derives 1-sentence image description and search query.
+        - For scenes S01..S06: derives 1-sentence image description and action search query.
         - For scene S07 (or any choice beat with 'or' / 'and'): derives TWO image descriptions to show both parts.
+        - Blocks obsolete/former managers from FactChecker across all queries and avoid_terms.
         """
+        dossier = FactChecker.audit_and_enrich_dossier(dossier)
+        suitor_mgr = dossier.pursuing_manager or FactChecker.get_verified_manager(dossier.pursuing_club)
+        suitor_std = dossier.pursuing_stadium or FactChecker.get_verified_stadium(dossier.pursuing_club)
+        curr_std = dossier.current_stadium or FactChecker.get_verified_stadium(dossier.current_club)
+        obsolete_terms = (
+            FactChecker.get_obsolete_managers(dossier.current_club) +
+            FactChecker.get_obsolete_managers(dossier.pursuing_club)
+        )
+        base_avoid = ["street", "sidewalk", "streetline", "empty bench", "empty dugout", "drawing", "cartoon", "static portrait"] + obsolete_terms
+
         specs: List[EditorialShotSpec] = []
         shot_counter = 1
 
         print(f"\n[LLMVisualDirector] Directing visual shots via {self.preferred_model} for {len(screenplay_scenes)} scenes...")
+
+        def _sanitize_obsolete(text_val: str, fallback_val: str) -> str:
+            low = (text_val or "").lower()
+            for obs in obsolete_terms:
+                if obs and obs in low:
+                    print(f"[LLMVisualDirector] Blocked stale entity '{obs}' in visual spec -> substituting '{fallback_val}'")
+                    return fallback_val
+            return text_val or fallback_val
 
         for sc in screenplay_scenes:
             sid = sc.get("scene_id", "")
@@ -241,73 +265,98 @@ Output JSON schema:
                 print(f"  [{sid}] Detected 'OR' / 'AND' choice dilemma -> Generating 2 image descriptions for both parts...")
                 choice_data = self.describe_choice_scene(sid, narration, dossier)
 
-                # Part 1 Shot
-                p1_query = choice_data["part1_query"].replace('"', '')
+                # Part 1 Shot (Selling club / player)
+                p1_entity = _sanitize_obsolete(choice_data["part1_entity"], dossier.current_manager)
+                p1_query = _sanitize_obsolete(choice_data["part1_query"].replace('"', ''), f"{p1_entity} {dossier.current_club} match action")
+                p1_desc = _sanitize_obsolete(choice_data["part1_description"], f"{p1_entity} in dynamic action for {dossier.current_club}.")
                 specs.append(EditorialShotSpec(
                     shot_id=f"{sid}_shot1",
                     scene_id=sid,
                     index=shot_counter,
                     role="choice_part1_home",
-                    primary_entity=choice_data["part1_entity"],
+                    primary_entity=p1_entity,
                     club_affiliation=dossier.current_club,
-                    crop_strategy="managerial" if "manager" in choice_data["part1_entity"].lower() or dossier.current_manager.lower() in choice_data["part1_entity"].lower() else "match_action",
+                    crop_strategy="managerial" if "manager" in p1_entity.lower() or dossier.current_manager.lower() in p1_entity.lower() else "match_action",
                     search_queries=[
                         f"{p1_query}",
-                        f"{choice_data['part1_entity']} {dossier.current_club} match",
-                        f"{choice_data['part1_entity']} press conference"
+                        f"{p1_entity} {dossier.current_club} match action",
+                        f"{dossier.current_manager} {dossier.current_club} touchline"
                     ],
-                    avoid_terms=["street", "sidewalk", "streetline", "empty bench", "empty dugout", "drawing", "cartoon"],
-                    required_context=choice_data["part1_description"]
+                    avoid_terms=list(base_avoid),
+                    required_context=p1_desc
                 ))
                 shot_counter += 1
 
-                # Part 2 Shot
-                p2_query = choice_data["part2_query"].replace('"', '')
+                # Part 2 Shot (Suitor coach / stadium - NEVER obsolete coaches)
+                p2_entity = _sanitize_obsolete(choice_data["part2_entity"], suitor_mgr)
+                p2_query = _sanitize_obsolete(choice_data["part2_query"].replace('"', ''), f"{suitor_mgr} {dossier.pursuing_club} touchline")
+                p2_desc = _sanitize_obsolete(choice_data["part2_description"], f"{suitor_mgr} directing tactical instructions for {dossier.pursuing_club}.")
+                is_p2_mgr = (suitor_mgr.lower() in p2_entity.lower() or "coach" in p2_entity.lower() or "manager" in p2_entity.lower())
                 specs.append(EditorialShotSpec(
                     shot_id=f"{sid}_shot2",
                     scene_id=sid,
                     index=shot_counter,
                     role="choice_part2_suitor",
-                    primary_entity=choice_data["part2_entity"],
+                    primary_entity=p2_entity,
                     club_affiliation=dossier.pursuing_club,
-                    crop_strategy="tactical",
+                    crop_strategy="managerial" if is_p2_mgr else "tactical",
                     search_queries=[
                         f"{p2_query}",
-                        f"Ruben Amorim {dossier.pursuing_club} coach" if "manchester united" in dossier.pursuing_club.lower() else f"{choice_data['part2_entity']} coach",
-                        f"{dossier.pursuing_club} Old Trafford floodlights night" if "manchester united" in dossier.pursuing_club.lower() else f"{dossier.pursuing_club} stadium floodlights night"
+                        f"{suitor_mgr} {dossier.pursuing_club} touchline coach",
+                        f"{suitor_mgr} {dossier.pursuing_club} press conference",
+                        f"{suitor_std} {dossier.pursuing_club} floodlights matchday"
                     ],
-                    avoid_terms=["street", "sidewalk", "streetline", "empty bench", "empty dugout", "drawing", "cartoon"],
-                    required_context=choice_data["part2_description"]
+                    avoid_terms=list(base_avoid),
+                    required_context=p2_desc
                 ))
                 shot_counter += 1
 
             else:
                 print(f"  [{sid}] Asking {self.preferred_model} for 1-sentence image description...")
                 single_data = self.describe_single_scene(sid, narration, dossier)
-                q = single_data["search_query"].replace('"', '')
-                entity = single_data["primary_entity"]
+                default_ent = curr_std if sid == "S01" else dossier.protagonist_name
+                entity = _sanitize_obsolete(single_data["primary_entity"], default_ent)
+                q = _sanitize_obsolete(single_data["search_query"].replace('"', ''), f"{entity} {dossier.current_club} match action")
+                desc = _sanitize_obsolete(single_data["image_description"], f"{entity} during high-intensity match action.")
 
-                # Determine crop strategy based on entity and scene
+                # Narrative-locked diversity rules so consecutive beats showcase varied authentic subjects
+                mgr_last = (dossier.current_manager or "").split()[-1].lower() if dossier.current_manager else ""
+                purs_low = (dossier.pursuing_club or "").lower()
+                prot_last = (dossier.protagonist_name or "").split()[-1].lower()
+                if sid != "S01" and mgr_last and len(mgr_last) > 3 and mgr_last in narr_lower:
+                    entity = dossier.current_manager
+                    q = f"{dossier.current_manager} {dossier.current_club} touchline manager"
+                    desc = f"{dossier.current_manager} giving touchline instructions for {dossier.current_club}."
+                elif sid != "S01" and purs_low and (purs_low in narr_lower or "united" in narr_lower) and prot_last not in narr_lower:
+                    entity = suitor_std
+                    q = f"{suitor_std} {dossier.pursuing_club} stadium floodlights"
+                    desc = f"{suitor_std} illuminated on matchnight as {dossier.pursuing_club} weigh their move."
+
+                # Determine crop strategy and avoid list based on entity and scene
                 if sid == "S01":
-                    crop_strat = "tactical"
+                    # Enforce S01 concealment: if entity accidentally named protagonist, use stadium or manager
+                    if dossier.protagonist_name.lower() in entity.lower():
+                        entity = curr_std
+                        q = f"{curr_std} {dossier.current_club} floodlights matchday"
+                    crop_strat = "managerial" if dossier.current_manager.lower() in entity.lower() else "tactical"
                     club_affil = dossier.current_club
-                    avoid = [dossier.protagonist_name, "street", "sidewalk", "streetline", "empty bench", "empty dugout", "drawing", "cartoon"]
-                elif "manager" in entity.lower() or dossier.current_manager.lower() in entity.lower():
+                    avoid = [dossier.protagonist_name] + list(base_avoid)
+                elif "manager" in entity.lower() or dossier.current_manager.lower() in entity.lower() or suitor_mgr.lower() in entity.lower():
                     crop_strat = "managerial"
-                    club_affil = dossier.current_club
-                    avoid = ["street", "sidewalk", "empty bench", "empty dugout", "drawing", "cartoon"]
+                    club_affil = dossier.pursuing_club if suitor_mgr.lower() in entity.lower() else dossier.current_club
+                    avoid = list(base_avoid)
                 elif dossier.protagonist_name.lower() in entity.lower():
-                    crop_strat = "portrait" if sid == "S02" else "match_action"
+                    crop_strat = "match_action"  # Prioritize dynamic match action over static portraits
                     club_affil = dossier.current_club
-                    avoid = ["unrelated player", "street", "sidewalk", "drawing", "cartoon"]
-                elif dossier.pursuing_club.lower() in entity.lower():
+                    avoid = ["unrelated player"] + list(base_avoid)
+                elif dossier.pursuing_club.lower() in entity.lower() or suitor_std.lower() in entity.lower():
                     crop_strat = "tactical"
                     club_affil = dossier.pursuing_club
-                    avoid = ["street", "sidewalk", "drawing", "cartoon"]
+                    avoid = list(base_avoid)
                 else:
                     crop_strat = "match_action"
                     club_affil = dossier.current_club
-                    avoid = ["street", "sidewalk", "drawing", "cartoon"]
+                    avoid = list(base_avoid)
 
                 specs.append(EditorialShotSpec(
                     shot_id=f"{sid}_shot1",
@@ -319,11 +368,11 @@ Output JSON schema:
                     crop_strategy=crop_strat,
                     search_queries=[
                         f"{q}",
-                        f"{entity} {club_affil} match action",
-                        f"{entity} {club_affil} training"
+                        f"{entity} {club_affil} match action" if crop_strat != "tactical" else f"{entity} {club_affil} matchday floodlights",
+                        f"{entity} {club_affil} tackle" if crop_strat == "match_action" else f"{entity} {club_affil} stadium"
                     ],
                     avoid_terms=avoid,
-                    required_context=single_data["image_description"]
+                    required_context=desc
                 ))
                 shot_counter += 1
 

@@ -1,77 +1,77 @@
 {
   "story_id": "calvin_bassey_fulham",
   "master_headline": "MAN UTD TRANSFER NEWS: FULHAM DEFENDER CALVIN BASSEY IS IN TALKS OVER NEW CONTRACT AMID MAN UTD LINKS",
-  "kicker": "\u25cf BREAKING TRANSFER REPORT",
+  "kicker": "TRANSFER WATCH",
   "ticker_text": "SKY SPORTS: FULHAM OPEN TALKS WITH CALVIN BASSEY AMID MAN UTD INTEREST \u2726 MARCO SILVA DETERMINED TO KEEP DEFENDER \u2726",
   "llm_model_used": "openai/gpt-oss-120b",
   "scenes": [
     {
       "scene_id": "S01",
-      "spoken_narration": "Fulham under pressure as a defender's future looms.",
+      "spoken_narration": "Fulham under pressure as a key defender drifts.",
       "on_screen": {
         "kicker": "\u25cf TRANSFER REPORT",
-        "headline": "Fulham defender's future uncertain",
-        "subheadline": "Club under pressure as rumors swirl",
+        "headline": "Fulham under pressure as defender drifts",
+        "subheadline": "Club seeks clarity amid speculation",
         "status_badge": "DEVELOPING"
       }
     },
     {
       "scene_id": "S02",
-      "spoken_narration": "And Calvin Bassey faces a United takeover bid.",
+      "spoken_narration": "And Calvin Bassey faces United's tempting offer today.",
       "on_screen": {
         "kicker": "\u25cf PROPOSED PACKAGE",
-        "headline": "Calvin Bassey linked with United",
-        "subheadline": "Red Devils eye \u00a330m move",
+        "headline": "And Calvin Bassey faces United's tempting offer today",
+        "subheadline": "Red Devils eye defensive reinforcement",
         "status_badge": "REVEALED"
       }
     },
     {
       "scene_id": "S03",
-      "spoken_narration": "Manchester United circle, ready to make a decisive offer.",
+      "spoken_narration": "Manchester United circle, to unleash a \u00a330m bid.",
       "on_screen": {
         "kicker": "\u25cf SUITOR INTEREST",
-        "headline": "Manchester United intensify pursuit",
-        "subheadline": "United ready to make decisive offer",
+        "headline": "Manchester United circle, to unleash a \u00a330m bid",
+        "subheadline": "Pochettino's side keen on Bassey",
         "status_badge": "REPORTED"
       }
     },
     {
       "scene_id": "S04",
-      "spoken_narration": "Fee reported at thirty million pounds, plus performance bonuses.",
+      "spoken_narration": "Reported fee: thirty million pounds, plus performance bonuses.",
       "on_screen": {
         "kicker": "\u25cf DEAL CLAUSE",
-        "headline": "\u00a330m fee reported",
-        "subheadline": "Potential add ons could raise total",
+        "headline": "Reported fee: thirty million pounds, plus performance bonuses",
+        "subheadline": "Potential add-ons could raise total cost",
         "status_badge": "UNAGREED"
       }
     },
     {
       "scene_id": "S05",
-      "spoken_narration": "Marco Silva insists board must reject any sale.",
+      "spoken_narration": "Marco Silva orders board: no sale without extension.",
       "on_screen": {
         "kicker": "\u25cf MANAGERIAL STAND",
-        "headline": "Silva demands board block sale",
-        "subheadline": "Manager urges extension before any departure",
+        "headline": "Marco Silva orders board: no sale without extension",
+        "subheadline": "Silva pushes for long\u2011term contract",
         "status_badge": "DEVELOPING"
       }
     },
     {
       "scene_id": "S06",
-      "spoken_narration": "Bassey seeks extension, wants security before any move.",
+      "spoken_narration": "Bassey seeks new deal, yet United pressure mounts.",
       "on_screen": {
         "kicker": "\u25cf SITUATION UPDATE",
-        "headline": "Bassey wants new contract",
-        "subheadline": "Player seeks security amid transfer chatter",
+        "headline": "Bassey seeks new deal, yet United pressure mounts",
+        "subheadline": "Player's future hangs in balance",
         "status_badge": "OFFICIAL"
       }
     },
     {
       "scene_id": "S07",
-      "spoken_narration": "So will Fulham retain Bassey, or United force the transfer?",
+      "spoken_narration": "Will Silva lock extension, or will United push transfer?",
       "on_screen": {
         "kicker": "\u25cf THE VERDICT",
-        "headline": "Fulham or United: the decision looms",
-        "subheadline": "Club and suitor at crossroads",
+        "headline": "Will Silva lock extension, or will United push transfer?",
+        "subheadline": "Decision could shape Fulham's season",
         "status_badge": "EDITORIAL"
       }
     },

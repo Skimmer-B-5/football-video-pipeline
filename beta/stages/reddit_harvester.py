@@ -95,7 +95,23 @@ def harvest_reddit_outrage(headline: str, club_or_player: Optional[str] = None, 
                 break
 
     except Exception as e:
-        print(f"[RedditHarvester] Reddit API note ({e}), using contextual heuristic fan outrage.")
+        print(f"[RedditHarvester] Reddit API note ({e}), trying Google News r/soccer RSS...")
+        try:
+            import xml.etree.ElementTree as ET
+            rss_q = urllib.parse.quote(f"reddit r/soccer {query}")
+            rss_url = f"https://news.google.com/rss/search?q={rss_q}&hl=en-GB&gl=GB&ceid=GB:en"
+            req = urllib.request.Request(rss_url, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"})
+            with urllib.request.urlopen(req, timeout=8) as resp:
+                root = ET.fromstring(resp.read())
+            query_tokens = [tok.lower() for tok in query.split() if len(tok) > 3]
+            for item in root.findall(".//item")[:max_quotes * 3]:
+                t = re.sub(r"\s*[-:]\s*(Reddit|r/soccer).*$", "", item.findtext("title", ""), flags=re.IGNORECASE).strip()
+                if len(t) >= 20 and t not in quotes and (not query_tokens or any(tok in t.lower() for tok in query_tokens)):
+                    quotes.append(clean_comment_text(t))
+                    if len(quotes) >= max_quotes:
+                        break
+        except Exception:
+            pass
 
     # Contextual fallback if Reddit API returned < 2 quotes
     if len(quotes) < 2:

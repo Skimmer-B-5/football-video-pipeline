@@ -98,8 +98,6 @@ def source_story_shots(
 
     run_dir = BETA_ROOT / "remotion" / "public" / "images" / f"story_{run_id}"
     run_dir.mkdir(parents=True, exist_ok=True)
-    root_pub = PROJECT_ROOT / "remotion" / "public" / "images" / f"story_{run_id}"
-    root_pub.mkdir(parents=True, exist_ok=True)
 
     remotion_shots = {}
     if screenplay_scenes:
@@ -122,12 +120,14 @@ def source_story_shots(
         dest_filename = f"{spec.shot_id}_{idx}.png"
         dest_file = run_dir / dest_filename
 
-        success = inspector.audit_and_produce_shot(spec, dest_file, ledger=ledger)
+        success = inspector.audit_and_produce_shot(
+            spec,
+            dest_file,
+            ledger=ledger,
+            protagonist_name=dossier.protagonist_name,
+            story_id=dossier.story_id,
+        )
         if success and dest_file.exists():
-            try:
-                shutil.copy(dest_file, root_pub / dest_filename)
-            except Exception:
-                pass
             if spec.scene_id not in remotion_shots:
                 remotion_shots[spec.scene_id] = []
             remotion_shots[spec.scene_id].append(f"/images/story_{run_id}/{dest_filename}")
@@ -135,7 +135,6 @@ def source_story_shots(
         else:
             print(f"  [{spec.shot_id}] Fallback: Generating verified broadcast crest card")
             inspector.sourcer.generate_broadcast_crest_fallback(spec.club_affiliation, dest_file)
-            shutil.copy(dest_file, root_pub / dest_filename)
             if spec.scene_id not in remotion_shots:
                 remotion_shots[spec.scene_id] = []
             remotion_shots[spec.scene_id].append(f"/images/story_{run_id}/{dest_filename}")
@@ -221,11 +220,11 @@ def create_broadcast_from_story(bot: TelegramBotClient, story: Dict[str, Any], c
         )
         audio_data = pipeline.synthesize_voice(script_data)
 
-        # 6. Compile 16-Shot Props & Trinitron CRT Analog Grade
+        # 6. Compile 8-Scene Props & Trinitron CRT Footage Layer
         progress.update(
             75,
-            "Staging 16-Shot Editorial Timeline",
-            "Configuring Trinitron CRT analog treatment, phosphor bloom, RGB fringing & typography..."
+            "Staging 8-Scene Editorial Timeline",
+            "Configuring Trinitron CRT footage treatment & crisp speech-aligned subtitles..."
         )
         props_path = pipeline.compile_visual_props(script_data, audio_data, shots)
 
@@ -235,6 +234,7 @@ def create_broadcast_from_story(bot: TelegramBotClient, story: Dict[str, Any], c
         story_s = audio_data.get("story_sec", total_s - 5.0)
         outro_s = audio_data.get("outro_sec", 5.0)
         voice_desc = audio_data.get("voice_name", "Original British Sports Presenter (Ryan)")
+        actual_shots_count = sum(len(v) for v in shots.values())
 
         progress.update(
             90,
@@ -254,8 +254,8 @@ def create_broadcast_from_story(bot: TelegramBotClient, story: Dict[str, Any], c
             f"• <b>Headline:</b> {dossier.main_headline}\n"
             f"• <b>Protagonist:</b> {dossier.protagonist_name} ({dossier.current_club} ➔ {dossier.pursuing_club})\n"
             f"• <b>Voice:</b> {voice_desc}\n"
-            f"• <b>Visuals:</b> 16 dynamically verified match & stadium photos (Immutable Ledger)\n"
-            f"• <b>Master:</b> 1990s Trinitron CRT analog treatment (-14 LUFS stereo)\n"
+            f"• <b>Visuals:</b> {actual_shots_count} dynamically verified match & stadium photos (Immutable Ledger)\n"
+            f"• <b>Master:</b> 1990s Trinitron CRT footage treatment (-14 LUFS stereo)\n"
             f"• <b>Story Runtime:</b> {story_s:.2f}s (~30s target)\n"
             f"• <b>Outro Runtime:</b> {outro_s:.2f}s (Separate branded ident)\n"
             f"• <b>Total Master:</b> {total_s:.2f}s ({total_f} frames @ 30fps)\n\n"
@@ -263,6 +263,10 @@ def create_broadcast_from_story(bot: TelegramBotClient, story: Dict[str, Any], c
         )
         bot.send_video(str(final_video), caption=caption, chat_id=chat_id)
         print(f"[Broadcast Engine] Video delivered to Telegram: {final_video}")
+
+        # 9. Optional Multilingual Versions (ES-419 & PT-BR) with Localized Subtitles
+        if os.getenv("AUTO_MULTILANG_TELEGRAM", "1").lower() in ("1", "true", "yes"):
+            _dispatch_multilang_to_telegram(bot, dossier, pipeline, script_data, props_path, chat_id)
     except Exception as e:
         print(f"[Broadcast Engine] Error during production: {e}")
         bot.send_message(
@@ -271,6 +275,89 @@ def create_broadcast_from_story(bot: TelegramBotClient, story: Dict[str, Any], c
             chat_id=chat_id
         )
         raise
+
+
+def _dispatch_multilang_to_telegram(
+    bot: TelegramBotClient,
+    dossier: StoryDossier,
+    pipeline: GeneralizedBroadcastPipeline,
+    en_script: Dict[str, Any],
+    en_props_path: Path,
+    chat_id: str,
+):
+    """Generates and delivers ES-419 and PT-BR masters with localized subtitles after the EN master."""
+    try:
+        from stages.multilang_engine import MultilingualEngine, VOICE_PROFILES
+        from pipeline.broadcast_story_pipeline import build_subtitles_from_scenes
+
+        en_props = json.loads(en_props_path.read_text(encoding="utf-8"))
+        bot.send_message(
+            "🌍 <b>Producing Spanish (ES-419) & Portuguese (PT-BR) broadcast masters...</b>",
+            chat_id=chat_id,
+        )
+
+        for lang_code, lang_title in (("es-419", "Español LATAM"), ("pt-BR", "Português Brasil")):
+            lang_dir = pipeline.ws.base_dir / "multilang" / lang_code
+            lang_dir.mkdir(parents=True, exist_ok=True)
+            translated = MultilingualEngine.translate_screenplay_llm(en_script, target_lang=lang_code)
+            audio_data = MultilingualEngine.synthesize_localized_voice(
+                translated_screenplay=translated,
+                target_lang=lang_code,
+                output_dir=lang_dir / "voice",
+            )
+
+            lang_props = dict(en_props)
+            lang_props["scenes"] = json.loads(json.dumps(en_props["scenes"]))
+            lang_props["totalDurationInFrames"] = audio_data["total_frames"]
+            lang_props["totalDurationSec"] = audio_data["total_sec"]
+            lang_props["storyDurationInFrames"] = audio_data.get("story_frames", int(round(audio_data["story_sec"] * 30.0)))
+            lang_props["storyDurationSec"] = audio_data["story_sec"]
+            lang_props["outroDurationInFrames"] = audio_data.get("outro_frames", int(round(audio_data["outro_sec"] * 30.0)))
+            lang_props["outroDurationSec"] = audio_data["outro_sec"]
+            v_prof = VOICE_PROFILES[lang_code]
+            lang_props["kicker"] = v_prof["live_kicker"]
+            if translated.get("master_headline"):
+                lang_props["headline"] = translated["master_headline"]
+            if translated.get("ticker_text"):
+                lang_props["tickerText"] = translated["ticker_text"]
+
+            aud_map = {m["scene_id"]: m for m in audio_data["scenes"]}
+            tr_map = {s["scene_id"]: s for s in translated["scenes"]}
+            for sc in lang_props["scenes"]:
+                sid = sc["scene_id"]
+                if sid in aud_map:
+                    sc["durationInFrames"] = aud_map[sid]["duration_frames"]
+                    sc["duration_sec"] = aud_map[sid]["duration_sec"]
+                    sc["audio_path"] = aud_map[sid]["wav_path"]
+                if sid in tr_map:
+                    sc["narration"] = tr_map[sid]["spoken_narration"]
+                    if "on_screen" in tr_map[sid]:
+                        sc["on_screen"] = tr_map[sid]["on_screen"]
+                if sc.get("shots"):
+                    tf = sc["durationInFrames"]
+                    n = len(sc["shots"])
+                    per, rem = tf // n, tf % n
+                    for i, sh in enumerate(sc["shots"]):
+                        sh["durationInFrames"] = per + (rem if i == n - 1 else 0)
+
+            lang_props["subtitles"] = build_subtitles_from_scenes(lang_props["scenes"], audio_data["scenes"], chunk_size=3)
+            reconciled_f = sum(sc["durationInFrames"] for sc in lang_props["scenes"])
+            lang_props["totalDurationInFrames"] = reconciled_f
+
+            props_file = lang_dir / f"remotion_props_{lang_code}.json"
+            props_file.write_text(json.dumps(lang_props, indent=2, ensure_ascii=False), encoding="utf-8")
+
+            vid = pipeline.render_and_master(props_file, Path(audio_data["master_audio_path"]), reconciled_f)
+            dest_vid = lang_dir / f"{dossier.story_id}_{lang_code.replace('-', '_')}_master.mp4"
+            shutil.copy2(vid, dest_vid)
+            cap = (
+                f"🌎 <b>{lang_title.upper()} BROADCAST MASTER ({lang_code})</b>\n"
+                f"• <b>Voice:</b> {audio_data['voice_name']}\n"
+                f"• <b>Runtime:</b> {audio_data['total_sec']:.2f}s ({reconciled_f} frames)"
+            )
+            bot.send_video(str(dest_vid), caption=cap, chat_id=chat_id)
+    except Exception as e:
+        print(f"[Broadcast Engine] Warning during optional multilang delivery: {e}")
 
 
 def run_scraping_and_story_selection(bot: TelegramBotClient, chat_id: str):
@@ -381,7 +468,7 @@ def main():
         "<b>Workflow on /new:</b>\n"
         "1. <b>Pick a Story</b>: <i>Browse live ranked stories with inline buttons.</i>\n"
         "2. <b>Script Approval</b>: <i>Review the draft with [Approve], [AI Rewrite], or [Manual Edit].</i>\n"
-        "3. <b>Dynamic Visual Sourcing</b>: <i>Sources 16 fresh match photos specifically for the story (zero reuse!).</i>\n"
+        "3. <b>Dynamic Visual Sourcing</b>: <i>Sources ~8–10 fresh match & stadium photos verified by YuNet/SFace (zero reuse!).</i>\n"
         "4. <b>Live Progress Bar</b>: <i>Follow real-time generation in-place [██████░░░░]!</i>\n"
         "5. <b>TV Broadcast Master</b>: <i>Energetic British Sports Anchor voiceover & Trinitron CRT analog treatment delivered to Telegram!</i>"
     )
