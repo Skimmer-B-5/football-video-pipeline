@@ -31,9 +31,11 @@ sys.path.insert(0, str(BETA_ROOT))
 
 # Configuration
 AUTHORIZED_REF_ENV = "BETA_AUTHORIZED_REFERENCE_AUDIO"
+DEFAULT_SPEAKER = "Aiden"
 DEFAULT_INSTRUCT = (
-    "A confident, crisp, high-energy British sports news presenter speaking with professional broadcast clarity, "
-    "punchy rhythm, sharp diction, and steady authoritative momentum. Completely smooth, natural and clean delivery."
+    "Shouted, high-pitched ecstatic live television football anchor yelling breaking deadline-day news on Sky Sports! "
+    "Extremely loud projecting voice, soaring energetic pitch inflection, rapid urgent speed, punchy staccato excitement on every phrase! "
+    "Never drop volume, never whisper, never trail off into a moan."
 )
 
 SCENE_DURATION_BOUNDS = {
@@ -91,19 +93,166 @@ class ProductionVoiceEngine:
             print(f"[VoiceEngine] Active Voice: Qwen3-TTS 0.6B Base (Authorized Reference: {self.authorized_ref})")
         else:
             self.mode = "CUSTOM_VOICE"
-            self.voice_name = "Original British Sports Presenter (Ryan)"
-            print(f"[VoiceEngine] Active Voice: Qwen3-TTS 0.6B CustomVoice (Speaker: Ryan — Original British Sports Presenter)")
+            self.voice_name = f"High-Voltage Live Sports Anchor ({DEFAULT_SPEAKER})"
+            print(f"[VoiceEngine] Active Voice: Qwen3-TTS 0.6B CustomVoice (Speaker: {DEFAULT_SPEAKER} — Live Urgent Anchor)")
+
+    @staticmethod
+    def _clean_tts_phrase(text: str) -> str:
+        import re
+        clean_text = (text or "").replace("—", " ").replace("--", " ").replace("–", " ").strip()
+        clean_text = re.sub(r'\b(And|So|Or|Because|While|Yet|But|Meanwhile)\s*[,—–-]\s*', r'\1 ', clean_text, flags=re.IGNORECASE)
+        clean_text = clean_text.replace("…", ", ").replace("...", ", ")
+        return re.sub(r'\s+', ' ', clean_text).strip()
+
+    @staticmethod
+    def _energize_punctuation(text: str) -> str:
+        """Converts flat trailing periods into energetic exclamation momentum for Qwen3-TTS pitch projection."""
+        t = (text or "").strip()
+        if not t:
+            return t
+        if t.endswith("."):
+            t = t[:-1] + "!"
+        return t
+
+    def _synthesize_block_wav(self, block_scenes: List[Dict[str, Any]], block_tag: str) -> Optional[Path]:
+        """Generates one continuous vocal WAV for `block_scenes` without unloading Qwen3-TTS."""
+        if not block_scenes:
+            return None
+        from stages.qwen_tts_synthesizer import synthesize_qwen3
+
+        cleaned_phrases = [self._energize_punctuation(self._clean_tts_phrase(sc["spoken_narration"])) for sc in block_scenes]
+        joined_parts = []
+        for idx, phr in enumerate(cleaned_phrases):
+            if idx < len(cleaned_phrases) - 1 and phr.endswith("!"):
+                nxt_low = cleaned_phrases[idx + 1].lower()
+                if any(nxt_low.startswith(c) for c in ("because ", "while ", "and ", "but ", "yet ", "so ", "even though ", "meanwhile ")):
+                    joined_parts.append(phr[:-1] + ",")
+                else:
+                    joined_parts.append(phr)
+            else:
+                joined_parts.append(phr)
+        full_block_text = " ".join(joined_parts)
+
+        block_wav = self.voice_dir / f"raw_block_{block_tag}.wav"
+        block_txt = self.voice_dir / f"raw_block_{block_tag}.txt"
+        need_tts = True
+        if block_wav.exists() and block_txt.exists():
+            try:
+                if block_txt.read_text(encoding="utf-8").strip() == full_block_text:
+                    need_tts = False
+            except Exception:
+                pass
+
+        if need_tts:
+            synthesize_qwen3(
+                text=full_block_text,
+                output_path=block_wav,
+                speaker=DEFAULT_SPEAKER,
+                instruct=DEFAULT_INSTRUCT,
+                language="English",
+                temperature=0.46,
+                repetition_penalty=1.18,
+                max_tokens_per_word=14.0,
+            )
+            try:
+                block_txt.write_text(full_block_text, encoding="utf-8")
+            except Exception:
+                pass
+        return block_wav
+
+    def _slice_block_with_whisper(self, block_wav: Path, block_scenes: List[Dict[str, Any]], block_tag: str, whisper_model=None) -> bool:
+        """Aligns and slices continuous block WAV into individual beat clips using Whisper CPU timestamps."""
+        data, sr = sf.read(str(block_wav))
+        mono = np.mean(data, axis=1) if data.ndim > 1 else data
+        total_sec = len(mono) / float(sr)
+
+        split_bounds: List[Tuple[float, float]] = []
+        try:
+            import re
+            if whisper_model is None:
+                import whisper
+                whisper_model = whisper.load_model("base", device="cpu")
+            res = whisper_model.transcribe(str(block_wav), language="en", word_timestamps=True, fp16=False)
+            spoken_words = []
+            for seg in res.get("segments", []):
+                for wd in seg.get("words", []):
+                    tok = re.sub(r"[^a-z0-9]", "", (wd.get("word") or "").lower())
+                    if tok:
+                        spoken_words.append((tok, float(wd["start"]), float(wd["end"])))
+
+            if len(spoken_words) >= sum(len(sc["spoken_narration"].split()) for sc in block_scenes) * 0.65:
+                cursor = 0
+                for idx, sc in enumerate(block_scenes):
+                    canon_w = [re.sub(r"[^a-z0-9]", "", w.lower()) for w in self._clean_tts_phrase(sc["spoken_narration"]).split()]
+                    canon_w = [w for w in canon_w if w]
+                    n_w = max(1, len(canon_w))
+                    end_idx = min(len(spoken_words) - (len(block_scenes) - 1 - idx), cursor + n_w)
+                    if idx < len(block_scenes) - 1 and canon_w:
+                        next_first = re.sub(r"[^a-z0-9]", "", self._clean_tts_phrase(block_scenes[idx + 1]["spoken_narration"]).split()[0].lower())
+                        best_k = end_idx
+                        best_score = -1
+                        for k in range(max(cursor + 1, end_idx - 3), min(len(spoken_words), end_idx + 4)):
+                            sc_match = (2 if spoken_words[k][0] == next_first else 0) + (2 if spoken_words[k - 1][0] == canon_w[-1] else 0)
+                            if sc_match > best_score:
+                                best_score = sc_match
+                                best_k = k
+                        end_idx = best_k
+                    if idx == len(block_scenes) - 1:
+                        end_idx = len(spoken_words)
+                    s_t = max(0.0, spoken_words[cursor][1] - 0.05) if idx == 0 else split_bounds[-1][1]
+                    if idx == len(block_scenes) - 1:
+                        e_t = total_sec
+                    else:
+                        w_end = spoken_words[end_idx - 1][2]
+                        w_next = spoken_words[min(len(spoken_words) - 1, end_idx)][1]
+                        gap = max(0.0, w_next - w_end)
+                        # Place boundary inside quietest room-tone gap after word tail (protecting final consonant!)
+                        e_t = w_end + min(0.08, gap * 0.5) if gap > 0.02 else w_end + 0.02
+                    e_t = max(s_t + 0.8, min(total_sec, e_t))
+                    split_bounds.append((s_t, e_t))
+                    cursor = min(len(spoken_words) - 1, end_idx)
+        except Exception as e:
+            print(f"[VoiceEngine] Cohesive Whisper alignment note ({block_tag}): {e}")
+
+        # Proportional RMS valley fallback if Whisper alignment skipped/mismatched
+        if len(split_bounds) != len(block_scenes):
+            weights = [max(1, len(sc["spoken_narration"].split())) for sc in block_scenes]
+            tot_w = float(sum(weights))
+            win = max(1, int(0.02 * sr))
+            env = np.array([np.mean(np.abs(mono[i * win : (i + 1) * win])) for i in range(len(mono) // win)])
+            s_cur = 0.0
+            split_bounds = []
+            for idx, wgt in enumerate(weights):
+                if idx == len(weights) - 1:
+                    split_bounds.append((s_cur, total_sec))
+                else:
+                    est_e = s_cur + (wgt / tot_w) * total_sec
+                    lo = max(1, int((est_e - 0.25) / 0.02))
+                    hi = min(len(env) - 1, int((est_e + 0.25) / 0.02))
+                    if hi > lo:
+                        valley_f = lo + int(np.argmin(env[lo:hi]))
+                        est_e = valley_f * 0.02
+                    split_bounds.append((s_cur, est_e))
+                    s_cur = est_e
+
+        for sc, (s_t, e_t) in zip(block_scenes, split_bounds):
+            sid = sc["scene_id"]
+            seg = data[int(s_t * sr) : int(e_t * sr)]
+            raw_wav = self.voice_dir / f"raw_{sid}.wav"
+            sf.write(str(raw_wav), seg, sr)
+            try:
+                (self.voice_dir / f"raw_{sid}.txt").write_text(self._clean_tts_phrase(sc["spoken_narration"]), encoding="utf-8")
+            except Exception:
+                pass
+        print(f"[VoiceEngine] Cohesive block '{block_tag}' ({len(block_scenes)} beats, {total_sec:.2f}s) sliced cleanly.")
+        return True
 
     def _synthesize_raw(self, text: str, sid: str) -> Path:
-        """Synthesizes raw monologue using the appropriate Qwen3-TTS engine."""
+        """Synthesizes a single phrase (used for Base Clone mode or Outro)."""
         raw_wav = self.voice_dir / f"raw_{sid}.wav"
         text_file = self.voice_dir / f"raw_{sid}.txt"
 
-        import re
-        clean_text = text.replace("—", " ").replace("--", " ").replace("–", " ").strip()
-        clean_text = re.sub(r'\b(And|So|Or|Either way)\s*[,—–-]\s*', r'\1 ', clean_text, flags=re.IGNORECASE)
-        clean_text = clean_text.replace("…", ". ").replace("...", ". ")
-        clean_text = re.sub(r'\s+', ' ', clean_text).strip()
+        clean_text = self._energize_punctuation(self._clean_tts_phrase(text))
 
         if raw_wav.exists() and text_file.exists():
             try:
@@ -115,14 +264,13 @@ class ProductionVoiceEngine:
         if self.mode == "BASE_CLONE":
             from stages.jeff_stelling_synthesizer import get_base_model
             model = get_base_model()
-            # Generate using authorized reference
             wavs, out_sr = model.generate_voice_clone(
                 text=clean_text,
                 language="English",
                 ref_audio=self.authorized_ref,
                 non_streaming_mode=True,
-                temperature=0.65,
-                repetition_penalty=1.10
+                temperature=0.55,
+                repetition_penalty=1.15
             )
             sf.write(str(raw_wav), wavs[0], out_sr)
         else:
@@ -130,7 +278,7 @@ class ProductionVoiceEngine:
             synthesize_qwen3(
                 text=clean_text,
                 output_path=raw_wav,
-                speaker="Ryan",
+                speaker=DEFAULT_SPEAKER,
                 instruct=DEFAULT_INSTRUCT,
                 language="English"
             )
@@ -158,33 +306,18 @@ class ProductionVoiceEngine:
         else:
             mono = data_raw
 
-        # Intelligent speech boundary trimming: cut leading silence and trailing mutterings/whispers
+        # Outside-in dead-air trim: keep all mid-sentence pauses intact & preserve word tail decay
         win_size = int(0.04 * sr_raw)
         n_frames = len(mono) // win_size
         if n_frames > 0:
             env = np.array([np.mean(np.abs(mono[i * win_size : (i + 1) * win_size])) for i in range(n_frames)])
-            active = env > 0.018
-            start_frame = None
-            for i, a in enumerate(active):
-                if a:
-                    start_frame = max(0, i - 1)
-                    break
-            if start_frame is None:
+            active_idxs = np.where(env > 0.012)[0]
+            if len(active_idxs) > 0:
+                start_frame = max(0, int(active_idxs[0]) - 1)
+                end_frame = min(n_frames, int(active_idxs[-1]) + 3)
+            else:
                 start_frame = 0
-
-            silence_run = 0
-            end_frame = n_frames
-            max_sil_frames = int(0.55 / 0.04)  # 0.55s silence gap indicates speech completion
-
-            for i in range(start_frame, n_frames):
-                dur_so_far = (i - start_frame) * 0.04
-                if not active[i]:
-                    silence_run += 1
-                    if dur_so_far >= 1.5 and silence_run >= max_sil_frames:
-                        end_frame = i - silence_run + 2
-                        break
-                else:
-                    silence_run = 0
+                end_frame = n_frames
 
             start_idx = max(0, start_frame * win_size)
             end_idx = min(len(data_raw), end_frame * win_size)
@@ -224,11 +357,12 @@ class ProductionVoiceEngine:
                 filter_parts.append(f"atempo={speed_factor:.3f}")
 
             filter_parts.extend([
-                "highpass=f=80",
-                "lowpass=f=12000",
-                "equalizer=f=2800:t=q:w=1.2:g=2.0",
-                "compand=attacks=0.02:decays=0.15:points=-60/-60|-24/-16|-12/-8|0/-3",
-                "loudnorm=I=-14:TP=-1.0:LRA=7",
+                "highpass=f=95",
+                "lowpass=f=12500",
+                "equalizer=f=185:t=q:w=1.0:g=-1.6",
+                "equalizer=f=3200:t=q:w=1.2:g=2.8",
+                "compand=attacks=0.015:decays=0.12:points=-60/-60|-24/-15|-12/-7|0/-2.5",
+                "loudnorm=I=-14:TP=-1.0:LRA=6",
                 "aformat=sample_rates=48000:channel_layouts=stereo"
             ])
             filter_chain = ",".join(filter_parts)
@@ -293,15 +427,43 @@ class ProductionVoiceEngine:
             "outro": (0.10, 0.20)
         }
 
+        # Concatenate story beats cleanly in 2 cohesive vocal blocks in CUSTOM_VOICE mode so pitch & flow never stutter
+        story_scenes = [sc for sc in screenplay_data["scenes"] if sc["scene_id"] != "outro"]
+        outro_scenes = [sc for sc in screenplay_data["scenes"] if sc["scene_id"] == "outro"]
+        if self.mode != "BASE_CLONE" and len(story_scenes) >= 4:
+            mid = max(2, len(story_scenes) // 2 + (len(story_scenes) % 2))
+            b1_wav = self._synthesize_block_wav(story_scenes[:mid], "part1")
+            b2_wav = self._synthesize_block_wav(story_scenes[mid:], "part2")
+            for o_sc in outro_scenes:
+                self._synthesize_raw(o_sc["spoken_narration"], "outro")
+            try:
+                from stages.qwen_tts_synthesizer import release_qwen3_tts_model
+                release_qwen3_tts_model()
+            except Exception:
+                pass
+            w_mod = None
+            try:
+                import whisper
+                w_mod = whisper.load_model("base", device="cpu")
+            except Exception:
+                pass
+            if b1_wav:
+                self._slice_block_with_whisper(b1_wav, story_scenes[:mid], "part1", whisper_model=w_mod)
+            if b2_wav:
+                self._slice_block_with_whisper(b2_wav, story_scenes[mid:], "part2", whisper_model=w_mod)
+            w_mod = None
+
         for sc in screenplay_data["scenes"]:
             sid = sc["scene_id"]
             text = sc["spoken_narration"]
-            pad_lead, pad_tail = lead_tail_config.get(sid, (0.08, 0.15))
+            pad_lead, pad_tail = lead_tail_config.get(sid, (0.06, 0.10))
 
             # Point 3: S01 must enforce minimum 4.0s identity concealment
             min_sec = SCENE_DURATION_BOUNDS.get(sid, {}).get("min", 4.0 if sid == "S01" else 0.0)
 
-            raw_wav = self._synthesize_raw(text, sid)
+            raw_wav = self.voice_dir / f"raw_{sid}.wav"
+            if self.mode == "BASE_CLONE" or sid == "outro" or not raw_wav.exists():
+                raw_wav = self._synthesize_raw(text, sid)
             scene_wav, dur_sec, dur_frames, onset_sec, offset_sec, sp_factor = self.master_scene_audio(
                 raw_wav, sid, pad_lead, pad_tail, min_duration_sec=min_sec
             )

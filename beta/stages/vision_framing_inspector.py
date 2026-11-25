@@ -51,6 +51,8 @@ class VisionFramingInspector:
         self.cropper = ActionAwareCropper()
         self.sourcer = EditorialImageSourcer()
         self._vlm_unavailable_logged = False
+        self._broadcast_card_count = 0
+        self._active_story_id = ""
 
     def verify_candidate_metadata_llm(
         self,
@@ -65,7 +67,10 @@ class VisionFramingInspector:
         title_lower = (candidate_title or "").lower()
         url_lower = (candidate_url or "").lower()
 
-        # Rule 1: Check avoid terms locally (includes obsolete managers like Ruben Amorim)
+        # Rule 1: Check avoid terms locally + block graphic vs/matchday-poster URLs
+        url_title_blob = f"{title_lower} {url_lower}"
+        if any(bad in url_title_blob for bad in ("news18.com", "match-preview", "dream11", "fantasy", "head-to-head", "lineup", "conference-room", "vs-lazio", "vs-napoli")):
+            return False, "Candidate metadata resembles match poster / conference hall graphic"
         for avoid in spec.avoid_terms:
             av = avoid.lower().strip()
             if av and (av in title_lower or av in url_lower):
@@ -261,6 +266,9 @@ Reply ONLY valid JSON: {{"approved": true/false, "reason": "..."}}"""
         """
         print(f"\n[Inspector] Auditing Shot {spec.shot_id} [{spec.role}]: Target '{spec.primary_entity}'")
         self._meta_llm_calls = 0
+        if story_id != self._active_story_id:
+            self._active_story_id = story_id
+            self._broadcast_card_count = 0
         self.sourcer.hydrate_from_ledgers(current_ledger=ledger, current_story_id=story_id)
 
         candidates = []
@@ -356,12 +364,14 @@ Reply ONLY valid JSON: {{"approved": true/false, "reason": "..."}}"""
                 print(f"    Candidate {idx} rejected by Pixel Gate: {px_reason}")
                 continue
 
-            # Gate E: ActionAwareCropper (Body+Face+Ball Joint Framing + Wide Broadcast Card fallback)
+            # Gate E: ActionAwareCropper (Aspect-aware Full-Vertical, Dual-Landscape Strips, Pan, & Capped Broadcast Card)
             preferred_box = getattr(self, "_last_matched_bbox", None)
             scene_objs = getattr(self, "_last_scene_objects", {}) or {}
             det_engine = self.cropper.detector
             matched_body = det_engine.match_face_to_person_box(preferred_box, scene_objs.get("persons", []))
             top_ball = scene_objs["balls"][0][:4] if scene_objs.get("balls") else None
+            use_half_panel = (spec.scene_id == "S07")
+            allow_card = (self._broadcast_card_count < 2) and not use_half_panel and not getattr(spec, "prefer_landscape", False) and not getattr(spec, "use_club_crest", False)
             passed, final_bgr, crop_audit = self.cropper.crop_candidate(
                 cv_bgr=cv_img,
                 strategy=spec.crop_strategy,
@@ -369,9 +379,34 @@ Reply ONLY valid JSON: {{"approved": true/false, "reason": "..."}}"""
                 body_box=matched_body,
                 ball_box=top_ball,
                 person_boxes=scene_objs.get("persons", []),
+                allow_broadcast_card=allow_card,
+                prefer_landscape_strip=bool(getattr(spec, "prefer_landscape", False)),
+                half_panel_duel=use_half_panel,
             )
             if not passed:
                 continue
+
+            # If wide pan_horizontal ended up with landscape aspect < 0.72 after fallback, ensure dual strip works nicely
+            if crop_audit.get("framing_mode") == "dual_landscape_split" and getattr(spec, "layout_preference", "auto") != "dual_landscape_split" and spec.scene_id != "S07":
+                # Keep full-bleed / pan_horizontal feel if single-shot scene fell back
+                crop_audit["framing_mode"] = "broadcast_card" if self._broadcast_card_count < 2 else "pan_horizontal"
+
+            if crop_audit.get("framing_mode") == "broadcast_card":
+                self._broadcast_card_count += 1
+
+            # Optional Transparent Club Logo Overlay (cut cleanly with alpha channel!) over verified stadium backdrop
+            if getattr(spec, "use_club_crest", False) and spec.club_affiliation:
+                crest_filename = f"{spec.shot_id}_{spec.index}_crest.png"
+                crest_file = out_path.with_name(crest_filename)
+                cut_crest = self.sourcer.fetch_club_crest_cutout(spec.club_affiliation, crest_file)
+                if cut_crest and cut_crest.exists():
+                    # Infer public URL relative to parent images/story_{id} folder cleanly
+                    rel_parent = out_path.parent.name
+                    crop_audit["overlay_crest_path"] = f"/images/{rel_parent}/{crest_filename}"
+                    crop_audit["club_label"] = spec.club_affiliation.upper()
+                    if spec.scene_id != "S07":
+                        crop_audit["framing_mode"] = "club_emblem_overlay"
+                    print(f"  [ClubEmblem] Staged background-cut crest -> {crest_filename}")
 
             # Gate F: Post-Crop Pixel Identity & Anonymity Verification (skip strict post-crop SFace on broadcast_card
             # ONLY if downscaled inset face < 35px, though 1000x562 inset keeps faces > 60px!)

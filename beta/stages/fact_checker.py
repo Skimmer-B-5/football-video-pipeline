@@ -62,20 +62,25 @@ CLUB_REGISTRY: Dict[str, ClubFact] = {
     ),
     "manchester city": ClubFact(
         canonical_name="Manchester City",
-        current_manager="Pep Guardiola",
+        current_manager="Enzo Maresca",
         stadium="Etihad Stadium",
         league="Premier League",
         country="England",
-        aliases=["man city", "city", "mcfc", "citizens"]
+        aliases=["man city", "city", "mcfc", "citizens"],
+        obsolete_managers=["pep guardiola", "guardiola"],
+        recent_managerial_change=True,
+        manager_appointment_note="Enzo Maresca succeeded Pep Guardiola as Manchester City manager."
     ),
     "liverpool": ClubFact(
         canonical_name="Liverpool",
-        current_manager="Arne Slot",
+        current_manager="Andoni Iraola",
         stadium="Anfield",
         league="Premier League",
         country="England",
         aliases=["lfc", "the reds"],
-        obsolete_managers=["jurgen klopp", "klopp"]
+        obsolete_managers=["arne slot", "slot", "jurgen klopp", "klopp"],
+        recent_managerial_change=True,
+        manager_appointment_note="Andoni Iraola appointed Liverpool head coach in June 2026."
     ),
     "arsenal": ClubFact(
         canonical_name="Arsenal",
@@ -87,28 +92,36 @@ CLUB_REGISTRY: Dict[str, ClubFact] = {
     ),
     "chelsea": ClubFact(
         canonical_name="Chelsea",
-        current_manager="Enzo Maresca",
+        current_manager="Liam Rosenior",
         stadium="Stamford Bridge",
         league="Premier League",
         country="England",
         aliases=["cfc", "the blues"],
-        obsolete_managers=["mauricio pochettino", "graham potter"]
+        obsolete_managers=["enzo maresca", "mauricio pochettino", "graham potter"],
+        recent_managerial_change=True,
+        manager_appointment_note="Liam Rosenior appointed Chelsea head coach in January 2026."
     ),
     "tottenham": ClubFact(
         canonical_name="Tottenham Hotspur",
-        current_manager="Ange Postecoglou",
+        current_manager="Roberto De Zerbi",
         stadium="Tottenham Hotspur Stadium",
         league="Premier League",
         country="England",
-        aliases=["tottenham", "spurs", "thfc"]
+        aliases=["tottenham", "spurs", "thfc"],
+        obsolete_managers=["ange postecoglou", "postecoglou"],
+        recent_managerial_change=True,
+        manager_appointment_note="Roberto De Zerbi appointed Tottenham Hotspur head coach in March 2026."
     ),
     "newcastle": ClubFact(
         canonical_name="Newcastle United",
-        current_manager="Eddie Howe",
+        current_manager="Matthias Jaissle",
         stadium="St James' Park",
         league="Premier League",
         country="England",
-        aliases=["newcastle", "nufc", "magpies"]
+        aliases=["newcastle", "nufc", "magpies"],
+        obsolete_managers=["eddie howe", "howe"],
+        recent_managerial_change=True,
+        manager_appointment_note="Matthias Jaissle appointed Newcastle United manager."
     ),
     "aston villa": ClubFact(
         canonical_name="Aston Villa",
@@ -120,11 +133,14 @@ CLUB_REGISTRY: Dict[str, ClubFact] = {
     ),
     "real madrid": ClubFact(
         canonical_name="Real Madrid",
-        current_manager="Carlo Ancelotti",
+        current_manager="José Mourinho",
         stadium="Santiago Bernabéu",
         league="La Liga",
         country="Spain",
-        aliases=["madrid", "los blancos", "merengues"]
+        aliases=["madrid", "los blancos", "merengues"],
+        obsolete_managers=["carlo ancelotti", "xabi alonso"],
+        recent_managerial_change=True,
+        manager_appointment_note="José Mourinho appointed Real Madrid manager in June 2026."
     ),
     "barcelona": ClubFact(
         canonical_name="Barcelona",
@@ -145,28 +161,34 @@ CLUB_REGISTRY: Dict[str, ClubFact] = {
     ),
     "ac milan": ClubFact(
         canonical_name="AC Milan",
-        current_manager="Paulo Fonseca",
+        current_manager="Rúben Amorim",
         stadium="San Siro",
         league="Serie A",
         country="Italy",
-        aliases=["milan", "rossoneri"]
+        aliases=["milan", "rossoneri"],
+        obsolete_managers=["paulo fonseca", "sergio conceicao", "stefano pioli"],
+        recent_managerial_change=True,
+        manager_appointment_note="Rúben Amorim appointed AC Milan head coach in June 2026."
     ),
     "inter milan": ClubFact(
         canonical_name="Inter Milan",
-        current_manager="Simone Inzaghi",
+        current_manager="Cristian Chivu",
         stadium="San Siro",
         league="Serie A",
         country="Italy",
-        aliases=["inter", "nerazzurri"]
+        aliases=["inter", "nerazzurri"],
+        obsolete_managers=["simone inzaghi"]
     ),
     "juventus": ClubFact(
         canonical_name="Juventus",
-        current_manager="Thiago Motta",
+        current_manager="Luciano Spalletti",
         stadium="Allianz Stadium",
         league="Serie A",
         country="Italy",
         aliases=["juve", "bianconeri"],
-        obsolete_managers=["massimiliano allegri", "allegri"]
+        obsolete_managers=["thiago motta", "motta", "igor tudor", "tudor", "massimiliano allegri", "allegri"],
+        recent_managerial_change=True,
+        manager_appointment_note="Luciano Spalletti appointed Juventus head coach in October 2025."
     ),
     "bayern munich": ClubFact(
         canonical_name="Bayern Munich",
@@ -203,11 +225,29 @@ CLUB_REGISTRY: Dict[str, ClubFact] = {
     ),
     "west ham": ClubFact(
         canonical_name="West Ham United",
-        current_manager="Julen Lopetegui",
+        current_manager="Scott Parker",
         stadium="London Stadium",
         league="Premier League",
         country="England",
-        aliases=["west ham", "hammers", "whufc"]
+        aliases=["west ham", "hammers", "whufc"],
+        obsolete_managers=["julen lopetegui", "graham potter"]
+    ),
+    "napoli": ClubFact(
+        canonical_name="Napoli",
+        current_manager="Massimiliano Allegri",
+        stadium="Stadio Diego Armando Maradona",
+        league="Serie A",
+        country="Italy",
+        aliases=["ssc napoli", "partenopei"],
+        obsolete_managers=["antonio conte", "conte", "francesco calzona"]
+    ),
+    "borussia dortmund": ClubFact(
+        canonical_name="Borussia Dortmund",
+        current_manager="Niko Kovač",
+        stadium="Signal Iduna Park",
+        league="Bundesliga",
+        country="Germany",
+        aliases=["dortmund", "bvb"]
     ),
 }
 

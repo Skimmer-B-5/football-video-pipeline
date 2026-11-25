@@ -139,6 +139,8 @@ def source_story_shots(
                 "focal_y": shot_audit.get("focal_y", 25.0),
                 "framing_mode": shot_audit.get("framing_mode", "full_bleed"),
                 "pan_direction": shot_audit.get("pan_direction", "center"),
+                "overlay_crest_path": shot_audit.get("overlay_crest_path"),
+                "club_label": shot_audit.get("club_label"),
             })
             print(f"  [{spec.shot_id}] Corroborated & Locked ({shot_audit.get('framing_mode', 'full_bleed')}) -> {dest_filename}")
         else:
@@ -229,11 +231,11 @@ def create_broadcast_from_story(bot: TelegramBotClient, story: Dict[str, Any], c
         progress.update(15, "Dynamic Match Photography Sourcing", f"Describing & scraping verified match photos for {dossier.protagonist_name} & {dossier.current_club}...")
         shots = source_story_shots(dossier, run_id, screenplay_scenes=script_data["scenes"], progress=progress)
 
-        # 5. Synthesize Sports Anchor Neural Voice
+        # 5. Synthesize High-Voltage Live Sports Anchor Voice
         progress.update(
             55,
-            "British Sports Anchor Voice Synthesis",
-            "Synthesizing Qwen3-TTS British sports presenter voice at 145 WPM with em-dash vocal stops..."
+            "High-Voltage Live Anchor Voice Synthesis",
+            "Synthesizing cohesive breaking-news Aiden anchor voice with word-aligned timing..."
         )
         audio_data = pipeline.synthesize_voice(script_data)
 
@@ -241,7 +243,7 @@ def create_broadcast_from_story(bot: TelegramBotClient, story: Dict[str, Any], c
         progress.update(
             75,
             "Staging 8-Scene Editorial Timeline",
-            "Configuring Trinitron CRT footage treatment & crisp speech-aligned subtitles..."
+            "Configuring aspect-aware layouts, Trinitron CRT treatment & crisp subtitles..."
         )
         props_path = pipeline.compile_visual_props(script_data, audio_data, shots)
 
@@ -250,7 +252,7 @@ def create_broadcast_from_story(bot: TelegramBotClient, story: Dict[str, Any], c
         total_s = audio_data.get("total_sec", 32.9)
         story_s = audio_data.get("story_sec", total_s - 5.0)
         outro_s = audio_data.get("outro_sec", 5.0)
-        voice_desc = audio_data.get("voice_name", "Original British Sports Presenter (Ryan)")
+        voice_desc = audio_data.get("voice_name", "High-Voltage Breaking-News Anchor (Aiden)")
         actual_shots_count = sum(len(v) for v in shots.values())
 
         progress.update(
@@ -364,7 +366,13 @@ def _dispatch_multilang_to_telegram(
             props_file = lang_dir / f"remotion_props_{lang_code}.json"
             props_file.write_text(json.dumps(lang_props, indent=2, ensure_ascii=False), encoding="utf-8")
 
-            vid = pipeline.render_and_master(props_file, Path(audio_data["master_audio_path"]), reconciled_f)
+            vid = pipeline.render_and_master(
+                props_file,
+                Path(audio_data["master_audio_path"]),
+                reconciled_f,
+                out_dir=lang_dir,
+                filename_prefix=f"{dossier.story_id}_{lang_code.replace('-', '_')}",
+            )
             dest_vid = lang_dir / f"{dossier.story_id}_{lang_code.replace('-', '_')}_master.mp4"
             shutil.copy2(vid, dest_vid)
             cap = (

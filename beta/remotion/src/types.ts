@@ -139,8 +139,15 @@ export interface SceneShot {
   durationInFrames: number;
   focal_x?: number;
   focal_y?: number;
-  framing_mode?: "full_bleed" | "broadcast_card" | "pan_horizontal";
+  framing_mode?:
+    | "full_bleed"
+    | "broadcast_card"
+    | "pan_horizontal"
+    | "dual_landscape_split"
+    | "club_emblem_overlay";
   pan_direction?: "left" | "right" | "center";
+  overlay_crest_path?: string;
+  club_label?: string;
 }
 
 export interface SceneProps {

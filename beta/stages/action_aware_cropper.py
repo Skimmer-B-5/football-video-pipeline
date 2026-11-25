@@ -90,6 +90,62 @@ class ActionAwareCropper:
         audit["safe_zone_compliant"] = True
         return True, final_bgr, audit
 
+    def _compose_wide_landscape_strip(
+        self,
+        cv_bgr: np.ndarray,
+        det: Dict[str, Any],
+        audit: Dict[str, Any],
+        strip_w: int = 1080,
+        strip_h: int = 540,
+    ) -> Tuple[bool, np.ndarray, Dict[str, Any]]:
+        """
+        Extracts a crisp subject-centered wide landscape strip (default 1080x540) for
+        edge-to-edge Dual-Landscape Split layouts (Top slides Left, Bottom slides Right).
+        """
+        ih, iw = cv_bgr.shape[:2]
+        blur_var = audit.get("blur_variance", self.eval_blur_variance(cv_bgr))
+        target_ar = strip_w / float(strip_h)
+        src_ar = iw / float(ih)
+
+        if src_ar >= target_ar:
+            ch = ih
+            cw = int(round(ch * target_ar))
+        else:
+            cw = iw
+            ch = int(round(cw / target_ar))
+
+        cx, cy = det.get("face_center") or det.get("subject_center") or (iw / 2.0, ih * 0.42)
+        if det.get("is_face"):
+            _, fy, _, fh = det["bbox"]
+            # Bias slightly downward from top of head so shoulders/torso stay intact in horizontal strip
+            y0 = int(max(0, min(ih - ch, fy - int(ch * 0.14))))
+        else:
+            y0 = int(max(0, min(ih - ch, cy - ch * 0.42)))
+        x0 = int(max(0, min(iw - cw, cx - cw / 2.0)))
+
+        crop_cv = cv_bgr[y0 : y0 + ch, x0 : x0 + cw]
+        resized = cv2.resize(crop_cv, (strip_w, strip_h), interpolation=cv2.INTER_LANCZOS4)
+        pil_res = Image.fromarray(cv2.cvtColor(resized, cv2.COLOR_BGR2RGB))
+        pil_res = pil_res.filter(ImageFilter.UnsharpMask(radius=1.1, percent=106, threshold=3))
+        pil_res = ImageEnhance.Contrast(pil_res).enhance(1.04)
+        pil_res = ImageEnhance.Color(pil_res).enhance(1.05)
+        out_bgr = cv2.cvtColor(np.array(pil_res), cv2.COLOR_RGB2BGR)
+
+        fx_pct = round(max(15.0, min(85.0, ((cx - x0) / float(max(1, cw))) * 100.0)), 1)
+        fy_pct = round(max(18.0, min(65.0, ((cy - y0) / float(max(1, ch))) * 100.0)), 1)
+
+        audit["decision"] = "PASSED"
+        audit["framing_mode"] = "dual_landscape_split"
+        audit["focal_x"] = fx_pct
+        audit["focal_y"] = fy_pct
+        audit["pan_direction"] = "right" if fx_pct < 45.0 else "left"
+        audit["crop_box"] = (x0, y0, cw, ch)
+        audit["effective_crop_res"] = f"{cw}x{ch}"
+        audit["scale_factor"] = round(max(strip_w / float(cw), strip_h / float(ch)), 2)
+        audit["safe_zone_compliant"] = True
+        audit["blur_variance"] = round(float(blur_var), 1)
+        return True, out_bgr, audit
+
     def crop_candidate(
         self,
         cv_bgr: np.ndarray,
@@ -99,6 +155,9 @@ class ActionAwareCropper:
         body_box: Optional[Tuple[int, int, int, int]] = None,
         ball_box: Optional[Tuple[int, int, int, int]] = None,
         person_boxes: Optional[List[Tuple[int, int, int, int, float]]] = None,
+        allow_broadcast_card: bool = True,
+        prefer_landscape_strip: bool = False,
+        half_panel_duel: bool = False,
     ) -> Tuple[bool, Optional[np.ndarray], Dict[str, Any]]:
         """
         Executes specialized 9:16 cropping:
@@ -152,6 +211,19 @@ class ActionAwareCropper:
         if not all_faces and not self.detector.face_default.empty():
             faces = self.detector.face_default.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=4, minSize=(45, 45))
             all_faces = [tuple(int(v) for v in f) for f in faces]
+
+        # Dual-Landscape Split beats return full-width 2:1 horizontal strips cleanly (never boxed!)
+        if prefer_landscape_strip:
+            if (iw / float(ih)) < 0.85 and not det.get("is_face"):
+                pass  # fallback gracefully if portrait without clear face
+            else:
+                return self._compose_wide_landscape_strip(cv_bgr, det, audit)
+
+        # Native Vertical / Portrait images ALWAYS fill the 1080x1920 vertical frame fully!
+        is_native_vertical = (iw <= ih * 0.92)
+        if half_panel_duel and (iw > ih * 1.15):
+            # In Split Duel (540x1920 pane), crop crisp upper-half tall action so it fills half-pane without tiny card box
+            allow_broadcast_card = False
 
         # -------------------------------------------------------------
         # Crop Geometry Calculation by Strategy
@@ -252,13 +324,16 @@ class ActionAwareCropper:
         # -------------------------------------------------------------
         # Gate 3: Multi-Player Border Slicing Check (Face + Adjacent Bodies)
         # -------------------------------------------------------------
-        if len(all_faces) >= 2:
+        if len(all_faces) >= 2 and not is_native_vertical:
             for (ofx, ofy, ofw, ofh) in all_faces:
                 if det.get("is_face") and abs(ofx - det["bbox"][0]) < 15 and abs(ofy - det["bbox"][1]) < 15:
                     continue
                 if (ofx < x0 < ofx + ofw) or (ofx < x0 + w_crop < ofx + ofw):
                     if iw >= 840 and ih >= 470 and (iw / float(ih)) >= 1.38 and blur_var >= 55.0:
-                        return self._compose_broadcast_studio_frame(cv_bgr, audit)
+                        if allow_broadcast_card:
+                            return self._compose_broadcast_studio_frame(cv_bgr, audit)
+                        # Fall back to kinetic wide pan strip filling full width rather than repeating card box
+                        return self._compose_wide_landscape_strip(cv_bgr, det, audit, strip_w=1080, strip_h=608)
                     audit["decision"] = "REJECTED"
                     audit["reason"] = "Secondary player face is sliced in half on the crop border (distracting partial figure)"
                     return False, None, audit
@@ -270,12 +345,32 @@ class ActionAwareCropper:
         scale_y = self.target_h / float(h_crop)
         max_scale = max(scale_x, scale_y)
 
-        # Tighten scale limit: max 2.35x upscale to prevent soft pixels on mobile screens;
-        # wide high-res horizontal sports photos upgrade cleanly to Broadcast Studio Inset framing instead of over-zoom!
-        max_allowed_scale = 2.35 if blur_var >= 45.0 else 2.00
+        # Native vertical photos get slightly relaxed upscale allowance so vertical ALWAYS fills full screen;
+        # wide high-res landscapes cut cleanly to full-bleed first when sharp (blur>=58) up to 2.55x before falling back!
+        if is_native_vertical or half_panel_duel:
+            max_allowed_scale = 2.75 if blur_var >= 48.0 else 2.35
+        else:
+            max_allowed_scale = 2.55 if blur_var >= 58.0 else 2.20
+
         if max_scale > max_allowed_scale:
-            if iw >= 840 and ih >= 470 and (iw / float(ih)) >= 1.38 and blur_var >= 55.0:
-                return self._compose_broadcast_studio_frame(cv_bgr, audit)
+            if not is_native_vertical and iw >= 840 and ih >= 470 and (iw / float(ih)) >= 1.38 and blur_var >= 55.0:
+                if allow_broadcast_card:
+                    return self._compose_broadcast_studio_frame(cv_bgr, audit)
+                # Keep full-width horizontal pan frame cleanly (never box all 6 scenes identically!)
+                pan_w = min(iw, max(1280, int(ih * 1.35)))
+                px0 = max(0, min(iw - pan_w, int((det.get("subject_center", (iw / 2.0, ih / 2.0))[0]) - pan_w / 2.0)))
+                pan_cv = cv_bgr[:, px0 : px0 + pan_w]
+                pil_p = Image.fromarray(cv2.cvtColor(pan_cv, cv2.COLOR_BGR2RGB))
+                pil_p = pil_p.filter(ImageFilter.UnsharpMask(radius=1.1, percent=106, threshold=3))
+                out_p = cv2.cvtColor(np.array(pil_p), cv2.COLOR_RGB2BGR)
+                audit["decision"] = "PASSED"
+                audit["framing_mode"] = "pan_horizontal"
+                audit["focal_x"] = 50.0
+                audit["focal_y"] = 35.0
+                audit["pan_direction"] = "right"
+                audit["scale_factor"] = round(self.target_h / float(ih), 2)
+                audit["safe_zone_compliant"] = True
+                return True, out_p, audit
             audit["decision"] = "REJECTED"
             audit["reason"] = f"Crop upscale factor ({max_scale:.2f}x) exceeds {max_allowed_scale:.2f}x limit (blur: {blur_var:.1f}); would cause pixelation"
             return False, None, audit
@@ -300,8 +395,10 @@ class ActionAwareCropper:
                 return False, None, audit
 
             if final_face_left < 50 or final_face_right > 1030 or final_face_center_x < 180 or final_face_center_x > 900:
-                if iw >= 840 and ih >= 470 and (iw / float(ih)) >= 1.38 and blur_var >= 55.0:
-                    return self._compose_broadcast_studio_frame(cv_bgr, audit)
+                if not is_native_vertical and iw >= 840 and ih >= 470 and (iw / float(ih)) >= 1.38 and blur_var >= 55.0:
+                    if allow_broadcast_card:
+                        return self._compose_broadcast_studio_frame(cv_bgr, audit)
+                    return self._compose_wide_landscape_strip(cv_bgr, det, audit, strip_w=1080, strip_h=608)
                 audit["decision"] = "REJECTED"
                 audit["reason"] = f"Primary face horizontally edge-pinned/clipped (x={final_face_left}..{final_face_right}, center={final_face_center_x})"
                 return False, None, audit

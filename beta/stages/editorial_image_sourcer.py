@@ -34,7 +34,9 @@ DISQUALIFIED_DOMAINS = {
 DISQUALIFIED_TITLE_TERMS = {
     'street view', 'streetview', 'streetline', 'sidewalk', 'brick wall', 'empty road',
     'empty bench', 'empty dugout', 'substitute bench empty', 'illustration', 'vector graphic',
-    'clipart', 'cartoon', 'fan art', 'drawing', 'watermark'
+    'clipart', 'cartoon', 'fan art', 'drawing', 'watermark', 'news18', 'match preview',
+    'predicted xi', 'probable lineup', 'starting xi', 'dream11', 'fantasy tips',
+    'conference hall', 'empty chairs', 'auditorium', 'head to head', 'score prediction',
 }
 
 HEADERS = {
@@ -400,22 +402,201 @@ class EditorialImageSourcer:
         except Exception:
             return None
 
+    def _remove_crest_background(self, pil_img: Image.Image) -> Image.Image:
+        """
+        Ensures any club crest has a transparent cutout background:
+        - Preserves native RGBA transparency if already present (<85% opaque corners).
+        - Otherwise flood-fills uniform corner-connected outer background with smooth anti-aliased feathering.
+        """
+        import numpy as np
+        import cv2
+        from PIL import ImageFilter
+
+        rgba = pil_img.convert("RGBA")
+        arr = np.array(rgba)
+        h, w = arr.shape[:2]
+        if h < 16 or w < 16:
+            return rgba
+
+        # Check existing alpha transparency first (even if geometric logo touches corners!)
+        corners_a = [arr[0, 0, 3], arr[0, w - 1, 3], arr[h - 1, 0, 3], arr[h - 1, w - 1, 3]]
+        trans_frac = float(np.count_nonzero(arr[:, :, 3] < 40)) / float(max(1, h * w))
+        if sum(1 for a in corners_a if a < 20) >= 2 or trans_frac >= 0.05:
+            bb = rgba.getbbox()
+            return rgba.crop(bb) if bb else rgba
+
+        # Corner flood-fill against uniform box background (e.g. white or dark backdrop around club badge)
+        rgb = arr[:, :, :3].copy()
+        bgr = cv2.cvtColor(rgb, cv2.COLOR_RGB2BGR)
+        mask = np.zeros((h + 2, w + 2), np.uint8)
+        corners = [(0, 0), (w - 1, 0), (0, h - 1), (w - 1, h - 1)]
+        for sx, sy in corners:
+            diff = (20, 20, 20)
+            cv2.floodFill(bgr.copy(), mask, (sx, sy), (0, 0, 0), diff, diff, flags=cv2.FLOODFILL_MASK_ONLY | (255 << 8))
+
+        bg_mask = (mask[1:-1, 1:-1] == 255)
+        bg_frac = float(np.count_nonzero(bg_mask)) / float(max(1, h * w))
+        if 0.02 <= bg_frac <= 0.88:
+            alpha = np.where(bg_mask, 0, 255).astype(np.uint8)
+            alpha_img = Image.fromarray(alpha, mode="L").filter(ImageFilter.GaussianBlur(radius=0.8))
+            arr[:, :, 3] = np.array(alpha_img)
+            out = Image.fromarray(arr, mode="RGBA")
+            bb = out.getbbox()
+            return out.crop(bb) if bb else out
+
+        # Fast lightweight u2netp fallback only if background is textured/photographic
+        try:
+            import rembg
+            session = rembg.new_session("u2netp")
+            cut = rembg.remove(rgba.convert("RGB"), session=session)
+            bb = cut.getbbox()
+            return cut.crop(bb) if bb else cut
+        except Exception:
+            return rgba
+
+    def fetch_club_crest_cutout(self, club_name: str, out_path: Path) -> Optional[Path]:
+        """
+        Fetches a verified, background-removed RGBA transparent PNG crest/logo for `club_name`
+        from Wikipedia / Wikimedia Commons (strictly checking club tokens to block wrong clubs).
+        """
+        if not club_name:
+            return None
+        club_clean = club_name.strip()
+        tokens = [
+            t.lower() for t in re.findall(r"[a-zA-ZÀ-ÿ]{3,}", club_clean)
+            if t.lower() not in ("football", "club", "futbol", "calcio", "united") or len(club_clean.split()) == 1
+        ]
+        if not tokens:
+            tokens = [t.lower() for t in re.findall(r"[a-zA-ZÀ-ÿ]{3,}", club_clean)]
+
+        candidate_urls: List[str] = []
+        headers = {"User-Agent": "FootballNewsDesk/2.0 (broadcast@footballin30sec.com)"}
+
+        # 1. Resolve canonical Wikipedia club article first
+        club_titles: List[str] = []
+        for q in (f"{club_clean} F.C.", f"{club_clean} football club", club_clean):
+            try:
+                os_u = f"https://en.wikipedia.org/w/api.php?action=opensearch&search={urllib.parse.quote(q)}&limit=3&format=json"
+                req = urllib.request.Request(os_u, headers=headers)
+                with urllib.request.urlopen(req, timeout=6) as r:
+                    res = json.loads(r.read().decode("utf-8"))
+                for t in (res[1] if len(res) > 1 else []):
+                    tl = t.lower()
+                    if any(tok in tl for tok in tokens) and t not in club_titles:
+                        club_titles.append(t)
+            except Exception:
+                continue
+
+        # 2. Extract crest / logo / badge SVG-rendered PNG or PNG from club Wikipedia summary + media-list
+        for wt in club_titles[:2]:
+            slug = urllib.parse.quote(wt.replace(" ", "_"))
+            try:
+                ml_url = f"https://en.wikipedia.org/api/rest_v1/page/media-list/{slug}"
+                req = urllib.request.Request(ml_url, headers=headers)
+                with urllib.request.urlopen(req, timeout=7) as r:
+                    data = json.loads(r.read().decode("utf-8"))
+                for it in data.get("items", []):
+                    title = (it.get("title") or "").lower()
+                    if not any(k in title for k in ("logo", "crest", "badge", "shield", "pictogram", club_clean.split()[0].lower())):
+                        continue
+                    srcset = it.get("srcset", [])
+                    src = srcset[-1].get("src", "") if srcset else it.get("src", "")
+                    if not src:
+                        continue
+                    if src.startswith("//"):
+                        src = "https:" + src
+                    # Request crisp >= 640px PNG thumbnail for SVG logos (preserves crisp alpha channel!)
+                    if ".svg" in src and "/thumb/" in src:
+                        src = re.sub(r"/\d+px-([^/]+\.png)$", r"/640px-\1", src)
+                    elif src.lower().endswith(".svg") and "/commons/" in src:
+                        # Convert direct .svg URL to PNG thumb URL cleanly
+                        m_svg = re.match(r"https://upload\.wikimedia\.org/wikipedia/(?:commons|en)/([0-9a-f]/[0-9a-f]{2}/([^/]+\.svg))$", src)
+                        if m_svg:
+                            base = "commons" if "/commons/" in src else "en"
+                            src = f"https://upload.wikimedia.org/wikipedia/{base}/thumb/{m_svg.group(1)}/640px-{m_svg.group(2)}.png"
+                    if not src.lower().endswith(".svg"):
+                        candidate_urls.append(src)
+            except Exception:
+                continue
+
+        # 3. Wikimedia Commons fallback specifically for "{club_name} logo"
+        if not candidate_urls:
+            try:
+                cm_u = (
+                    "https://commons.wikimedia.org/w/api.php?action=query&generator=search"
+                    f"&gsrsearch={urllib.parse.quote(club_clean + ' football logo')}&gsrnamespace=6&gsrlimit=6"
+                    "&prop=imageinfo&iiprop=url|mime&iiurlwidth=640&format=json"
+                )
+                req = urllib.request.Request(cm_u, headers=headers)
+                with urllib.request.urlopen(req, timeout=7) as r:
+                    cm = json.loads(r.read().decode("utf-8"))
+                for _, p in cm.get("query", {}).get("pages", {}).items():
+                    t_low = (p.get("title") or "").lower()
+                    if not any(tok in t_low for tok in tokens):
+                        continue
+                    info = p.get("imageinfo", [{}])[0]
+                    thumb = info.get("thumburl") or info.get("url")
+                    if thumb and not thumb.lower().endswith(".svg"):
+                        candidate_urls.append(thumb)
+            except Exception:
+                pass
+
+        for cu in candidate_urls[:6]:
+            try:
+                req = urllib.request.Request(cu, headers=headers)
+                with urllib.request.urlopen(req, timeout=8) as r:
+                    raw_b = r.read()
+                if len(raw_b) < 2000:
+                    continue
+                pil = Image.open(io.BytesIO(raw_b))
+                cut_crest = self._remove_crest_background(pil)
+                if min(cut_crest.size) < 80:
+                    continue
+                out_path.parent.mkdir(parents=True, exist_ok=True)
+                cut_crest.save(str(out_path), "PNG")
+                print(f"[ImageSourcer] Fetched background-cut club crest for '{club_clean}' ({cut_crest.width}x{cut_crest.height}) -> {out_path.name}")
+                return out_path
+            except Exception:
+                continue
+        return None
+
     def generate_broadcast_crest_fallback(self, club_name: str, out_path: Path) -> bool:
-        """Generates an authentic 1990s broadcast club crest card when genuine action photo is unavailable."""
+        """Generates a 1990s broadcast club crest card featuring the real transparent club logo when possible."""
         out_path.parent.mkdir(parents=True, exist_ok=True)
         w, h = 1080, 1920
-        # Dark studio navy background with authentic phosphor CRT scan lines
-        img = Image.new("RGB", (w, h), (14, 22, 38))
+        img = Image.new("RGBA", (w, h), (14, 22, 38, 255))
         draw = ImageDraw.Draw(img)
 
-        # Subtle vignette / lighting
-        for r in range(400, 0, -20):
-            alpha = int(40 * (1 - r / 400))
+        for r in range(440, 0, -24):
+            alpha = int(42 * (1 - r / 440))
             draw.ellipse(
-                [(w//2 - r, h//2 - 200 - r), (w//2 + r, h//2 - 200 + r)],
-                outline=(22 + alpha, 34 + alpha, 58 + alpha),
-                width=10
+                [(w//2 - r, h//2 - 220 - r), (w//2 + r, h//2 - 220 + r)],
+                outline=(24 + alpha, 38 + alpha, 64 + alpha, 255),
+                width=12
             )
+
+        crest_tmp = out_path.with_name(out_path.stem + "_crest_alpha.png")
+        real_crest = self.fetch_club_crest_cutout(club_name, crest_tmp)
+        if real_crest and real_crest.exists():
+            with Image.open(real_crest) as cr:
+                cr = cr.convert("RGBA")
+                scale = min(460.0 / float(cr.width), 460.0 / float(cr.height))
+                nw, nh = max(1, int(cr.width * scale)), max(1, int(cr.height * scale))
+                cr_res = cr.resize((nw, nh), Image.Resampling.LANCZOS)
+                px, py = (w - nw) // 2, 540 + (460 - nh) // 2
+                img.paste(cr_res, (px, py), cr_res)
+            try:
+                crest_tmp.unlink(missing_ok=True)
+            except Exception:
+                pass
+            try:
+                title_font = ImageFont.truetype("arialbd.ttf", 52)
+            except Exception:
+                title_font = ImageFont.load_default()
+            draw.text((w // 2, 1085), club_name.upper(), font=title_font, fill=(255, 255, 255, 255), anchor="mm")
+            img.convert("RGB").save(out_path, quality=95)
+            print(f"[ImageSourcer] Created real-logo broadcast card for '{club_name}' -> {out_path.name}")
+            return True
 
         # Broadcast studio diagonal stripe accent
         for offset in range(-h, w + h, 140):
@@ -460,6 +641,6 @@ class EditorialImageSourcer:
             anchor="mm"
         )
 
-        img.save(out_path, quality=95)
+        img.convert("RGB").save(out_path, quality=95)
         print(f"[ImageSourcer] Created authoritative broadcast crest card for '{club_name}' -> {out_path.name}")
         return True

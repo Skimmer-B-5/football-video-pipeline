@@ -180,15 +180,19 @@ class GeneralizedBroadcastPipeline:
 
 EDITORIAL, GROUNDING & VOCAL MANDATES:
 1. STORY CATEGORY ({category.upper()}): {cat_guide}
-2. RUNTIME WORD BUDGET: 54–64 spoken words TOTAL across S01–S07 (7–9 words per beat). Fast 145 WPM studio punch.
-3. MANDATORY S01 SECRECY (MINIMUM 4.0s ANONYMITY):
+2. RUNTIME WORD BUDGET: 55–66 spoken words TOTAL across S01–S07 (8–10 words per beat). Fast explosive live newsroom punch.
+3. NATURAL BROADCAST CONJUNCTION FLOW (MANDATORY):
+   - S01–S07 MUST flow as ONE urgent connected breaking-news bulletin, NOT choppy standalone robot headlines!
+   - Link S02–S07 naturally using spoken conjunctions ("Because", "And now", "While", "Even though", "Yet", "Meanwhile", "So").
+   - NEVER tack weak filler ("...now.", "...today.") onto the end of sentences. Vary phrasing naturally!
+4. MANDATORY S01 SECRECY (MINIMUM 4.0s ANONYMITY):
    - S01 MUST NOT name the protagonist in spoken_narration, on_screen.headline, on_screen.subheadline, or on_screen.kicker!
-4. SPOKEN NUMBER CLARITY FOR VOICE ENGINE:
+5. SPOKEN NUMBER CLARITY & ENERGY FOR VOICE ENGINE:
    - Inside "spoken_narration", write currencies & shorthand in clean spoken words ("thirty million pounds", NOT "£30M" or "30m"). Keep crisp symbols ("£30M") inside "on_screen" ONLY.
    - NO em-dashes (—), NO hyphens as pauses, ZERO clickbait clichés ("the catch?", "bombshell", "changes everything", "you won't believe").
-5. FACTUAL ACCURACY: Use ONLY facts explicitly stated in the dossier & source article below. NEVER invent contract expiry years, fees, or quotes, and NEVER mention obsolete managers ({', '.join(blocked_names) if blocked_names else 'none'}).
-6. TELEMETRY CALLOUTS: On S03 or S04, when concrete fees, durations, or clauses exist in the article/dossier, set concise "data_callout" (e.g. "£30M + £5M ADD-ONS") and optionally structured "infographic" summary.
-7. outro: EXACTLY "This is football in thirty seconds. Follow for daily transfer updates."
+6. STRICT FACTUAL ACCURACY: Use ONLY facts explicitly stated in the dossier & source article below. NEVER invent "free agent" claims, contract years, fees, or quotes unless written in the article, and NEVER mention obsolete managers ({', '.join(blocked_names) if blocked_names else 'none'}).
+7. TELEMETRY CALLOUTS: On S03 or S04, when concrete fees, durations, or clauses exist in the article/dossier, set concise "data_callout" (e.g. "£30M + £5M ADD-ONS") and optionally structured "infographic" summary.
+8. outro: EXACTLY "This is football in thirty seconds. Follow for daily transfer updates."
 
 Output ONLY valid JSON matching this schema:
 {{
@@ -316,8 +320,14 @@ SOURCES: {', '.join(d.reporting_sources or ['Football Desk'])}
                         for obs in blocked_names:
                             if obs and obs.lower() in low_n:
                                 issues.append(f"Obsolete manager '{obs}' in {s.get('scene_id')}")
-                    if story_words < 45 or story_words > 72:
-                        issues.append(f"Story spoken word budget {story_words} out of target 54-64 range")
+                    if story_words < 45 or story_words > 74:
+                        issues.append(f"Story spoken word budget {story_words} out of target 55-66 range")
+                    conj_rx = re.compile(r"\b(because|and|but|while|even though|although|yet|meanwhile|so)\b", re.IGNORECASE)
+                    conj_hits = sum(
+                        1 for s in sc_list if str(s.get("scene_id", "")).upper() != "OUTRO" and conj_rx.search(s.get("spoken_narration", ""))
+                    )
+                    if conj_hits < 3:
+                        issues.append(f"Weak conjunction flow ({conj_hits} linked beats < 3): link S02-S07 with natural conjunctions (because, while, yet, even though, so)")
                     return issues
 
                 audit_issues = _audit_scenes(parsed["scenes"])
@@ -404,19 +414,19 @@ SOURCES: {', '.join(d.reporting_sources or ['Football Desk'])}
         scenes = [
             {
                 "scene_id": "S01",
-                "spoken_narration": f"{d.current_club} face a battle to keep their star defender.",
+                "spoken_narration": f"{d.current_club} face a huge battle to keep their star player!",
                 "on_screen": {
-                    "kicker": "● TRANSFER REPORT",
-                    "headline": f"{d.current_club.upper()} DEFENCE TARGETED",
-                    "subheadline": "MANAGER FIGHTS TO KEEP STAR",
+                    "kicker": "TRANSFER REPORT",
+                    "headline": f"{d.current_club.upper()} STAR TARGETED",
+                    "subheadline": "MANAGER FIGHTS TO KEEP KEY FIGURE",
                     "status_badge": "REPORTED"
                 }
             },
             {
                 "scene_id": "S02",
-                "spoken_narration": f"And — {d.pursuing_club} are actively circling around {d.protagonist_name}.",
+                "spoken_narration": f"Because {d.pursuing_club} are actively circling {d.protagonist_name}!",
                 "on_screen": {
-                    "kicker": "● PROPOSED PACKAGE",
+                    "kicker": "PROPOSED PACKAGE",
                     "headline": f"{d.protagonist_name.upper()} TARGETED",
                     "subheadline": f"{d.pursuing_club.upper()} CIRCLING",
                     "status_badge": "PROPOSAL"
@@ -424,9 +434,9 @@ SOURCES: {', '.join(d.reporting_sources or ['Football Desk'])}
             },
             {
                 "scene_id": "S03",
-                "spoken_narration": f"{src_name} reports confirm formal interest from the suitor.",
+                "spoken_narration": f"And {src_name} reports confirm serious interest from the suitor.",
                 "on_screen": {
-                    "kicker": "● SUITOR INTEREST",
+                    "kicker": "SUITOR INTEREST",
                     "headline": f"{d.pursuing_club.upper()} MAKE APPROACH",
                     "subheadline": "INTEREST FORMALIZED",
                     "status_badge": "REPORTED"
@@ -434,9 +444,9 @@ SOURCES: {', '.join(d.reporting_sources or ['Football Desk'])}
             },
             {
                 "scene_id": "S04",
-                "spoken_narration": f"The package is understood to reach {fee_spoken}{bonus_spoken}.",
+                "spoken_narration": f"Even though talks continue, any deal could reach {fee_spoken}{bonus_spoken}.",
                 "on_screen": {
-                    "kicker": "● DEAL CLAUSE",
+                    "kicker": "DEAL CLAUSE",
                     "headline": "FINANCIAL PACKAGE",
                     "subheadline": f"{fee_spoken.upper()} PROPOSAL",
                     "status_badge": "UNAGREED"
@@ -444,9 +454,9 @@ SOURCES: {', '.join(d.reporting_sources or ['Football Desk'])}
             },
             {
                 "scene_id": "S05",
-                "spoken_narration": f"Meanwhile — {d.current_manager} wants the board to block any approach.",
+                "spoken_narration": f"Meanwhile, {d.current_manager} wants his board to block the move!",
                 "on_screen": {
-                    "kicker": "● MANAGERIAL STAND",
+                    "kicker": "MANAGERIAL STAND",
                     "headline": f"{d.current_manager.upper()} RESISTS",
                     "subheadline": "BOARD URGED TO BLOCK DEAL",
                     "status_badge": "DEVELOPING"
@@ -454,27 +464,27 @@ SOURCES: {', '.join(d.reporting_sources or ['Football Desk'])}
             },
             {
                 "scene_id": "S06",
-                "spoken_narration": f"Crucially — {d.complication or 'talks over extension remain open'}.",
+                "spoken_narration": f"While behind the scenes, {d.complication or 'crucial negotiations remain ongoing'}.",
                 "on_screen": {
-                    "kicker": "● CONTRACT UPDATE",
-                    "headline": "STATUS & EXTENSION",
-                    "subheadline": "SECURITY SOUGHT",
+                    "kicker": "CONTRACT UPDATE",
+                    "headline": "STATUS & TALKS",
+                    "subheadline": "CLUB MONITORS NEXT STEP",
                     "status_badge": "OFFICIAL"
                 }
             },
             {
                 "scene_id": "S07",
-                "spoken_narration": f"So — will {d.current_manager} keep him, or will {d.pursuing_club} force a compromise?",
+                "spoken_narration": f"So will {d.current_manager} keep him, or will {d.pursuing_club} win the race?",
                 "on_screen": {
-                    "kicker": "● THE VERDICT",
+                    "kicker": "THE VERDICT",
                     "headline": f"{d.current_club.upper()} OR {d.pursuing_club.upper()}?",
-                    "subheadline": "SANCTION OR RETAIN",
+                    "subheadline": "STAY OR SWITCH?",
                     "status_badge": "EDITORIAL"
                 }
             },
             {
                 "scene_id": "outro",
-                "spoken_narration": "Either way — this is football in thirty seconds. Follow for daily transfer updates.",
+                "spoken_narration": "This is football in thirty seconds. Follow for daily transfer updates.",
                 "on_screen": {
                     "headline": "THIS IS FOOTBALL IN 30 SECONDS",
                     "kicker": "FOLLOW FOR MORE"
@@ -542,6 +552,8 @@ SOURCES: {', '.join(d.reporting_sources or ['Football Desk'])}
                             "focal_y": shot_item.get("focal_y", 25.0),
                             "framing_mode": shot_item.get("framing_mode", "full_bleed"),
                             "pan_direction": shot_item.get("pan_direction", "center"),
+                            "overlay_crest_path": shot_item.get("overlay_crest_path"),
+                            "club_label": shot_item.get("club_label"),
                         }
                     else:
                         shot_dict = {
@@ -559,8 +571,14 @@ SOURCES: {', '.join(d.reporting_sources or ['Football Desk'])}
                 assert sum_shot_f == dur_f, f"Scene {sid} shot frames ({sum_shot_f}) != scene duration frames ({dur_f})"
 
                 first_mode = rem_shots[0].get("framing_mode", "full_bleed") if rem_shots else "full_bleed"
-                if sid == "S07" and len(rem_shots) >= 2:
+                has_two = len(rem_shots) >= 2
+                wants_dual_split = has_two and any(
+                    s.get("framing_mode") == "dual_landscape_split" for s in rem_shots
+                )
+                if sid == "S07" and has_two:
                     motion_cfg = {"type": "split_duel"}
+                elif wants_dual_split:
+                    motion_cfg = {"type": "dual_landscape_split"}
                 elif first_mode == "pan_horizontal":
                     motion_cfg = {"type": "slow_pan", "direction": rem_shots[0].get("pan_direction", "right")}
                 elif sid == "S02":
@@ -657,13 +675,18 @@ SOURCES: {', '.join(d.reporting_sources or ['Football Desk'])}
         self,
         props_file: Path,
         audio_mix_path: Path,
-        total_frames: int
+        total_frames: int,
+        out_dir: Optional[Path] = None,
+        filename_prefix: Optional[str] = None,
     ) -> Path:
         """Executes Remotion CLI render and muxes with 1990s CRT analog broadcast filter."""
         print(f"\n[Stage 4] Rendering Video & Applying CRT Analog Broadcast Treatment")
         remotion_dir = PROJECT_ROOT / "beta" / "remotion"
-        raw_video = self.ws.base_dir / "output" / f"raw_video_{self.dossier.story_id}.mp4"
-        final_master = self.ws.base_dir / "output" / f"{self.dossier.story_id}_broadcast_master.mp4"
+        target_dir = Path(out_dir) if out_dir else (self.ws.base_dir / "output")
+        target_dir.mkdir(parents=True, exist_ok=True)
+        stem = filename_prefix or self.dossier.story_id
+        raw_video = target_dir / f"raw_video_{stem}.mp4"
+        final_master = target_dir / f"{stem}_broadcast_master.mp4"
 
         cmd = [
             "npx.cmd" if sys.platform == "win32" else "npx",

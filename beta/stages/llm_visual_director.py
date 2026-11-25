@@ -38,6 +38,9 @@ class EditorialShotSpec:
     avoid_terms: List[str]   # Explicit terms to disqualify
     required_context: str    # One-sentence visual description from GPT OSS
     allow_fallback_crest: bool = True
+    use_club_crest: bool = False
+    prefer_landscape: bool = False
+    layout_preference: str = "auto"
 
 
 class LLMVisualDirector:
@@ -224,11 +227,22 @@ Output JSON schema:
         suitor_mgr = dossier.pursuing_manager or FactChecker.get_verified_manager(dossier.pursuing_club)
         suitor_std = dossier.pursuing_stadium or FactChecker.get_verified_stadium(dossier.pursuing_club)
         curr_std = dossier.current_stadium or FactChecker.get_verified_stadium(dossier.current_club)
+        cat_low = (getattr(dossier, "story_category", "") or "").lower()
         obsolete_terms = (
             FactChecker.get_obsolete_managers(dossier.current_club) +
             FactChecker.get_obsolete_managers(dossier.pursuing_club)
         )
-        base_avoid = ["street", "sidewalk", "streetline", "empty bench", "empty dugout", "drawing", "cartoon", "static portrait"] + obsolete_terms
+        base_avoid = [
+            "street", "sidewalk", "streetline", "empty bench", "empty dugout",
+            "drawing", "cartoon", "static portrait", "match preview", "lineup", "news18",
+            "conference hall", "empty chairs", "score prediction"
+        ] + obsolete_terms
+
+        # Vary which 1 beat showcases dual stacked landscape split (Top from Left + Bottom from Right) per story
+        dual_seed = sum(ord(ch) for ch in (dossier.story_id or "news")) % 3
+        dual_split_scene = ["S04", "S06", "S02"][dual_seed]
+        if cat_low == "managerial_change" and dual_split_scene == "S02":
+            dual_split_scene = "S04"
 
         specs: List[EditorialShotSpec] = []
         shot_counter = 1
@@ -273,8 +287,11 @@ Output JSON schema:
                 print(f"  [{sid}] Detected 'OR' / 'AND' choice dilemma -> Generating 2 image descriptions for both parts...")
                 choice_data = self.describe_choice_scene(sid, narration, dossier)
 
-                # Part 1 Shot (Selling club / player)
-                p1_entity = _normalize_entity(choice_data["part1_entity"], dossier.current_manager)
+                # Part 1 Shot (Selling club protagonist / match action — NEVER tiny boxed card)
+                p1_default_ent = dossier.current_manager if cat_low == "managerial_change" else dossier.protagonist_name
+                p1_entity = _normalize_entity(choice_data["part1_entity"], p1_default_ent)
+                if cat_low != "managerial_change" and dossier.protagonist_name.lower() in p1_entity.lower():
+                    p1_entity = dossier.protagonist_name
                 p1_query = _sanitize_obsolete(choice_data["part1_query"].replace('"', ''), f"{p1_entity} {dossier.current_club} match action")
                 p1_desc = _sanitize_obsolete(choice_data["part1_description"], f"{p1_entity} in dynamic action for {dossier.current_club}.")
                 specs.append(EditorialShotSpec(
@@ -284,22 +301,31 @@ Output JSON schema:
                     role="choice_part1_home",
                     primary_entity=p1_entity,
                     club_affiliation=dossier.current_club,
-                    crop_strategy="managerial" if "manager" in p1_entity.lower() or dossier.current_manager.lower() in p1_entity.lower() else "match_action",
+                    crop_strategy="managerial" if ("manager" in p1_entity.lower() or dossier.current_manager.lower() in p1_entity.lower()) else "match_action",
                     search_queries=[
                         f"{p1_query}",
                         f"{p1_entity} {dossier.current_club} match action",
-                        f"{dossier.current_manager} {dossier.current_club} touchline"
+                        f"{dossier.protagonist_name} {dossier.current_club} celebration"
                     ],
                     avoid_terms=list(base_avoid),
-                    required_context=p1_desc
+                    required_context=p1_desc,
+                    layout_preference="split_duel"
                 ))
                 shot_counter += 1
 
-                # Part 2 Shot (Suitor coach / stadium - NEVER obsolete coaches)
-                p2_entity = _normalize_entity(choice_data["part2_entity"], suitor_mgr)
-                p2_query = _sanitize_obsolete(choice_data["part2_query"].replace('"', ''), f"{suitor_mgr} {dossier.pursuing_club} touchline")
-                p2_desc = _sanitize_obsolete(choice_data["part2_description"], f"{suitor_mgr} directing tactical instructions for {dossier.pursuing_club}.")
-                is_p2_mgr = (suitor_mgr.lower() in p2_entity.lower() or "coach" in p2_entity.lower() or "manager" in p2_entity.lower())
+                # Part 2 Shot: For player-transfer destination debates, feature Pursuing Club Stadium + Transparent Crest Overlay
+                # so viewers immediately see the suitor club identity (never an unlabelled face!)
+                use_suitor_emblem = (cat_low != "managerial_change") and bool(dossier.pursuing_club) and ("rival" not in dossier.pursuing_club.lower())
+                if use_suitor_emblem:
+                    p2_entity = suitor_std
+                    p2_query = f"{suitor_std} {dossier.pursuing_club} stadium floodlights night"
+                    p2_desc = f"{suitor_std} floodlit matchnight stadium featuring transparent {dossier.pursuing_club} crest."
+                    p2_strat = "tactical"
+                else:
+                    p2_entity = _normalize_entity(choice_data["part2_entity"], suitor_mgr)
+                    p2_query = _sanitize_obsolete(choice_data["part2_query"].replace('"', ''), f"{suitor_mgr} {dossier.pursuing_club} touchline")
+                    p2_desc = _sanitize_obsolete(choice_data["part2_description"], f"{suitor_mgr} directing tactical instructions for {dossier.pursuing_club}.")
+                    p2_strat = "managerial" if (suitor_mgr.lower() in p2_entity.lower() or "coach" in p2_entity.lower() or "manager" in p2_entity.lower()) else "tactical"
                 specs.append(EditorialShotSpec(
                     shot_id=f"{sid}_shot2",
                     scene_id=sid,
@@ -307,15 +333,59 @@ Output JSON schema:
                     role="choice_part2_suitor",
                     primary_entity=p2_entity,
                     club_affiliation=dossier.pursuing_club,
-                    crop_strategy="managerial" if is_p2_mgr else "tactical",
+                    crop_strategy=p2_strat,
                     search_queries=[
                         f"{p2_query}",
+                        f"{suitor_std} {dossier.pursuing_club} stadium pitch night",
+                        f"{suitor_std} matchday floodlights"
+                    ] if use_suitor_emblem else [
+                        f"{p2_query}",
                         f"{suitor_mgr} {dossier.pursuing_club} touchline coach",
-                        f"{suitor_mgr} {dossier.pursuing_club} press conference",
                         f"{suitor_std} {dossier.pursuing_club} floodlights matchday"
                     ],
+                    avoid_terms=list(base_avoid) + ["conference hall", "empty chairs"],
+                    required_context=p2_desc,
+                    use_club_crest=use_suitor_emblem,
+                    layout_preference="split_duel"
+                ))
+                shot_counter += 1
+
+            elif sid == dual_split_scene and sid != "S01":
+                # Dual Landscape Split Beat: 2 distinct horizontal images (Top slides from Left + Bottom slides from Right)
+                print(f"  [{sid}] Assigning animated Dual-Landscape Split Beat (Top-from-Left + Bottom-from-Right)...")
+                single_data = self.describe_single_scene(sid, narration, dossier)
+                e1 = _normalize_entity(single_data["primary_entity"], dossier.protagonist_name)
+                q1 = _sanitize_obsolete(single_data["search_query"].replace('"', ''), f"{e1} {dossier.current_club} match action")
+                e2 = dossier.current_manager if (e1.lower() != dossier.current_manager.lower()) else curr_std
+                q2 = f"{dossier.current_manager} {dossier.current_club} touchline match" if e2 == dossier.current_manager else f"{curr_std} {dossier.current_club} floodlights night"
+                specs.append(EditorialShotSpec(
+                    shot_id=f"{sid}_shot1",
+                    scene_id=sid,
+                    index=shot_counter,
+                    role=f"scene_{sid.lower()}_split_top",
+                    primary_entity=e1,
+                    club_affiliation=dossier.current_club,
+                    crop_strategy="match_action" if dossier.protagonist_name.lower() in e1.lower() else "tactical",
+                    search_queries=[q1, f"{dossier.protagonist_name} {dossier.current_club} match action"],
                     avoid_terms=list(base_avoid),
-                    required_context=p2_desc
+                    required_context=single_data.get("image_description") or f"{e1} top landscape frame",
+                    prefer_landscape=True,
+                    layout_preference="dual_landscape_split",
+                ))
+                shot_counter += 1
+                specs.append(EditorialShotSpec(
+                    shot_id=f"{sid}_shot2",
+                    scene_id=sid,
+                    index=shot_counter,
+                    role=f"scene_{sid.lower()}_split_bottom",
+                    primary_entity=e2,
+                    club_affiliation=dossier.current_club,
+                    crop_strategy="managerial" if e2 == dossier.current_manager else "tactical",
+                    search_queries=[q2, f"{dossier.current_club} players training pitch matchday"],
+                    avoid_terms=list(base_avoid),
+                    required_context=f"Complementary bottom landscape shot featuring {e2}.",
+                    prefer_landscape=True,
+                    layout_preference="dual_landscape_split",
                 ))
                 shot_counter += 1
 
@@ -327,22 +397,25 @@ Output JSON schema:
                 q = _sanitize_obsolete(single_data["search_query"].replace('"', ''), f"{entity} {dossier.current_club} match action")
                 desc = _sanitize_obsolete(single_data["image_description"], f"{entity} during high-intensity match action.")
 
-                # Narrative-locked diversity rules so consecutive beats showcase varied authentic subjects
+                # Narrative-locked diversity rules (never misroute current club "united" onto suitor club!)
                 mgr_last = (dossier.current_manager or "").split()[-1].lower() if dossier.current_manager else ""
                 purs_low = (dossier.pursuing_club or "").lower()
+                curr_low = (dossier.current_club or "").lower()
                 prot_last = (dossier.protagonist_name or "").split()[-1].lower()
+                use_crest_single = False
+
                 if sid != "S01" and mgr_last and len(mgr_last) > 3 and mgr_last in narr_lower:
                     entity = dossier.current_manager
                     q = f"{dossier.current_manager} {dossier.current_club} touchline manager"
                     desc = f"{dossier.current_manager} giving touchline instructions for {dossier.current_club}."
-                elif sid != "S01" and purs_low and (purs_low in narr_lower or "united" in narr_lower) and prot_last not in narr_lower:
+                elif sid != "S01" and purs_low and purs_low in narr_lower and prot_last not in narr_lower and curr_low not in narr_lower:
                     entity = suitor_std
-                    q = f"{suitor_std} {dossier.pursuing_club} stadium floodlights"
-                    desc = f"{suitor_std} illuminated on matchnight as {dossier.pursuing_club} weigh their move."
+                    q = f"{suitor_std} {dossier.pursuing_club} stadium floodlights night"
+                    desc = f"{suitor_std} illuminated with transparent {dossier.pursuing_club} badge."
+                    use_crest_single = ("rival" not in purs_low and "suitor" not in purs_low)
 
                 # Determine crop strategy and avoid list based on entity and scene
                 if sid == "S01":
-                    # Enforce S01 concealment: if entity accidentally named protagonist, use stadium or manager
                     if dossier.protagonist_name.lower() in entity.lower():
                         entity = curr_std
                         q = f"{curr_std} {dossier.current_club} floodlights matchday"
@@ -354,13 +427,15 @@ Output JSON schema:
                     club_affil = dossier.pursuing_club if suitor_mgr.lower() in entity.lower() else dossier.current_club
                     avoid = list(base_avoid)
                 elif dossier.protagonist_name.lower() in entity.lower():
-                    crop_strat = "match_action"  # Prioritize dynamic match action over static portraits
+                    crop_strat = "match_action"
                     club_affil = dossier.current_club
                     avoid = ["unrelated player"] + list(base_avoid)
                 elif dossier.pursuing_club.lower() in entity.lower() or suitor_std.lower() in entity.lower():
                     crop_strat = "tactical"
                     club_affil = dossier.pursuing_club
                     avoid = list(base_avoid)
+                    if sid == "S03":
+                        use_crest_single = True
                 else:
                     crop_strat = "match_action"
                     club_affil = dossier.current_club
@@ -377,10 +452,11 @@ Output JSON schema:
                     search_queries=[
                         f"{q}",
                         f"{entity} {club_affil} match action" if crop_strat != "tactical" else f"{entity} {club_affil} matchday floodlights",
-                        f"{entity} {club_affil} tackle" if crop_strat == "match_action" else f"{entity} {club_affil} stadium"
+                        f"{entity} {club_affil} tackle" if crop_strat == "match_action" else f"{entity} {club_affil} stadium night"
                     ],
                     avoid_terms=avoid,
-                    required_context=desc
+                    required_context=desc,
+                    use_club_crest=use_crest_single,
                 ))
                 shot_counter += 1
 

@@ -48,13 +48,31 @@ def get_qwen3_tts_model():
     print(f"[Qwen3TTS] Model loaded successfully in {time.time()-t0:.2f}s.")
     return _MODEL_INSTANCE
 
+def release_qwen3_tts_model():
+    """Releases cached Qwen3-TTS model and frees CUDA memory."""
+    global _MODEL_INSTANCE
+    if _MODEL_INSTANCE is not None:
+        _MODEL_INSTANCE = None
+        import gc
+        gc.collect()
+        try:
+            import torch
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
+        except Exception:
+            pass
+
+
 def synthesize_qwen3(
     text: str,
     output_path: Optional[Path] = None,
-    speaker: str = "Ryan",
+    speaker: str = "Aiden",
     instruct: Optional[str] = None,
     language: str = "English",
-    normalize_db: float = -1.0
+    normalize_db: float = -1.0,
+    temperature: float = 0.48,
+    repetition_penalty: float = 1.18,
+    max_tokens_per_word: float = 14.5,
 ) -> Tuple[Path, float]:
     """
     Synthesize speech using Qwen3-TTS with dynamic instruction styling.
@@ -73,25 +91,27 @@ def synthesize_qwen3(
     import soundfile as sf
 
     if instruct is None:
-        instruct = "Speak in an urgent, dramatic sports breaking news anchor tone with punchy, high-energy British cadence."
+        instruct = (
+            "Shouted, high-pitched ecstatic live television football anchor yelling breaking deadline-day news on Sky Sports! "
+            "Bright projecting voice, soaring energetic pitch inflection, rapid urgent speed, crisp staccato diction. Never drop volume, never whisper, never groan."
+        )
 
     model = get_qwen3_tts_model()
 
     print(f"[Qwen3TTS] Synthesizing ({len(text.split())} words): \"{text[:60]}...\"")
     t0 = time.time()
 
-    # Dynamic token limit based on word count to prevent runaway hallucinations/whispers
+    # Dynamic token limit tuned for 12.5Hz Qwen3-TTS codec (~1.16s/word ceiling to avoid silence/moaning stalls)
     word_count = len(text.split())
-    # Codec tokens at ~25Hz; cap at ~0.65s per word + 50 tokens buffer
-    calculated_max_tokens = max(100, int(word_count * 25))
+    calculated_max_tokens = max(110, int(word_count * max_tokens_per_word) + 30)
 
     wavs, sr = model.generate_custom_voice(
         text=text,
         language=language,
         speaker=speaker,
         instruct=instruct,
-        temperature=0.6,
-        repetition_penalty=1.15,
+        temperature=temperature,
+        repetition_penalty=repetition_penalty,
         max_new_tokens=calculated_max_tokens,
     )
 

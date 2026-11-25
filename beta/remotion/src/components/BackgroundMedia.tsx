@@ -24,6 +24,105 @@ function resolveImgSrc(rawPath?: string): string {
   }
 }
 
+const FloatingClubCrest: React.FC<{
+  crestPath?: string;
+  clubLabel?: string;
+  frame: number;
+  fps: number;
+  startDelay?: number;
+  compact?: boolean;
+}> = ({ crestPath, clubLabel, frame, fps, startDelay = 3, compact = false }) => {
+  const src = resolveImgSrc(crestPath);
+  if (!src) return null;
+
+  const relFrame = Math.max(0, frame - startDelay);
+  const pop = spring({
+    frame: relFrame,
+    fps,
+    config: { damping: 14, mass: 0.68, stiffness: 145 },
+  });
+  const opacity = interpolate(relFrame, [0, 6], [0, 1], { extrapolateRight: "clamp" });
+  const scale = interpolate(pop, [0, 1], [0.72, 1.0]);
+  const logoSize = compact ? 240 : 340;
+
+  return (
+    <div
+      style={{
+        position: "absolute",
+        left: 0,
+        right: 0,
+        top: 220,
+        bottom: 690,
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        opacity,
+        transform: `scale(${scale})`,
+        transformOrigin: "center center",
+        zIndex: 5,
+        pointerEvents: "none",
+        willChange: "transform, opacity",
+      }}
+    >
+      <div
+        style={{
+          position: "relative",
+          width: logoSize,
+          height: logoSize,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        {/* Soft studio radial spotlight so dark/monochrome crests (e.g. Juventus JJ) pop cleanly off stadiums */}
+        <div
+          style={{
+            position: "absolute",
+            inset: -44,
+            borderRadius: "50%",
+            background:
+              "radial-gradient(circle, rgba(255,255,255,0.42) 0%, rgba(255,255,255,0.16) 46%, rgba(255,255,255,0) 74%)",
+            pointerEvents: "none",
+          }}
+        />
+        <Img
+          src={src}
+          style={{
+            position: "relative",
+            width: logoSize,
+            height: logoSize,
+            objectFit: "contain",
+            filter:
+              "drop-shadow(0 0 4px rgba(255, 255, 255, 0.72)) drop-shadow(0 16px 32px rgba(0, 0, 0, 0.92))",
+          }}
+        />
+      </div>
+      {clubLabel && (
+        <div
+          style={{
+            marginTop: 18,
+            padding: compact ? "7px 16px" : "9px 24px",
+            backgroundColor: "rgba(11, 19, 43, 0.88)",
+            border: "2px solid rgba(255, 215, 0, 0.88)",
+            borderRadius: 6,
+            boxShadow: "0 10px 24px rgba(0, 0, 0, 0.72)",
+            color: "#FFFFFF",
+            fontSize: compact ? 22 : 28,
+            fontWeight: 900,
+            letterSpacing: "0.09em",
+            textTransform: "uppercase",
+            fontFamily: "system-ui, -apple-system, sans-serif",
+            textAlign: "center",
+          }}
+        >
+          {clubLabel}
+        </div>
+      )}
+    </div>
+  );
+};
+
 export const BackgroundMedia: React.FC<BackgroundMediaProps> = ({
   imagePath,
   shots,
@@ -36,6 +135,176 @@ export const BackgroundMedia: React.FC<BackgroundMediaProps> = ({
 
   const motionType = motion?.type || "subtle_push_in";
   const isSplitDuel = motionType === "split_duel" && shots && shots.length >= 2;
+  const isDualLandscapeSplit =
+    motionType === "dual_landscape_split" && shots && shots.length >= 2;
+
+  // Dynamic Stacked Dual-Landscape Split (Top half slides from LEFT, Bottom half slides from RIGHT)
+  if (isDualLandscapeSplit && shots) {
+    const topShot = shots[0];
+    const botShot = shots[1];
+    const topSrc = resolveImgSrc(topShot.image_path);
+    const botSrc = resolveImgSrc(botShot.image_path);
+    const tfx = topShot.focal_x ?? 50;
+    const tfy = topShot.focal_y ?? 30;
+    const bfx = botShot.focal_x ?? 50;
+    const bfy = botShot.focal_y ?? 30;
+
+    const slideEase = Easing.bezier(0.22, 1, 0.36, 1);
+    const topSlideProg = interpolate(frame, [0, 11], [0, 1], {
+      extrapolateLeft: "clamp",
+      extrapolateRight: "clamp",
+      easing: slideEase,
+    });
+    const botSlideProg = interpolate(frame, [4, 15], [0, 1], {
+      extrapolateLeft: "clamp",
+      extrapolateRight: "clamp",
+      easing: slideEase,
+    });
+
+    const topSlideX = (1 - topSlideProg) * -1080;
+    const botSlideX = (1 - botSlideProg) * 1080;
+    const topDriftX = interpolate(frame, [0, durationInFrames], [-14, 14], {
+      extrapolateRight: "clamp",
+    });
+    const botDriftX = interpolate(frame, [0, durationInFrames], [14, -14], {
+      extrapolateRight: "clamp",
+    });
+    const bandScale = interpolate(frame, [0, durationInFrames], [1.03, 1.08], {
+      extrapolateRight: "clamp",
+    });
+    const seamOpacity = interpolate(frame, [8, 16], [0, 1], {
+      extrapolateLeft: "clamp",
+      extrapolateRight: "clamp",
+    });
+
+    return (
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          overflow: "clip",
+          backgroundColor: "#0B132B",
+        }}
+      >
+        {/* Ambient blurred studio backdrop above TopHUD & below Subtitles */}
+        {topSrc && (
+          <Img
+            src={topSrc}
+            style={{
+              position: "absolute",
+              inset: 0,
+              width: "100%",
+              height: "100%",
+              objectFit: "cover",
+              transform: "scale(1.16)",
+              filter: "blur(26px) brightness(0.36) saturate(1.15)",
+            }}
+          />
+        )}
+
+        {/* Top Landscape Band (y: 192..728) sliding in cleanly from LEFT */}
+        <div
+          style={{
+            position: "absolute",
+            left: 0,
+            top: 192,
+            width: 1080,
+            height: 536,
+            overflow: "clip",
+            transform: `translate3d(${topSlideX}px, 0, 0)`,
+            willChange: "transform",
+            borderTop: "2px solid rgba(255, 215, 0, 0.45)",
+          }}
+        >
+          {topSrc && (
+            <Img
+              src={topSrc}
+              style={{
+                width: "100%",
+                height: "100%",
+                objectFit: "cover",
+                objectPosition: `${tfx}% ${tfy}%`,
+                transformOrigin: `${tfx}% ${tfy}%`,
+                transform: `scale(${bandScale}) translate3d(${topDriftX}px, 0, 0)`,
+                filter: "contrast(1.08) brightness(0.98) saturate(1.15)",
+              }}
+            />
+          )}
+        </div>
+
+        {/* Bottom Landscape Band (y: 736..1272) sliding in cleanly from RIGHT */}
+        <div
+          style={{
+            position: "absolute",
+            left: 0,
+            top: 736,
+            width: 1080,
+            height: 536,
+            overflow: "clip",
+            transform: `translate3d(${botSlideX}px, 0, 0)`,
+            willChange: "transform",
+            borderBottom: "2px solid rgba(56, 189, 248, 0.45)",
+          }}
+        >
+          {botSrc && (
+            <Img
+              src={botSrc}
+              style={{
+                width: "100%",
+                height: "100%",
+                objectFit: "cover",
+                objectPosition: `${bfx}% ${bfy}%`,
+                transformOrigin: `${bfx}% ${bfy}%`,
+                transform: `scale(${bandScale}) translate3d(${botDriftX}px, 0, 0)`,
+                filter: "contrast(1.08) brightness(0.98) saturate(1.15)",
+              }}
+            />
+          )}
+        </div>
+
+        {/* Center Horizontal Broadcast Seam Bar */}
+        <div
+          style={{
+            position: "absolute",
+            left: 0,
+            right: 0,
+            top: 728,
+            height: 8,
+            opacity: seamOpacity,
+            background:
+              "linear-gradient(90deg, rgba(255,215,0,0.35) 0%, #FFD700 35%, #FFFFFF 50%, #38BDF8 65%, rgba(56,189,248,0.35) 100%)",
+            boxShadow: "0 0 18px rgba(255, 215, 0, 0.65)",
+            zIndex: 4,
+            pointerEvents: "none",
+          }}
+        />
+
+        {/* 1990s CRT Scanlines & Upper/Lower Edge Scrims */}
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            background:
+              "repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.34) 0px, rgba(0, 0, 0, 0.34) 2px, transparent 2px, transparent 4px)",
+            mixBlendMode: "multiply",
+            pointerEvents: "none",
+            opacity: 0.78,
+            zIndex: 3,
+          }}
+        />
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            background:
+              "linear-gradient(180deg, rgba(11, 19, 43, 0.85) 0%, rgba(11, 19, 43, 0) 14%, rgba(11, 19, 43, 0) 68%, rgba(11, 19, 43, 0.94) 85%, #0B132B 100%)",
+            pointerEvents: "none",
+            zIndex: 2,
+          }}
+        />
+      </div>
+    );
+  }
 
   // Dual-choice animated split-duel faceoff on S07 when 2 verified shots exist
   if (isSplitDuel && shots) {
@@ -78,9 +347,9 @@ export const BackgroundMedia: React.FC<BackgroundMediaProps> = ({
         style={{
           position: "absolute",
           inset: 0,
-          overflow: "hidden",
+          overflow: "clip",
           backgroundColor: "#0B132B",
-          transform: `translateX(${entryOffsetX}px)`,
+          transform: `translate3d(${entryOffsetX}px, 0, 0)`,
         }}
       >
         {/* Left / Part 1 Shot Pane */}
@@ -91,7 +360,7 @@ export const BackgroundMedia: React.FC<BackgroundMediaProps> = ({
             bottom: 0,
             left: 0,
             width: `${leftWidthPct}%`,
-            overflow: "hidden",
+            overflow: "clip",
           }}
         >
           {src1 && (
@@ -100,14 +369,24 @@ export const BackgroundMedia: React.FC<BackgroundMediaProps> = ({
               style={{
                 width: "100%",
                 height: "100%",
-                objectFit: s1.framing_mode === "broadcast_card" ? "contain" : "cover",
-                objectPosition: s1.framing_mode === "broadcast_card" ? "center 40%" : `${fx1}% ${fy1}%`,
-                transformOrigin: s1.framing_mode === "broadcast_card" ? "center 40%" : `${fx1}% ${fy1}%`,
+                objectFit: "cover",
+                objectPosition: `${fx1}% ${fy1}%`,
+                transformOrigin: `${fx1}% ${fy1}%`,
                 transform: `scale(${zoom1})`,
-                filter: "contrast(1.08) brightness(0.98) saturate(1.14)",
+                filter: s1.overlay_crest_path
+                  ? "contrast(1.08) brightness(0.74) saturate(1.12)"
+                  : "contrast(1.08) brightness(0.98) saturate(1.14)",
               }}
             />
           )}
+          <FloatingClubCrest
+            crestPath={s1.overlay_crest_path}
+            clubLabel={s1.club_label}
+            frame={frame}
+            fps={fps}
+            startDelay={4}
+            compact
+          />
         </div>
 
         {/* Right / Part 2 Shot Pane (Slides in cleanly at dilemma midpoint) */}
@@ -119,8 +398,8 @@ export const BackgroundMedia: React.FC<BackgroundMediaProps> = ({
               bottom: 0,
               left: "50%",
               width: "50%",
-              overflow: "hidden",
-              transform: `translateX(${rightTranslateXPct}%)`,
+              overflow: "clip",
+              transform: `translate3d(${rightTranslateXPct}%, 0, 0)`,
               willChange: "transform",
             }}
           >
@@ -130,14 +409,24 @@ export const BackgroundMedia: React.FC<BackgroundMediaProps> = ({
                 style={{
                   width: "100%",
                   height: "100%",
-                  objectFit: s2.framing_mode === "broadcast_card" ? "contain" : "cover",
-                  objectPosition: s2.framing_mode === "broadcast_card" ? "center 40%" : `${fx2}% ${fy2}%`,
-                  transformOrigin: s2.framing_mode === "broadcast_card" ? "center 40%" : `${fx2}% ${fy2}%`,
+                  objectFit: "cover",
+                  objectPosition: `${fx2}% ${fy2}%`,
+                  transformOrigin: `${fx2}% ${fy2}%`,
                   transform: `scale(${zoom2})`,
-                  filter: "contrast(1.08) brightness(0.98) saturate(1.14)",
+                  filter: s2.overlay_crest_path
+                    ? "contrast(1.08) brightness(0.72) saturate(1.12)"
+                    : "contrast(1.08) brightness(0.98) saturate(1.14)",
                 }}
               />
             )}
+            <FloatingClubCrest
+              crestPath={s2.overlay_crest_path}
+              clubLabel={s2.club_label}
+              frame={frame}
+              fps={fps}
+              startDelay={splitStart + 2}
+              compact
+            />
           </div>
         )}
 
@@ -237,20 +526,21 @@ export const BackgroundMedia: React.FC<BackgroundMediaProps> = ({
       extrapolateLeft: "clamp",
       extrapolateRight: "clamp",
     });
+  } else if (framingMode === "pan_horizontal" || motionType === "slow_pan") {
+    scale = framingMode === "pan_horizontal" ? 1.09 : 1.07;
+    const sweep = framingMode === "pan_horizontal" ? 30 : 18;
+    const startX = panDir === "left" ? sweep : -sweep;
+    const endX = panDir === "left" ? -sweep : sweep;
+    translateX = interpolate(activeFrame, [0, activeDuration], [startX, endX], {
+      extrapolateLeft: "clamp",
+      extrapolateRight: "clamp",
+      easing: Easing.bezier(0.22, 1, 0.36, 1),
+    });
   } else if (motionType === "subtle_push_in") {
     scale = interpolate(activeFrame, [0, activeDuration], [1.0, 1.08], {
       extrapolateLeft: "clamp",
       extrapolateRight: "clamp",
       easing: Easing.bezier(0.25, 0.1, 0.25, 1),
-    });
-  } else if (motionType === "slow_pan") {
-    scale = 1.07;
-    const startX = panDir === "left" ? 18 : -18;
-    const endX = panDir === "left" ? -18 : 18;
-    translateX = interpolate(activeFrame, [0, activeDuration], [startX, endX], {
-      extrapolateLeft: "clamp",
-      extrapolateRight: "clamp",
-      easing: Easing.bezier(0.22, 1, 0.36, 1),
     });
   } else if (motionType === "pop_in") {
     const pop = spring({
@@ -326,12 +616,14 @@ export const BackgroundMedia: React.FC<BackgroundMediaProps> = ({
     transformOrigin: `${focalX}% ${focalY}%`,
   };
 
+  const hasCrestOverlay = Boolean(activeShot?.overlay_crest_path);
+
   return (
     <div
       style={{
         position: "absolute",
         inset: 0,
-        overflow: "hidden",
+        overflow: "clip",
         backgroundColor: "#0B132B",
         opacity: containerOpacity,
       }}
@@ -352,8 +644,10 @@ export const BackgroundMedia: React.FC<BackgroundMediaProps> = ({
                 width: "100%",
                 height: "100%",
                 ...imgPositionStyle,
-                transform: `scale(${finalScale}) translate(${currentTranslateX}px, ${currentTranslateY}px)`,
-                filter: "contrast(1.07) brightness(0.98) saturate(1.14) blur(0.35px)",
+                transform: `scale(${finalScale}) translate3d(${currentTranslateX}px, ${currentTranslateY}px, 0)`,
+                filter: hasCrestOverlay
+                  ? "contrast(1.07) brightness(0.75) saturate(1.12) blur(0.45px)"
+                  : "contrast(1.07) brightness(0.98) saturate(1.14) blur(0.35px)",
                 willChange: "transform, opacity",
               }}
             />
@@ -367,9 +661,9 @@ export const BackgroundMedia: React.FC<BackgroundMediaProps> = ({
                 width: "100%",
                 height: "100%",
                 ...imgPositionStyle,
-                transform: `scale(${finalScale}) translate(${currentTranslateX}px, ${currentTranslateY}px)`,
+                transform: `scale(${finalScale}) translate3d(${currentTranslateX}px, ${currentTranslateY}px, 0)`,
                 filter: "blur(14px) brightness(1.25) saturate(1.18)",
-                opacity: 0.24,
+                opacity: hasCrestOverlay ? 0.14 : 0.24,
                 mixBlendMode: "screen",
                 pointerEvents: "none",
               }}
@@ -384,7 +678,7 @@ export const BackgroundMedia: React.FC<BackgroundMediaProps> = ({
                 width: "100%",
                 height: "100%",
                 ...imgPositionStyle,
-                transform: `scale(${finalScale}) translate(${currentTranslateX - 1.8}px, ${currentTranslateY}px)`,
+                transform: `scale(${finalScale}) translate3d(${currentTranslateX - 1.8}px, ${currentTranslateY}px, 0)`,
                 filter: "hue-rotate(-25deg) saturate(1.35) blur(0.35px)",
                 opacity: 0.14,
                 mixBlendMode: "screen",
@@ -399,7 +693,7 @@ export const BackgroundMedia: React.FC<BackgroundMediaProps> = ({
                 width: "100%",
                 height: "100%",
                 ...imgPositionStyle,
-                transform: `scale(${finalScale}) translate(${currentTranslateX + 1.8}px, ${currentTranslateY}px)`,
+                transform: `scale(${finalScale}) translate3d(${currentTranslateX + 1.8}px, ${currentTranslateY}px, 0)`,
                 filter: "hue-rotate(170deg) saturate(1.35) blur(0.35px)",
                 opacity: 0.14,
                 mixBlendMode: "screen",
@@ -417,6 +711,17 @@ export const BackgroundMedia: React.FC<BackgroundMediaProps> = ({
           />
         )}
       </div>
+
+      {/* 1b. Transparent Background-Cut Club Emblem Floating Over Stadium / Backdrop */}
+      {hasCrestOverlay && (
+        <FloatingClubCrest
+          crestPath={activeShot?.overlay_crest_path}
+          clubLabel={activeShot?.club_label}
+          frame={activeFrame}
+          fps={fps}
+          startDelay={4}
+        />
+      )}
 
       {/* 2. Exposure Glint Accent (camera_flash transition) */}
       {flashOverlayOpacity > 0 && (
