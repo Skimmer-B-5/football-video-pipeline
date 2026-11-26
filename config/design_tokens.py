@@ -132,14 +132,14 @@ TYPOGRAPHY_TOKENS = {
     }
 }
 
-# 6. CRT & Analog Broadcast Effects
+# 6. CRT & Analog Broadcast Effects (Restrained Retro TV Aesthetic - No muddying, no text blur)
 CRT_TOKENS = {
-    "scanline_opacity": 0.38,
-    "grain_intensity": 2.0,
-    "chromatic_aberration": "chromashift=cbh=1.6:crh=-1.6",
-    "color_balance": "colorbalance=rs=0.03:gs=0.01:bs=-0.02",
-    "noise_filter": "noise=alls=2.5:allf=t+u",
-    "phosphor_softness": "contrast(1.04) brightness(0.98) saturate(1.05)",
+    "scanline_opacity": 0.06,  # Subtle analog broadcast scanline texture (never heavy black bars)
+    "grain_intensity": 1.2,
+    "chromatic_aberration": "", # Chromatic fringing eliminated for tack-sharp typography
+    "color_balance": "colorbalance=rs=0.01:gs=0.01:bs=-0.01",
+    "noise_filter": "noise=alls=1.2:allf=t+u",
+    "phosphor_softness": "contrast(1.02) brightness(0.99) saturate(1.02)",
 }
 
 # 7. Audio Production & Mastering Constants
@@ -155,18 +155,17 @@ AUDIO_TOKENS = {
     
     # Breathing Room & Transition Padding
     "scene_tail_pad_sec": 0.15,
-    "scene_final_hold_sec": 0.75,     # 0.75s breath on final photo before outro
-    "outro_pre_roll_sec": 0.25,      # 0.25s hold on outro plate before voice
-    "outro_post_roll_sec": 0.60,     # 0.60s hold on outro card after voice
+    "scene_final_hold_sec": 0.25,     # Crisp 0.25s breath on final photo before outro
+    "outro_max_dur_sec": 2.0,        # Outro plate strictly capped under 2.0s
     "master_fadeout_sec": 0.35,      # Clean final audio fadeout
 }
 
 # 8. Pacing & Narrative Rhythm Guidelines
 PACING_TOKENS = {
-    "target_duration_min": 22.0,
-    "target_duration_max": 34.0,
+    "target_duration_min": 24.0,
+    "target_duration_max": 30.0,
     "target_word_count_min": 60,
-    "target_word_count_max": 88,
+    "target_word_count_max": 76,
     "visual_beat_interval_sec": (2.0, 4.0), # Visual change every 2-4 seconds
     "attention_reset_interval_sec": (8.0, 10.0), # Major reveal / interruption every 8-10 seconds
 }

@@ -123,7 +123,7 @@ def _fetch_grounding_context(topic_or_url: str) -> Tuple[str, str]:
     if topic_or_url.strip().startswith("http"):
         try:
             try:
-                from beta.stages.url_scraper import scrape_article_from_url
+                from stages.url_scraper import scrape_article_from_url
             except ModuleNotFoundError:
                 from stages.url_scraper import scrape_article_from_url
             art = scrape_article_from_url(topic_or_url.strip(), timeout=10)
@@ -425,7 +425,7 @@ def generate_documentary_package(
     to generate a brisk, sarcastic Benedict Cumberbatch–style 8-beat BBC 2.5D documentary StoryPackage.
     """
     try:
-        from beta.stages.groq_client import call_groq_chat
+        from stages.groq_client import call_groq_chat
     except ModuleNotFoundError:
         from stages.groq_client import call_groq_chat
 

@@ -12,7 +12,8 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
 def load_config(config_path: Optional[Path] = None) -> Dict[str, Any]:
     if config_path is None:
-        config_path = PROJECT_ROOT / "config.yaml"
+        cfg_main = PROJECT_ROOT / "config" / "config.yaml"
+        config_path = cfg_main if cfg_main.exists() else (PROJECT_ROOT / "config.yaml")
     
     if not config_path.exists():
         raise FileNotFoundError(f"Configuration file not found: {config_path}")

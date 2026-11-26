@@ -1,8 +1,0 @@
-file 'C:/Users/sb000/.gemini/antigravity/scratch/football-video-pipeline/beta/workspaces/calvin_bassey_fulham/v7_8scenes_master/multilang/es-419/voice/scene_S01.wav'
-file 'C:/Users/sb000/.gemini/antigravity/scratch/football-video-pipeline/beta/workspaces/calvin_bassey_fulham/v7_8scenes_master/multilang/es-419/voice/scene_S02.wav'
-file 'C:/Users/sb000/.gemini/antigravity/scratch/football-video-pipeline/beta/workspaces/calvin_bassey_fulham/v7_8scenes_master/multilang/es-419/voice/scene_S03.wav'
-file 'C:/Users/sb000/.gemini/antigravity/scratch/football-video-pipeline/beta/workspaces/calvin_bassey_fulham/v7_8scenes_master/multilang/es-419/voice/scene_S04.wav'
-file 'C:/Users/sb000/.gemini/antigravity/scratch/football-video-pipeline/beta/workspaces/calvin_bassey_fulham/v7_8scenes_master/multilang/es-419/voice/scene_S05.wav'
-file 'C:/Users/sb000/.gemini/antigravity/scratch/football-video-pipeline/beta/workspaces/calvin_bassey_fulham/v7_8scenes_master/multilang/es-419/voice/scene_S06.wav'
-file 'C:/Users/sb000/.gemini/antigravity/scratch/football-video-pipeline/beta/workspaces/calvin_bassey_fulham/v7_8scenes_master/multilang/es-419/voice/scene_S07.wav'
-file 'C:/Users/sb000/.gemini/antigravity/scratch/football-video-pipeline/beta/workspaces/calvin_bassey_fulham/v7_8scenes_master/multilang/es-419/voice/scene_outro.wav'

@@ -58,10 +58,19 @@ models/qwen3_tts_customvoice/
 models/qwen3_tts_base/
 !models/.gitkeep
 
-# Temporary media & assembly caches
+# Runtime media caches, workspaces & logs
 runs/
+workspaces/
+logs/
+cache/
 experiments/
 final_package/
+data/*.db
+data/*.db-wal
+data/*.db-shm
+data/face_cache/
+data/fact_cache.json
+data/used_images_global.json
 data/audio/*
 !data/audio/.gitkeep
 data/images/*
@@ -72,6 +81,8 @@ data/temp_assembly/
 data/temp_remotion_assembly/
 data/temp_*
 remotion/node_modules/
+remotion/public/doc_stories/
+remotion/public/images/
 remotion/temp_render_props.json
 temp/
 temp_*
@@ -111,15 +122,17 @@ data/fonts/
 run_*_test_render.py
 run_*_rebuild.py
 
-# Whitelist Essential Production Assets & Master Vault
+# Whitelist Essential Fonts, Production Visual Assets & Master Vault
+!assets/fonts/**
+!remotion/public/fonts/**
 !fs30/story_pipeline/assets/**
 !final_masters_vault/**
 
-# Runtime beta state & face caches
-beta/data/face_cache/
-beta/data/fact_cache/
-beta/data/used_images_global.json
-beta/remotion/node_modules/
+# Runtime state & Python bytecode (must follow whitelists so __pycache__ stays ignored)
+data/script_history.json
+__pycache__/
+*.py[cod]
+*$py.class
 
 # Operating System files
 Thumbs.db

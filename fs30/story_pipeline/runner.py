@@ -26,14 +26,12 @@ import soundfile as sf
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
-if str(PROJECT_ROOT / "beta") not in sys.path:
-    sys.path.insert(1, str(PROJECT_ROOT / "beta"))
 
 from fs30.story_pipeline.story_director import generate_documentary_package, StoryPackage
 from fs30.story_pipeline.v25_visual_director import V25DocumentaryVisualDirector
 from fs30.story_pipeline.audio_engine import master_story_audio
 
-REMOTION_DIR = PROJECT_ROOT / "beta" / "remotion"
+REMOTION_DIR = PROJECT_ROOT / "remotion"
 SFX_DIR = PROJECT_ROOT / "assets" / "sfx"
 
 MODELS_DIR = PROJECT_ROOT / "models"
@@ -53,7 +51,7 @@ def _apply_pronunciation_hints(text: str, hints: Dict[str, str]) -> str:
 
 def _release_qwen3_tts():
     try:
-        from beta.stages import qwen_tts_synthesizer
+        from stages import qwen_tts_synthesizer
         if getattr(qwen_tts_synthesizer, "_MODEL_INSTANCE", None) is not None:
             qwen_tts_synthesizer._MODEL_INSTANCE = None
     except Exception:

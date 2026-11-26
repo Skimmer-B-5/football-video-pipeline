@@ -36,7 +36,7 @@ echo Press Ctrl+C in this terminal to stop the studio.
 echo ===============================================================================
 echo.
 
-".venv\Scripts\python.exe" -u beta\run_telegram_broadcast_service.py
+".venv\Scripts\python.exe" -u run_telegram_broadcast_service.py
 
 echo.
 echo -------------------------------------------------------------------------------

@@ -57,7 +57,7 @@ echo       /status - Inspect studio daemon status and active jobs
 echo.
 echo Press Ctrl+C to stop.
 echo.
-".venv\Scripts\python.exe" -u beta\run_telegram_broadcast_service.py
+".venv\Scripts\python.exe" -u run_telegram_broadcast_service.py
 pause
 goto MENU
 
@@ -91,8 +91,8 @@ if "%HIST_CHOICE%"=="2" (
 )
 if "%HIST_CHOICE%"=="3" (
     echo.
-    echo [*] Launching FS30 Story Director...
-    ".venv\Scripts\python.exe" -u fs30\story_pipeline\runner.py
+    echo [*] Launching FS30 Story Director (2.5D Documentary Experiment)...
+    ".venv\Scripts\python.exe" -m fs30.story_pipeline.runner
     pause
     goto MENU
 )

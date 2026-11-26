@@ -21,13 +21,11 @@ from PIL import Image, ImageDraw, ImageFont, ImageFilter, ImageOps
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
-if str(PROJECT_ROOT / "beta") not in sys.path:
-    sys.path.insert(1, str(PROJECT_ROOT / "beta"))
 
-from beta.stages.editorial_image_sourcer import EditorialImageSourcer, DISQUALIFIED_DOMAINS, DISQUALIFIED_TITLE_TERMS
-from beta.stages.semantic_image_procurement import EnhancedSubjectDetector
-from beta.stages.vision_framing_inspector import compute_dhash
-from beta.stages.action_aware_cropper import ActionAwareCropper
+from stages.editorial_image_sourcer import EditorialImageSourcer, DISQUALIFIED_DOMAINS, DISQUALIFIED_TITLE_TERMS
+from stages.semantic_image_procurement import EnhancedSubjectDetector
+from stages.vision_framing_inspector import compute_dhash
+from stages.action_aware_cropper import ActionAwareCropper
 from fs30.cutout_refiner import refine_cutout_matte
 from fs30.paper_compositor import apply_handcut_paper_edge, multiply_paper_texture
 from fs30.story_pipeline.photo_mounter import mount_archival_photo, scale_cutout_proportional
@@ -42,7 +40,7 @@ from fs30.story_pipeline.paper_widgets import (
 )
 from fs30.story_pipeline.story_director import StoryPackage, StoryBeatPlan
 
-REMOTION_DOC_PUBLIC = PROJECT_ROOT / "beta" / "remotion" / "public" / "doc_stories"
+REMOTION_DOC_PUBLIC = PROJECT_ROOT / "remotion" / "public" / "doc_stories"
 BADGES_DIR = Path(__file__).resolve().parent / "assets" / "badges"
 
 
